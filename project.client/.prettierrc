@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    "prettier-plugin-tailwindcss",
+    "prettier-plugin-organize-imports",
+    "prettier-plugin-organize-attributes"
+  ],
+  "tailwindConfig": "./tailwind.config.js",
+  "tailwindAttributes": ["tw"],
+  "tailwindFunctions": ["tw"],
+  "tailwindDirective": "tw",
+  "tailwindClassNames": ["tw"],
+  "endOfLine": "auto"
+}

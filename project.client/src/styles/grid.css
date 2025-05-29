@@ -1,0 +1,183 @@
+.gcol {
+  @apply grid-flow-col;
+}
+.gcol-1 {
+  @apply grid-cols-1;
+}
+.gcol-2 {
+  @apply grid-cols-2;
+}
+.gcol-3 {
+  @apply grid-cols-3;
+}
+.gcol-4 {
+  @apply grid-cols-4;
+}
+.gcol-5 {
+  @apply grid-cols-5;
+}
+.gcol-6 {
+  @apply grid-cols-6;
+}
+.gcol-7 {
+  @apply grid-cols-7;
+}
+.gcol-8 {
+  @apply grid-cols-8;
+}
+.gcol-9 {
+  @apply grid-cols-9;
+}
+.gcol-10 {
+  @apply grid-cols-10;
+}
+.gcol-11 {
+  @apply grid-cols-11;
+}
+.gcol-12 {
+  @apply grid-cols-12;
+}
+.gcol-sm-1 {
+  @apply sm:grid-cols-1;
+}
+.gcol-sm-2 {
+  @apply sm:grid-cols-2;
+}
+.gcol-sm-3 {
+  @apply sm:grid-cols-3;
+}
+.gcol-sm-4 {
+  @apply sm:grid-cols-4;
+}
+.gcol-sm-5 {
+  @apply sm:grid-cols-5;
+}
+.gcol-sm-6 {
+  @apply sm:grid-cols-6;
+}
+.gcol-sm-7 {
+  @apply sm:grid-cols-7;
+}
+.gcol-sm-8 {
+  @apply sm:grid-cols-8;
+}
+.gcol-sm-9 {
+  @apply sm:grid-cols-9;
+}
+.gcol-sm-10 {
+  @apply sm:grid-cols-10;
+}
+.gcol-sm-11 {
+  @apply sm:grid-cols-11;
+}
+.gcol-sm-12 {
+  @apply sm:grid-cols-12;
+}
+.gcol-md-1 {
+  @apply md:grid-cols-1;
+}
+.gcol-md-2 {
+  @apply md:grid-cols-2;
+}
+.gcol-md-3 {
+  @apply md:grid-cols-3;
+}
+.gcol-md-4 {
+  @apply md:grid-cols-4;
+}
+.gcol-md-5 {
+  @apply md:grid-cols-5;
+}
+.gcol-md-6 {
+  @apply md:grid-cols-6;
+}
+.gcol-md-7 {
+  @apply md:grid-cols-7;
+}
+.gcol-md-8 {
+  @apply md:grid-cols-8;
+}
+.gcol-md-9 {
+  @apply md:grid-cols-9;
+}
+.gcol-md-10 {
+  @apply md:grid-cols-10;
+}
+.gcol-md-11 {
+  @apply md:grid-cols-11;
+}
+.gcol-md-12 {
+  @apply md:grid-cols-12;
+}
+.gcol-lg-1 {
+  @apply lg:grid-cols-1;
+}
+.gcol-lg-2 {
+  @apply lg:grid-cols-2;
+}
+.gcol-lg-3 {
+  @apply lg:grid-cols-3;
+}
+.gcol-lg-4 {
+  @apply lg:grid-cols-4;
+}
+.gcol-lg-5 {
+  @apply lg:grid-cols-5;
+}
+.gcol-lg-6 {
+  @apply lg:grid-cols-6;
+}
+.gcol-lg-7 {
+  @apply lg:grid-cols-7;
+}
+.gcol-lg-8 {
+  @apply lg:grid-cols-8;
+}
+.gcol-lg-9 {
+  @apply lg:grid-cols-9;
+}
+.gcol-lg-10 {
+  @apply lg:grid-cols-10;
+}
+.gcol-lg-11 {
+  @apply lg:grid-cols-11;
+}
+.gcol-lg-12 {
+  @apply lg:grid-cols-12;
+}
+.gcol-xl-1 {
+  @apply xl:grid-cols-1;
+}
+.gcol-xl-2 {
+  @apply xl:grid-cols-2;
+}
+.gcol-xl-3 {
+  @apply xl:grid-cols-3;
+}
+.gcol-xl-4 {
+  @apply xl:grid-cols-4;
+}
+.gcol-xl-5 {
+  @apply xl:grid-cols-5;
+}
+.gcol-xl-6 {
+  @apply xl:grid-cols-6;
+}
+.gcol-xl-7 {
+  @apply xl:grid-cols-7;
+}
+.gcol-xl-8 {
+  @apply xl:grid-cols-8;
+}
+.gcol-xl-9 {
+  @apply xl:grid-cols-9;
+}
+.gcol-xl-10 {
+  @apply xl:grid-cols-10;
+}
+.gcol-xl-11 {
+  @apply xl:grid-cols-11;
+}
+.gcol-xl-12 {
+  @apply xl:grid-cols-12;
+}

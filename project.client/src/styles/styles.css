@@ -1,0 +1,77 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800&family=Play:wght@700&display=swap");
+
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "./flex.css";
+@import "./grid.css";
+@import "./spinners.css";
+@import "./components.css";
+
+@layer base {
+  body {
+    font-family: "Montserrat", sans-serif;
+  }
+}
+
+.w-33 {
+  @apply w-2/3;
+}
+
+.w-100 {
+  @apply w-full;
+}
+
+.height-10 {
+  @apply h-11;
+  transition: all 0.4s ease-in-out;
+}
+
+.height-24 {
+  @apply h-24;
+  transition: all 0.4s ease-in-out;
+}
+
+.mw-sm {
+  @apply max-w-sm;
+}
+
+.mw-md {
+  @apply max-w-md;
+}
+
+.mw-lg {
+  @apply max-w-lg;
+}
+
+.mw-xl {
+  @apply max-w-xl;
+}
+
+.mw-2xl {
+  @apply max-w-2xl;
+}
+
+.mw-3xl {
+  @apply max-w-3xl;
+}
+
+.mw-4xl {
+  @apply max-w-4xl;
+}
+
+.mw-5xl {
+  @apply max-w-5xl;
+}
+
+.main-content {
+  @apply h-[92vh] w-[300px];
+}
+
+:root {
+  --bs-container: #00488a;
+  --solusersa: #a3d2e6;
+  --solusersa-head: #00578a;
+  --bs-light: white;
+}
+
+@tailwind utilities;
