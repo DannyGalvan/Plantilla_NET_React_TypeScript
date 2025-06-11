@@ -14,8 +14,6 @@ namespace Project.Server.Mappers
                 .Map(dest => dest.State, src => src.State)
                 .Map(dest => dest.Number, src => src.Number)
                 .Map(dest => dest.Password, src => src.Password)
-                .Map(dest => dest.MunicipalityCode, src => src.MunicipalityCode)
-                .Map(dest => dest.CountryCode, src => src.CountryCode)
                 .Map(dest => dest.IdentificationDocument, src => src.IdentificationDocument)
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.UserName, src => src.UserName)
@@ -27,14 +25,11 @@ namespace Project.Server.Mappers
             TypeAdapterConfig<User, UserResponse>.NewConfig()
                 .Map(dest => dest.State, src => src.State)
                 .Map(dest => dest.Number, src => src.Number)
-                .Map(dest => dest.MunicipalityCode, src => src.MunicipalityCode)
-                .Map(dest => dest.CountryCode, src => src.CountryCode)
                 .Map(dest => dest.IdentificationDocument, src => src.IdentificationDocument)
                 .Map(dest => dest.Email, src => src.Email)
                 .Map(dest => dest.UserName, src => src.UserName)
                 .Map(dest => dest.Name, src => src.Name)
                 .Map(dest => dest.RolId, src => src.RolId)
-                .Map(dest => dest.Municipality, src => src.Municipality)
                 .Map(dest => dest.Rol, src => src.Rol)
                 .Map(dest => dest.CreatedBy, src => src.CreatedBy)
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
@@ -54,20 +49,6 @@ namespace Project.Server.Mappers
 
             TypeAdapterConfig<User, User>.NewConfig();
 
-            //Mapper Municipality
-            TypeAdapterConfig<Municipality, MunicipalityResponse>.NewConfig()
-                .Map(dest => dest.Code, src => src.Code)
-                .Map(dest => dest.Name, src => src.Name)
-                .Map(dest => dest.CountryCode, src => src.CountryCode)
-                .Map(dest => dest.DepartmentCode, src => src.DepartmentCode)
-                .Map(dest => dest.Users, src => src.Users)
-                .Map(dest => dest.Country, src => src.Country);
-
-            //Mapper Country
-            TypeAdapterConfig<Country, CountryResponse>.NewConfig()
-                .Map(dest => dest.Code, src => src.Code)
-                .Map(dest => dest.Name, src => src.Name)
-                .Map(dest => dest.Municipalities, src => src.Municipalities);
 
             //Mapper Rol
             TypeAdapterConfig<Rol, RolResponse>.NewConfig()

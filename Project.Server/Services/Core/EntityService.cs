@@ -1,18 +1,15 @@
-﻿using FluentValidation;
-using FluentValidation.Results;
+﻿using FluentValidation.Results;
 using Lombok.NET;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Reflection;
-using Project.Server.Entities.Interfaces;
-using Project.Server.Services.Interfaces;
-using Project.Server.Utils;
 using Project.Server.Entities.Response;
-using Project.Server.Interceptors.Interfaces;
 using Project.Server.Context;
+using Project.Server.Services.Interfaces;
+using Project.Server.Entities.Interfaces;
+using Project.Server.Utils;
 
-namespace SoluEmpleo.Server.Services.Core
+namespace Project.Server.Services.Core
 {
     /// <summary>
     /// Defines the <see cref="EntityService{TEntity, TRequest, TId}" />
@@ -39,27 +36,31 @@ namespace SoluEmpleo.Server.Services.Core
         private readonly DataContext _db;
 
         /// <summary>
-        /// Defines the _serviceProvider
-        /// </summary>
-        private readonly IServiceProvider _serviceProvider;
-
-        /// <summary>
         /// Defines the _filterTranslator
         /// </summary>
-        private readonly IFilterTranslator<TEntity> _filterTranslator;
+        private readonly IFilterTranslator _filterTranslator;
+
+        /// <summary>
+        /// Defines the _entitySupportService
+        /// </summary>
+        private readonly IEntitySupportService _entitySupportService;
 
         /// <summary>
         /// The GetAll
         /// </summary>
         /// <param name="filters">The filters<see cref="string"/></param>
-        /// <param name="thenInclude">The thenInclude<see cref="bool"/></param>
+        /// <param name="includes">The includes<see>
+        ///         <cref>string[]?</cref>
+        ///     </see>
+        /// </param>
         /// <param name="pageNumber">The pageNumber<see cref="int"/></param>
         /// <param name="pageSize">The pageSize<see cref="int"/></param>
+        /// <param name="includeTotal">The pageSize<see cref="bool"/></param>
         /// <returns>The <see>
         ///         <cref>Response{List{TEntity}, List{ValidationFailure}}</cref>
         ///     </see>
         /// </returns>
-        public Response<List<TEntity>, List<ValidationFailure>> GetAll(string? filters, bool? thenInclude, int pageNumber = 1, int pageSize = 30)
+        public Response<List<TEntity>, List<ValidationFailure>> GetAll(string? filters, string[]? includes = null, int pageNumber = 1, int pageSize = 30, bool includeTotal = false)
         {
             Response<List<TEntity>, List<ValidationFailure>> response = new();
 
@@ -67,32 +68,51 @@ namespace SoluEmpleo.Server.Services.Core
             {
                 IQueryable<TEntity> query = _db.Set<TEntity>();
 
+                // 🔒 Filtrar automáticamente registros eliminados lógicamente
+                var parameter = Expression.Parameter(typeof(TEntity), "e");
+                var stateProp = Expression.Property(parameter, "State");
+                var condition = Expression.NotEqual(stateProp, Expression.Constant(0));
+                var lambda = Expression.Lambda<Func<TEntity, bool>>(condition, parameter);
+                query = query.Where(lambda);
+
                 if (!string.IsNullOrEmpty(filters))
                 {
-                    var filterExpression = _filterTranslator.TranslateToEfFilter(filters);
+                    var filterExpression = _filterTranslator.TranslateToEfFilter<TEntity>(filters);
                     query = query.Where(filterExpression);
                 }
 
-                if (thenInclude ?? false)
+                if (includes is { Length: > 0 })
                 {
-                    var properties = typeof(TEntity).GetProperties()
-                        .Where(p => p.GetGetMethod()!.IsVirtual && p.PropertyType.IsClass);
-
-                    query = properties.Aggregate(query, (current, property) => current.Include(property.Name));
+                    try
+                    {
+                        query = query.ApplyIncludes(includes);
+                    }
+                    catch (Exception ex)
+                    {
+                        response.Success = false;
+                        response.Message = $"Error en Include: {ex.Message}";
+                        response.Errors = [new ValidationFailure("Include", ex.Message)];
+                        return response;
+                    }
                 }
 
                 query = query.OrderByDescending(e => e.CreatedAt);
 
-                int totalRecords = query.Count();
-
                 int skip = (pageNumber - 1) * pageSize;
-                query = query.Skip(skip).Take(pageSize);
+                var pagedData = query.Skip(skip).Take(pageSize + 1).AsNoTracking().ToList();
 
-                var entities = query.ToList();
+                response.Data = pagedData.Take(pageSize).ToList();
 
-                response.Errors = null;
-                response.Data = entities;
-                response.TotalResults = totalRecords;
+                // Si el cliente quiere saber el total real
+                if (includeTotal)
+                {
+                    response.TotalResults = query.Count(); // costo adicional
+                }
+                else
+                {
+                    response.TotalResults = skip + response.Data.Count + (pagedData.Count > pageSize ? 1 : 0); // estimado
+                }
+
                 response.Success = true;
                 response.Message = $"Entities {typeof(TEntity).Name} retrieved successfully";
 
@@ -173,7 +193,7 @@ namespace SoluEmpleo.Server.Services.Core
 
             try
             {
-                var results = GetValidator("Create").Validate(model);
+                var results = _entitySupportService.GetValidator<TRequest>("Create").Validate(model);
 
                 if (!results.IsValid)
                 {
@@ -186,8 +206,10 @@ namespace SoluEmpleo.Server.Services.Core
                 }
 
                 var entity = _mapper.Map<TEntity>(model!);
+                var database = _db.Set<TEntity>();
+                using var transaction = _db.Database.BeginTransaction();
 
-                foreach (var interceptor in GetBeforeCreateInterceptors())
+                foreach (var interceptor in _entitySupportService.GetBeforeCreateInterceptors<TEntity,TRequest>())
                 {
                     if (!response.Success) return response;
 
@@ -206,8 +228,6 @@ namespace SoluEmpleo.Server.Services.Core
                 entity.UpdatedAt = null;
                 entity.UpdatedBy = null;
 
-                var database = _db.Set<TEntity>();
-
                 database.Add(entity);
                 _db.SaveChanges();
 
@@ -218,12 +238,14 @@ namespace SoluEmpleo.Server.Services.Core
 
                 if (!response.Success) return response;
 
-                foreach (var interceptor in GetAfterCreateInterceptors())
+                foreach (var interceptor in _entitySupportService.GetAfterCreateInterceptors<TEntity, TRequest>())
                 {
                     if (!response.Success) return response;
 
                     response = interceptor.Execute(response, model);
                 }
+
+                transaction.Commit();
 
                 return response;
             }
@@ -256,7 +278,7 @@ namespace SoluEmpleo.Server.Services.Core
 
             try
             {
-                var results = GetValidator("Update").Validate(model);
+                var results = _entitySupportService.GetValidator<TRequest>("Update").Validate(model);
 
                 if (!results.IsValid)
                 {
@@ -269,8 +291,9 @@ namespace SoluEmpleo.Server.Services.Core
                 }
 
                 TEntity entity = _mapper.Map<TEntity>(model!);
-
                 var database = _db.Set<TEntity>();
+
+                using var transaction = _db.Database.BeginTransaction();
 
                 var parameter = Expression.Parameter(typeof(TEntity), "x");
                 var member = Expression.PropertyOrField(parameter, "Id");
@@ -312,12 +335,14 @@ namespace SoluEmpleo.Server.Services.Core
 
                 if (!response.Success) return response;
 
-                foreach (var interceptor in GetAfterUpdateInterceptors())
+                foreach (var interceptor in _entitySupportService.GetAfterUpdateInterceptors<TEntity,TRequest>())
                 {
                     if (!response.Success) return response;
 
                     response = interceptor.Execute(response, model, prevState);
                 }
+
+                transaction.Commit();
 
                 return response;
             }
@@ -350,7 +375,7 @@ namespace SoluEmpleo.Server.Services.Core
 
             try
             {
-                var results = GetValidator("Partial").Validate(model);
+                var results = _entitySupportService.GetValidator<TRequest>("Partial").Validate(model);
 
                 if (!results.IsValid)
                 {
@@ -365,6 +390,8 @@ namespace SoluEmpleo.Server.Services.Core
                 TEntity entity = _mapper.Map<TEntity>(model!);
 
                 var database = _db.Set<TEntity>();
+
+                using var transaction = _db.Database.BeginTransaction();
 
                 var parameter = Expression.Parameter(typeof(TEntity), "x");
                 var member = Expression.PropertyOrField(parameter, "Id");
@@ -403,12 +430,14 @@ namespace SoluEmpleo.Server.Services.Core
 
                 if (!response.Success) return response;
 
-                foreach (var interceptor in GetAfterPartialUpdateInterceptors())
+                foreach (var interceptor in _entitySupportService.GetAfterPartialUpdateInterceptors<TEntity,TRequest>())
                 {
                     if (!response.Success) return response;
 
                     response = interceptor.Execute(response, model, prevState);
                 }
+
+                transaction.Commit();
 
                 return response;
             }
@@ -456,6 +485,8 @@ namespace SoluEmpleo.Server.Services.Core
 
                 TEntity? entity = _db.Set<TEntity>().AsNoTracking().FirstOrDefault(condition);
 
+                using var transaction = _db.Database.BeginTransaction();
+
                 if (entity == null)
                 {
                     response.Success = false;
@@ -480,6 +511,8 @@ namespace SoluEmpleo.Server.Services.Core
                 response.Success = true;
                 response.Message = $"Entity {typeof(TEntity).Name} deleted successfully";
 
+                transaction.Commit();
+
                 return response;
             }
             catch (Exception ex)
@@ -493,64 +526,6 @@ namespace SoluEmpleo.Server.Services.Core
 
                 return response;
             }
-        }
-
-        /// <summary>
-        /// The GetValidator
-        /// </summary>
-        /// <param name="key">The key<see cref="string"/></param>
-        /// <returns>The <see cref="IValidator{TRequest}"/></returns>
-        private IValidator<TRequest> GetValidator(string key)
-        {
-            return _serviceProvider.GetRequiredKeyedService<IValidator<TRequest>>(key);
-        }
-
-        /// <summary>
-        /// The GetAfterCreateInterceptors
-        /// </summary>
-        /// <returns>The <see>
-        ///         <cref>IEnumerable{IEntityAfterCreateInterceptor{TEntity, TRequest}}</cref>
-        ///     </see>
-        /// </returns>
-        private IEnumerable<IEntityAfterCreateInterceptor<TEntity, TRequest>> GetAfterCreateInterceptors()
-        {
-            return _serviceProvider.GetServices<IEntityAfterCreateInterceptor<TEntity, TRequest>>().OrderBy(i => i.GetType().GetCustomAttribute<OrderAttribute>()?.Priority ?? int.MaxValue);
-        }
-
-        /// <summary>
-        /// The GetBeforeCreateInterceptors
-        /// </summary>
-        /// <returns>The <see>
-        ///         <cref>IEnumerable{IEntityBeforeCreateInterceptor{TEntity, TRequest}}</cref>
-        ///     </see>
-        /// </returns>
-        private IEnumerable<IEntityBeforeCreateInterceptor<TEntity, TRequest>> GetBeforeCreateInterceptors()
-        {
-            return _serviceProvider.GetServices<IEntityBeforeCreateInterceptor<TEntity, TRequest>>().OrderBy(i => i.GetType().GetCustomAttribute<OrderAttribute>()?.Priority ?? int.MaxValue);
-        }
-
-        /// <summary>
-        /// The GetAfterUpdateInterceptors
-        /// </summary>
-        /// <returns>The <see>
-        ///         <cref>IEnumerable{IEntityAfterUpdateInterceptor{TEntity, TRequest}}</cref>
-        ///     </see>
-        /// </returns>
-        private IEnumerable<IEntityAfterUpdateInterceptor<TEntity, TRequest>> GetAfterUpdateInterceptors()
-        {
-            return _serviceProvider.GetServices<IEntityAfterUpdateInterceptor<TEntity, TRequest>>().OrderBy(i => i.GetType().GetCustomAttribute<OrderAttribute>()?.Priority ?? int.MaxValue);
-        }
-
-        /// <summary>
-        /// The GetAfterPartialUpdateInterceptors
-        /// </summary>
-        /// <returns>The <see>
-        ///         <cref>IEnumerable{IEntityAfterPartialUpdateInterceptor{TEntity, TRequest}}</cref>
-        ///     </see>
-        /// </returns>
-        private IEnumerable<IEntityAfterPartialUpdateInterceptor<TEntity, TRequest>> GetAfterPartialUpdateInterceptors()
-        {
-            return _serviceProvider.GetServices<IEntityAfterPartialUpdateInterceptor<TEntity, TRequest>>().OrderBy(i => i.GetType().GetCustomAttribute<OrderAttribute>()?.Priority ?? int.MaxValue);
         }
     }
 }

@@ -3,10 +3,9 @@
 namespace Project.Server.Services.Interfaces
 {
     /// <summary>
-    /// Defines the <see cref="IFilterTranslator{TEntity}" />
+    /// Defines the <see cref="IFilterTranslator" />
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    public interface IFilterTranslator<TEntity> where TEntity : class
+    public interface IFilterTranslator
     {
         /// <summary>
         /// The TranslateToEfFilter
@@ -16,6 +15,6 @@ namespace Project.Server.Services.Interfaces
         ///         <cref>Expression{Func{TEntity, bool}}</cref>
         ///     </see>
         /// </returns>
-        Expression<Func<TEntity, bool>> TranslateToEfFilter(string? sqlQuery);
+        Expression<Func<TEntity, bool>> TranslateToEfFilter<TEntity>(string? sqlQuery) where TEntity : class;
     }
 }

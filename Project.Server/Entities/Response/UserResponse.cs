@@ -12,17 +12,6 @@
         /// </summary>
         public long RolId { get; set; }
 
-
-        /// <summary>
-        /// Gets or sets the MunicipalityCode
-        /// </summary>
-        public string MunicipalityCode { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets the MunicipalityCode
-        /// </summary>
-        public string CountryCode { get; set; } = string.Empty;
-
         /// <summary>
         /// Gets or sets the Email
         /// </summary>
@@ -77,10 +66,5 @@
         /// Gets or sets the Rol
         /// </summary>
         public virtual RolResponse? Rol { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Municipality
-        /// </summary>
-        public virtual MunicipalityResponse? Municipality { get; set; }
     }
 }

@@ -1,12 +1,10 @@
-﻿namespace Project.Server.Services.Interfaces
+﻿using FluentValidation.Results;
+using Project.Server.Entities.Request;
+using Project.Server.Entities.Models;
+using Project.Server.Entities.Response;
+
+namespace Project.Server.Services.Interfaces
 {
-    using FluentValidation.Results;
-    using Entities.Request;
-    using Project.Server.Entities.Request;
-    using Project.Server.Entities.Models;
-    using Project.Server.Entities.Response;
-
-
     /// <summary>
     /// Defines the <see cref="IAuthService" />
     /// </summary>

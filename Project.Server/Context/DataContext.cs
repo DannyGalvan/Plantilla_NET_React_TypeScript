@@ -59,70 +59,12 @@ namespace Project.Server.Context
         /// </summary>
         public DbSet<RolOperation> RolOperations { get; set; }
 
-        /// <summary>
-        /// Gets or sets the Countries
-        /// </summary>
-        public DbSet<Country> Countries { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Municipalities
-        /// </summary>
-        public DbSet<Municipality> Municipalities { get; set; }
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // Add configuration for each entity
-            modelBuilder.Entity<Country>(entity =>
-            {
-                entity.HasKey(e => e.Code);
-                entity.Property(e => e.Code)
-                    .ValueGeneratedNever();
-                entity.Property(e => e.Name)
-                        .HasMaxLength(255);
-                entity.Property(e => e.Code)
-                        .HasMaxLength(255);
-
-                entity.HasData(
-                    new Country
-                    {
-                        Code = "30",
-                        Name = "Guatemala"
-                    }
-                );
-            });
-
-            modelBuilder.Entity<Municipality>(entity =>
-            {
-                entity.HasKey(e => e.Code);
-                entity.Property(e => e.Code)
-                    .ValueGeneratedNever();
-                entity.Property(e => e.Name)
-                    .HasMaxLength(255);
-                entity.Property(e => e.Code)
-                    .HasMaxLength(255);
-                entity.Property(e => e.CountryCode)
-                    .HasMaxLength(255);
-                entity.Property(e => e.DepartmentCode)
-                    .HasMaxLength(255);
-
-                entity.HasOne(e => e.Country)
-                        .WithMany(e => e.Municipalities)
-                    .HasForeignKey(e => e.CountryCode);
-
-                entity.HasData(
-                    new Municipality
-                    {
-                        Code = "3001",
-                        Name = "Guatemala",
-                        CountryCode = "30",
-                        DepartmentCode = "3001"
-                    }
-                );
-            });
-
             modelBuilder.Entity<Rol>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -137,17 +79,6 @@ namespace Project.Server.Context
                         Id = 1,
                         Name = "SA",
                         Description = "Super Administrator",
-                        State = 1,
-                        CreatedAt = new DateTime(2025, 2, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                        CreatedBy = 1,
-                        UpdatedAt = null,
-                        UpdatedBy = null
-                    },
-                    new Rol
-                    {
-                        Id = 2,
-                        Name = "Student",
-                        Description = "Estudiante",
                         State = 1,
                         CreatedAt = new DateTime(2025, 2, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
                         CreatedBy = 1,
@@ -172,10 +103,6 @@ namespace Project.Server.Context
                     .HasMaxLength(255);
                 entity.Property(e => e.Email)
                     .HasMaxLength(255);
-                entity.Property(e => e.MunicipalityCode)
-                    .HasMaxLength(255);
-                entity.Property(e => e.CountryCode)
-                    .HasMaxLength(50);
                 entity.Property(e => e.IdentificationDocument)
                     .HasMaxLength(255);
                 entity.Property(e => e.RecoveryToken)
@@ -184,10 +111,6 @@ namespace Project.Server.Context
                 entity.HasOne(e => e.Rol)
                         .WithMany(e => e.Users)
                     .HasForeignKey(e => e.RolId);
-
-                entity.HasOne(e => e.Municipality)
-                        .WithMany(e => e.Users)
-                        .HasForeignKey(e => e.MunicipalityCode);
 
                 //password: Guatemala1.
                 entity.HasData(
@@ -201,8 +124,6 @@ namespace Project.Server.Context
                         Number = "51995142",
                         Email = "pruebas.test29111999@gmail.com",
                         IdentificationDocument = "2987967910101",
-                        MunicipalityCode = "3001",
-                        CountryCode = "30",
                         RecoveryToken = "",
                         Reset = false,
                         State = 1,

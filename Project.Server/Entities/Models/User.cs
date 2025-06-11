@@ -17,17 +17,6 @@ namespace Project.Server.Entities.Models
         /// </summary>
         public long RolId { get; set; }
 
-
-        /// <summary>
-        /// Gets or sets the MunicipalityCode
-        /// </summary>
-        public string? MunicipalityCode { get; set; }
-
-        /// <summary>
-        /// Gets or sets the MunicipalityCode
-        /// </summary>
-        public string CountryCode { get; set; } = string.Empty;
-
         /// <summary>
         /// Gets or sets the Password
         /// </summary>
@@ -102,10 +91,5 @@ namespace Project.Server.Entities.Models
         /// Gets or sets the Rol
         /// </summary>
         public virtual Rol? Rol { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Municipality
-        /// </summary>
-        public virtual Municipality? Municipality { get; set; }
     }
 }
