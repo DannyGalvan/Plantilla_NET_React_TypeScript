@@ -100,22 +100,24 @@ export function SubMenu({
                 {data.module.name}
               </div>
               <ul className="flex flex-col gap-0.5 w-full">
-                {data.operations.map((menu) => (
-                  <li key={menu.path} className="w-full">
-                    <Link
-                      viewTransition
-                      className={`block w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        pathname === menu.path
-                          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/80"
-                      }`}
-                      to={menu.path}
-                      onClick={handleLinkClick}
-                    >
-                      {menu.name}
-                    </Link>
-                  </li>
-                ))}
+                {data.operations
+                  .filter((x) => x.isVisible)
+                  .map((menu) => (
+                    <li key={menu.path} className="w-full">
+                      <Link
+                        viewTransition
+                        className={`block w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                          pathname === menu.path
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/80"
+                        }`}
+                        to={menu.path}
+                        onClick={handleLinkClick}
+                      >
+                        {menu.name}
+                      </Link>
+                    </li>
+                  ))}
               </ul>
             </div>
           </Popover.Dialog>
@@ -132,21 +134,23 @@ export function SubMenu({
             initial={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            {data.operations.map((menu) => (
-              <li key={menu.path}>
-                <Link
-                  viewTransition
-                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    pathname === menu.path
-                      ? "bg-blue-100/50 text-blue-700 dark:bg-zinc-800 dark:text-blue-400"
-                      : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                  to={menu.path}
-                >
-                  {menu.name}
-                </Link>
-              </li>
-            ))}
+            {data.operations
+              .filter((x) => x.isVisible)
+              .map((menu) => (
+                <li key={menu.path}>
+                  <Link
+                    viewTransition
+                    className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                      pathname === menu.path
+                        ? "bg-blue-100/50 text-blue-700 dark:bg-zinc-800 dark:text-blue-400"
+                        : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                    to={menu.path}
+                  >
+                    {menu.name}
+                  </Link>
+                </li>
+              ))}
           </motion.ul>
         ) : null}
       </AnimatePresence>

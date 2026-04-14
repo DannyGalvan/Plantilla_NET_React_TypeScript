@@ -26,6 +26,7 @@
     "react-dom": "^19.2.4",
     "react-responsive": "^10.0.1",
     "react-router": "^7.5.0",
+    "react-select": "^5.10.2",
     "tailwind-scrollbar": "^4.0.2",
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.2.2",

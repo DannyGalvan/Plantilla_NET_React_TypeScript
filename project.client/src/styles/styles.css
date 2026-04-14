@@ -69,7 +69,7 @@
 }
 
 .main-content {
-  @apply h-[92vh] w-[300px];
+  @apply h-[92vh] w-75;
 }
 
 /* Custom variables (optional, not Tailwind-specific) */

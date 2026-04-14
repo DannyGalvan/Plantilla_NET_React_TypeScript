@@ -22,6 +22,21 @@ namespace Project.Server.Mappers
                 .Ignore(dest => dest.CreatedAt)
                 .Ignore(dest => dest.UpdatedAt!);
 
+            // Mapper UserRequest to User
+            TypeAdapterConfig<UserRequest, User>.NewConfig()
+                .Map(dest => dest.RolId, src => src.RolId)
+                .Map(dest => dest.Name, src => src.Name)
+                .Map(dest => dest.Email, src => src.Email)
+                .Map(dest => dest.UserName, src => src.UserName)
+                .Map(dest => dest.Password, src => src.Password)
+                .Map(dest => dest.IdentificationDocument, src => src.IdentificationDocument)
+                .Map(dest => dest.Number, src => src.Number)
+                .Map(dest => dest.State, src => src.State)
+                .Map(dest => dest.CreatedBy, src => src.CreatedBy)
+                .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt!);
+
             TypeAdapterConfig<User, UserResponse>.NewConfig()
                 .Map(dest => dest.State, src => src.State)
                 .Map(dest => dest.Number, src => src.Number)
@@ -51,30 +66,41 @@ namespace Project.Server.Mappers
 
 
             //Mapper Rol
+            TypeAdapterConfig<RolRequest, Rol>.NewConfig()
+                .Map(dest => dest.Name, src => src.Name)
+                .Map(dest => dest.Description, src => src.Description)
+                .Map(dest => dest.State, src => src.State)
+                .Map(dest => dest.CreatedBy, src => src.CreatedBy)
+                .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt!);
+
             TypeAdapterConfig<Rol, RolResponse>.NewConfig()
                 .Map(dest => dest.Id, src => src.Id)
                 .Map(dest => dest.Name, src => src.Name)
                 .Map(dest => dest.Description, src => src.Description)
-                .Map(dest => dest.Users, src => src.Users)
                 .Map(dest => dest.State, src => src.State)
-                .Map(dest => dest.RolOperations, src => src.RolOperations)
                 .Map(dest => dest.CreatedBy, src => src.CreatedBy)
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
                 .Map(dest => dest.CreatedAt, src => src.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
-                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null);
+                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null)
+                .Ignore(dest => dest.Users) // Ignorar navegación circular
+                .Ignore(dest => dest.RolOperations); // Ignorar navegación circular
+
+            TypeAdapterConfig<Rol, Rol>.NewConfig();
 
             //Mapper RolOperation
             TypeAdapterConfig<RolOperation, RolOperationResponse>.NewConfig()
                 .Map(dest => dest.Id, src => src.Id)
                 .Map(dest => dest.OperationId, src => src.OperationId)
-                .Map(dest => dest.Operation, src => src.Operation)
                 .Map(dest => dest.State, src => src.State)
                 .Map(dest => dest.RolId, src => src.RolId)
-                .Map(dest => dest.Rol, src => src.Rol)
                 .Map(dest => dest.CreatedBy, src => src.CreatedBy)
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
                 .Map(dest => dest.CreatedAt, src => src.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
-                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null);
+                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null)
+                .Ignore(dest => dest.Operation) // Ignorar navegación circular
+                .Ignore(dest => dest.Rol); // Ignorar navegación circular
 
             TypeAdapterConfig<RolOperation, Operation>.NewConfig()
                 .Map(dest => dest.Id, src => src.OperationId)
@@ -103,12 +129,12 @@ namespace Project.Server.Mappers
                 .Map(dest => dest.Path, src => src.Path)
                 .Map(dest => dest.ModuleId, src => src.ModuleId)
                 .Map(dest => dest.IsVisible, src => src.IsVisible)
-                .Map(dest => dest.RolOperations, src => src.RolOperations)
                 .Map(dest => dest.State, src => src.State)
                 .Map(dest => dest.CreatedBy, src => src.CreatedBy)
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
                 .Map(dest => dest.CreatedAt, src => src.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
-                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null);
+                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null)
+                .Ignore(dest => dest.RolOperations); // Ignorar navegación circular
 
             //Mapper Module
             TypeAdapterConfig<Module, ModuleResponse>.NewConfig()
@@ -118,11 +144,11 @@ namespace Project.Server.Mappers
                 .Map(dest => dest.Image, src => src.Image)
                 .Map(dest => dest.Path, src => src.Path)
                 .Map(dest => dest.State, src => src.State)
-                .Map(dest => dest.Operations, src => src.Operations)
                 .Map(dest => dest.CreatedBy, src => src.CreatedBy)
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
                 .Map(dest => dest.CreatedAt, src => src.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
-                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null);
+                .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null)
+                .Ignore(dest => dest.Operations); // Ignorar navegación circular
         }
     }
 }

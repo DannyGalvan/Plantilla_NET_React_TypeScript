@@ -123,21 +123,26 @@ namespace SoluEmpleo.Server.Services.Core
                     return userResponse;
                 }
 
-                List<RolOperation> rolOperations = _bd.RolOperations.Include(r => r.Operation)
-                    .Where(r => r.RolId == oUser.RolId && r.State == 1).ToList();
+                List<RolOperation> rolOperations = _bd.RolOperations
+                    .Include(r => r.Operation)
+                    .Where(r => r.RolId == oUser.RolId && r.State == 1)
+                    .ToList();
 
                 List<Operation> operationsRol = _mapper.Map<List<RolOperation>, List<Operation>>(rolOperations);
 
-                var modules =
-                    _bd.Modules
-                        .FromSql($"""
-                                  select Id,Name,Description,Image,Path,State,CreatedAt,UpdatedAt,CreatedBy,UpdatedBy from (select ModuleId from RolOperations ro 
-                                                                                                      inner join Operations o on o.Id = ro.OperationId
-                                                                                                      inner join Modules m on o.ModuleId = m.Id
-                                                                                                      where ro.RolId = {oUser.RolId} and ro.state = 1                
-                                                                                                      group by ModuleId) as mod
-                                                                                                      inner join Modules mo on mod.ModuleId = mo.Id
-                                  """).ToList();
+                // Consulta LINQ compatible con SQL Server, PostgreSQL y MySQL
+                var modules = _bd.RolOperations
+                    .Where(ro => ro.RolId == oUser.RolId && ro.State == 1)
+                    .Join(_bd.Operations,
+                        ro => ro.OperationId,
+                        o => o.Id,
+                        (ro, o) => o.ModuleId)
+                    .Distinct()
+                    .Join(_bd.Modules,
+                        moduleId => moduleId,
+                        m => m.Id,
+                        (moduleId, m) => m)
+                    .ToList();
 
 
                 List<Authorizations> authorizations = modules
@@ -302,7 +307,7 @@ namespace SoluEmpleo.Server.Services.Core
                 oUser.Password = encrypt;
                 oUser.RecoveryToken = "";
                 oUser.Reset = false;
-                oUser.UpdatedAt = DateTime.Now;
+                oUser.UpdatedAt = DateTime.UtcNow;
                 oUser.UpdatedBy = oUser.Id;
 
                 _bd.Users.Update(oUser);
@@ -371,7 +376,7 @@ namespace SoluEmpleo.Server.Services.Core
                 oUser.Password = encrypt;
                 oUser.RecoveryToken = "";
                 oUser.Reset = false;
-                oUser.UpdatedAt = DateTime.Now;
+                oUser.UpdatedAt = DateTime.UtcNow;
                 oUser.UpdatedBy = oUser.Id;
 
                 _bd.Users.Update(oUser);
@@ -423,7 +428,7 @@ namespace SoluEmpleo.Server.Services.Core
                     return response;
                 }
 
-                var currentDate = DateTime.Now;
+                var currentDate = DateTime.UtcNow;
 
                 if (currentDate.CompareTo(oUser.DateToken?.AddMinutes(15)) >= 0)
                 {
@@ -496,8 +501,8 @@ namespace SoluEmpleo.Server.Services.Core
 
                 oUser.RecoveryToken = token;
                 oUser.Reset = true;
-                oUser.DateToken = DateTime.Now;
-                oUser.UpdatedAt = DateTime.Now;
+                oUser.DateToken = DateTime.UtcNow;
+                oUser.UpdatedAt = DateTime.UtcNow;
                 oUser.UpdatedBy = oUser.Id;
 
                 _bd.Users.Update(oUser);

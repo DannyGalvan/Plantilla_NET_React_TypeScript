@@ -1,30 +1,30 @@
-import { createTheme, defaultThemes } from "react-data-table-component";
+import { createTheme } from "react-data-table-component";
 
 createTheme(
-  "solusersa-theme",
+  "heroui-theme",
   {
     text: {
-      primary: "var(--bs-dark)",
-      secondary: "var(--bs-dark)",
+      primary: "hsl(var(--heroui-foreground))",
+      secondary: "hsl(var(--heroui-foreground-500))",
     },
     background: {
-      default: "var(--bs-white)",
+      default: "hsl(var(--heroui-content1))",
     },
     context: {
-      background: "var(--solusersa-head)",
-      text: "var(--bs-white)",
+      background: "hsl(var(--heroui-primary))",
+      text: "hsl(var(--heroui-primary-foreground))",
     },
     divider: {
-      default: "var(--bs-gray-300)",
+      default: "hsl(var(--heroui-divider))",
     },
     button: {
-      default: "var(--bs-dark)",
-      hover: "var(--bs-gray-300)",
-      focus: "var(--bs-gray-300)",
-      disabled: "var(--bs-gray-300)",
+      default: "hsl(var(--heroui-foreground-500))",
+      hover: "hsl(var(--heroui-foreground))",
+      focus: "hsl(var(--heroui-primary))",
+      disabled: "hsl(var(--heroui-foreground-300))",
     },
     sortFocus: {
-      default: "var(--bs-dark)",
+      default: "hsl(var(--heroui-primary))",
     },
   },
   "default",
@@ -33,70 +33,104 @@ createTheme(
 export const customStyles = {
   header: {
     style: {
-      minHeight: "60px",
-      background: "var(--solusersa-head)",
-      color: "var(--bs-light)",
+      backgroundColor: "transparent",
+      color: "hsl(var(--heroui-foreground))",
       fontWeight: "bold",
-      fontSize: "30px",
-      justifyContent: "center",
+      fontSize: "1.5rem",
+      justifyContent: "flex-start",
+      paddingLeft: "1rem",
     },
   },
   subHeader: {
     style: {
-      background: "var(--solusersa-head)",
-      color: "var(--bs-light)",
+      backgroundColor: "transparent",
+      color: "hsl(var(--heroui-foreground))",
+      paddingLeft: "1rem",
+      paddingRight: "1rem",
     },
   },
   headRow: {
     style: {
-      borderTopStyle: "solid",
-      background: "var(--solusersa-head)",
-      color: "var(--bs-light)",
-      borderTopWidth: "1px",
-      borderTopColor: defaultThemes.default.divider.default,
+      backgroundColor: "hsl(var(--heroui-content2))",
+      color: "hsl(var(--heroui-foreground))",
+      borderTopWidth: "0px",
+      borderBottomWidth: "1px",
+      borderBottomColor: "hsl(var(--heroui-divider))",
+      borderTopLeftRadius: "0.75rem",
+      borderTopRightRadius: "0.75rem",
     },
   },
   headCells: {
     style: {
-      "&:not(:last-of-type)": {
-        borderRightStyle: "solid",
-        borderRightWidth: "1px",
-        borderRightColor: defaultThemes.default.divider.default,
-        background: "var(--solusersa-head)",
-      },
+      fontSize: "0.875rem",
+      fontWeight: "600",
+      textTransform: "uppercase",
+      color: "hsl(var(--heroui-foreground-600))",
+      paddingLeft: "1rem",
+      paddingRight: "1rem",
     },
   },
   cells: {
     style: {
-      "&:not(:last-of-type)": {
-        borderRightStyle: "solid",
-        borderRightWidth: "1px",
-        minHeight: "80px",
-        borderRightColor: defaultThemes.default.divider.default,
-        color: "var(--bs-light)",
-      },
+      color: "hsl(var(--heroui-foreground))",
+      fontSize: "0.875rem",
+      paddingLeft: "1rem",
+      paddingRight: "1rem",
     },
   },
   rows: {
     stripedStyle: {
-      backgroundColor: "white",
-      color: "black",
+      backgroundColor: "hsl(var(--heroui-content1))",
+      color: "hsl(var(--heroui-foreground))",
     },
     style: {
-      background: "var(--solusersa)",
+      backgroundColor: "hsl(var(--heroui-content1))",
+      color: "hsl(var(--heroui-foreground))",
+      "&:not(:last-of-type)": {
+        borderBottomStyle: "solid",
+        borderBottomWidth: "1px",
+        borderBottomColor: "hsl(var(--heroui-divider))",
+      },
     },
     highlightOnHoverStyle: {
-      backgroundColor: "var(--solusersa-hover)",
-      color: "var(--bs-light)",
-      outline: "1px solid var(--bs-light)",
-      outlineOffset: "-1px",
+      backgroundColor: "hsl(var(--heroui-default-100))",
+      color: "hsl(var(--heroui-foreground))",
+      transitionDuration: "0.15s",
+      transitionProperty: "background-color",
+      outline: "none",
     },
   },
   pagination: {
     style: {
-      border: "none",
-      background: "var(--bs-container)",
-      color: "var(--bs-light)",
+      borderTop: "1px solid hsl(var(--heroui-divider))",
+      backgroundColor: "hsl(var(--heroui-content1))",
+      color: "hsl(var(--heroui-foreground))",
+      borderBottomLeftRadius: "0.75rem",
+      borderBottomRightRadius: "0.75rem",
+    },
+    pageButtonsStyle: {
+      borderRadius: "0.5rem",
+      height: "40px",
+      width: "40px",
+      padding: "8px",
+      margin: "0 4px",
+      cursor: "pointer",
+      transition: "0.4s",
+      color: "hsl(var(--heroui-foreground-500))",
+      fill: "hsl(var(--heroui-foreground-500))",
+      backgroundColor: "transparent",
+      "&:disabled": {
+        cursor: "unset",
+        color: "hsl(var(--heroui-foreground-300))",
+        fill: "hsl(var(--heroui-foreground-300))",
+      },
+      "&:hover:not(:disabled)": {
+        backgroundColor: "hsl(var(--heroui-default-200))",
+      },
+      "&:focus": {
+        outline: "none",
+        backgroundColor: "hsl(var(--heroui-default-200))",
+      },
     },
   },
   noData: {
@@ -104,7 +138,9 @@ export const customStyles = {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "var(--solusersa)",
+      backgroundColor: "hsl(var(--heroui-content1))",
+      color: "hsl(var(--heroui-foreground-500))",
+      padding: "2rem",
     },
   },
   progress: {
@@ -112,7 +148,9 @@ export const customStyles = {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "var(--solusersa)",
+      backgroundColor: "hsl(var(--heroui-content1))",
+      color: "hsl(var(--heroui-foreground-500))",
+      padding: "2rem",
     },
   },
 };

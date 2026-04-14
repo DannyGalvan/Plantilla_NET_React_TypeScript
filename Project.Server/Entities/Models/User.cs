@@ -51,7 +51,7 @@ namespace Project.Server.Entities.Models
         /// <summary>
         /// Gets or sets the DateToken
         /// </summary>
-        public DateTime? DateToken { get; set; } = DateTime.Now;
+        public DateTime? DateToken { get; set; }
 
         /// <summary>
         /// Gets or sets the Reset

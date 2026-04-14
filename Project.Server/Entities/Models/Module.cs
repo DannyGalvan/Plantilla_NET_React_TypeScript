@@ -34,6 +34,11 @@ namespace Project.Server.Entities.Models
         public string Path { get; set; } = string.Empty;
 
         /// <summary>
+        /// Gets or sets the Path
+        /// </summary>
+        public bool IsVisible { get; set; }
+
+        /// <summary>
         /// Gets or sets the State
         /// </summary>
         public int State { get; set; }
@@ -46,7 +51,7 @@ namespace Project.Server.Entities.Models
         /// <summary>
         /// Gets or sets the CreatedAt
         /// </summary>
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// Gets or sets the UpdatedAt

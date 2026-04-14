@@ -23,15 +23,17 @@ export function UserButton({ data }: UserButtonProps) {
           <Icon name="bi bi-three-dots-vertical" />
         </Button>
       </Dropdown.Trigger>
-      <Dropdown.Menu aria-label="Action event">
-        <Dropdown.Item
-          key="viewDetails"
-          className="text-warning hover:text-white"
-          onClick={handleEdit}
-        >
-          Editar
-        </Dropdown.Item>
-      </Dropdown.Menu>
+      <Dropdown.Popover>
+        <Dropdown.Menu aria-label="Action event">
+          <Dropdown.Item
+            key="viewDetails"
+            className="text-warning hover:text-white"
+            onClick={handleEdit}
+          >
+            Editar
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown.Popover>
     </Dropdown>
   );
 }

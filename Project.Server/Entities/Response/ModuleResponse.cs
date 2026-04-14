@@ -40,6 +40,11 @@ namespace Project.Server.Entities.Response
         public int Order { get; set; }
 
         /// <summary>
+        /// Gets or sets the Order
+        /// </summary>
+        public bool IsVisible { get; set; }
+
+        /// <summary>
         /// Gets or sets the CreatedAt
         /// </summary>
         public string CreatedAt { get; set; } = string.Empty;

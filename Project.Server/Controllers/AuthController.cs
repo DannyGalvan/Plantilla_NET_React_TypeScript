@@ -17,6 +17,14 @@ namespace Project.Server.Controllers
     [Route("api/v1/[controller]")]
     [ApiController]
     [AllArgsConstructor]
+    [ModuleInfo(
+        DisplayName = "Auth",
+        Description = "Gestión de autenticación en la aplicación",
+        Icon = "bi-shield-lock",
+        Path = "auth",
+        Order = 1,
+        IsVisible = false
+    )]
     public partial class AuthController : CommonController
     {
         /// <summary>

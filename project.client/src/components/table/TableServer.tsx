@@ -197,7 +197,7 @@ export function TableServer<T extends object>({
           progressPending={isPending || isExternalLoading}
           selectableRows={selectedRows}
           subHeaderComponent={<SubHeaderTableButton onClick={toggle} />}
-          theme="individuality"
+          theme="heroui-theme"
           title={title}
           onChangePage={onChangePage}
           onChangeRowsPerPage={onChangeRowsPerPage}

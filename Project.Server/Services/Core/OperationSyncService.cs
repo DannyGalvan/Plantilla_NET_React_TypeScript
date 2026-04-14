@@ -97,7 +97,8 @@ namespace Project.Server.Services.Core
                             State = 1,
                             Order = moduleInfo?.Order ?? 0,
                             CreatedBy = 1,
-                            CreatedAt = DateTime.UtcNow
+                            CreatedAt = DateTime.UtcNow,
+                            IsVisible = moduleInfo?.IsVisible ?? false
                         };
 
                         _db.Modules.Add(module);
@@ -120,6 +121,7 @@ namespace Project.Server.Services.Core
                             module.Order = moduleInfo.Order;
                             module.UpdatedBy = 1;
                             module.UpdatedAt = DateTime.UtcNow;
+                            module.IsVisible = moduleInfo.IsVisible;
                         }
                     }
 

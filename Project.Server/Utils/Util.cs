@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Project.Server.Utils
 {
@@ -131,6 +132,21 @@ namespace Project.Server.Utils
                     return Enum.Parse(underlyingType, value);
                 }
 
+                // Para DateTime con un formato específico
+                if (underlyingType == typeof(DateTime))
+                {
+                    string[] formatos = { "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss", "yyyy-MM-ddTHH:mm:ss.fff", "yyyy-MM-dd" };
+                    if (DateTime.TryParseExact(value, formatos, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime fecha))
+                    {
+                        return fecha;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error al convertir el valor '{value}' a {targetType.Name}: Formato de fecha no válido.");
+                        return null;
+                    }
+                }
+
                 // Convertir el valor utilizando Convert.ChangeType
                 return Convert.ChangeType(value, underlyingType);
             }
@@ -139,6 +155,54 @@ namespace Project.Server.Utils
                 Console.WriteLine($"Error al convertir el valor '{value}' a {targetType.Name}: {ex.Message}");
                 return null;
             }
+        }
+
+        public static bool IsCuiValid(string? cui)
+        {
+            if (string.IsNullOrWhiteSpace(cui))
+                return false;
+
+            // Remover espacios
+            cui = cui.Replace(" ", "");
+
+            // Validar formato general
+            if (!Regex.IsMatch(cui, @"^\d{13}$"))
+                return false;
+
+            // Extraer partes
+            var numero = cui.Substring(0, 8);
+            if (!int.TryParse(cui.Substring(8, 1), out int verificador))
+                return false;
+
+            if (!int.TryParse(cui.Substring(9, 2), out int depto) ||
+                !int.TryParse(cui.Substring(11, 2), out int muni))
+                return false;
+
+            // Validar código de municipio y departamento
+            int[] munisPorDepto = {
+                17,  8, 16, 16, 13, 14, 19,  8, 24, 21,  9,
+                30, 32, 21,  8, 17, 14,  5, 11, 11,  7, 17
+            };
+
+            if (depto == 0 || muni == 0)
+                return false;
+
+            if (depto > munisPorDepto.Length)
+                return false;
+
+            if (muni > munisPorDepto[depto - 1])
+                return false;
+
+            // Validar dígito verificador (módulo 11)
+            int total = 0;
+            for (int i = 0; i < numero.Length; i++)
+            {
+                int digit = int.Parse(numero[i].ToString());
+                total += digit * (i + 2);
+            }
+
+            int modulo = total % 11;
+            return modulo == verificador;
         }
     }
 }

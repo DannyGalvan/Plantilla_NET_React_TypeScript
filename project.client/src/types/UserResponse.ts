@@ -6,6 +6,7 @@ export interface UserResponse {
   email: string;
   name: string;
   userName: string;
+  identificationDocument: string;
   number: string;
   state: number;
   createdAt: string;

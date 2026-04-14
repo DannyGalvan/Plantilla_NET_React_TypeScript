@@ -1,7 +1,10 @@
-﻿using Project.Server.Security;
+﻿using Project.Server.Entities.Models;
+using Project.Server.Entities.Request;
+using Project.Server.Security;
 using Project.Server.Services.Background;
 using Project.Server.Services.Core;
 using Project.Server.Services.Interfaces;
+using Project.Server.Utils;
 using SoluEmpleo.Server.Services.Core;
 
 
@@ -23,6 +26,10 @@ namespace Project.Server.Configs.Extensions
             // entities services
             services.AddScoped<IAuthService, AuthService>();
 
+            // CRUD services
+            services.AddScoped<IEntityService<User, UserRequest, long>, EntityService<User, UserRequest, long>>();
+            services.AddScoped<IEntityService<Rol, RolRequest, long>, EntityService<Rol, RolRequest, long>>();
+
             // security services
             services.AddScoped<ISecurityAuthService, SecurityAuthService>();
             services.AddScoped<SessionAuthService>();
@@ -36,6 +43,9 @@ namespace Project.Server.Configs.Extensions
 
             // other services
             services.AddScoped<ISendMail, SendEmail>();
+
+            services.AddScoped<IFilterTranslator, FilterTranslator>();
+            services.AddScoped<IEntitySupportService, EntitySupportService>();
 
             return services;
         }

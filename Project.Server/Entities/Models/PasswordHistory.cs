@@ -25,7 +25,7 @@ namespace Project.Server.Entities.Models
         /// <summary>
         /// Gets or sets the ChangedAt
         /// </summary>
-        public DateTime ChangedAt { get; set; } = DateTime.Now;
+        public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// Gets or sets the ChangedBy
@@ -55,7 +55,7 @@ namespace Project.Server.Entities.Models
         /// <summary>
         /// Gets or sets the CreatedAt
         /// </summary>
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// Gets or sets the UpdatedAt

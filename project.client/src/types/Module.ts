@@ -4,6 +4,7 @@ import type { Operations } from "./Operations";
 export interface Module extends Catalogue {
   image: string;
   path: string;
+  isVisible: boolean;
 
   operations?: Operations[];
 }

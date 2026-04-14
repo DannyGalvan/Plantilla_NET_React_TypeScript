@@ -30,24 +30,6 @@ export const getUserById = async (id: number) => {
   return api.get<unknown, ApiResponse<UserResponse>>(`User/${id}?Include=rol`);
 };
 
-export const getUserByApplicantRequisition = async (
-  applicantRequisitionId: number,
-) => {
-  const request = await api.get<unknown, ApiResponse<UserResponse[]>>(
-    `User?Filters=JobRequisitionApplicantId:eq:${applicantRequisitionId}&PageNumber=1&PageSize=30&IncludeTotal=false`,
-  );
-
-  if (!request.success) {
-    return null;
-  }
-
-  if (request.data.length == 0) {
-    return null;
-  }
-
-  return request.data[0];
-};
-
 export const createUser = async (User: UserRequest) => {
   return api.post<unknown, ApiResponse<UserResponse>, UserRequest>(
     "User",
@@ -57,4 +39,8 @@ export const createUser = async (User: UserRequest) => {
 
 export const updateUser = async (User: UserRequest) => {
   return api.put<unknown, ApiResponse<UserResponse>, UserRequest>(`User`, User);
+};
+
+export const deleteUser = async (id: number) => {
+  return api.delete<unknown, ApiResponse<UserResponse>>(`User/${id}`);
 };

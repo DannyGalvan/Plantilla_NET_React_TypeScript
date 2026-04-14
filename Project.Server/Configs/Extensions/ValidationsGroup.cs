@@ -3,6 +3,8 @@
     using FluentValidation;
     using Project.Server.Entities.Request;
     using Project.Server.Validations.Auth;
+    using Project.Server.Validations.Rol;
+    using Project.Server.Validations.User;
 
     /// <summary>
     /// Defines the <see cref="ValidationsGroup" />
@@ -22,6 +24,16 @@
             services.AddScoped<IValidator<ResetPasswordRequest>, ResetPasswordValidations>();
             services.AddScoped<IValidator<RecoveryPasswordRequest>, RecoveryPasswordValidations>();
             services.AddScoped<IValidator<RegisterRequest>, RegisterValidations>();
+
+            //user validations
+            services.AddKeyedScoped<IValidator<UserRequest>, CreateUserValidation>("Create");
+            services.AddKeyedScoped<IValidator<UserRequest>, UpdateUserValidation>("Update");
+            services.AddKeyedScoped<IValidator<UserRequest>, PartialUserValidation>("Partial");
+
+            //rol validations
+            services.AddKeyedScoped<IValidator<RolRequest>, CreateRolValidation>("Create");
+            services.AddKeyedScoped<IValidator<RolRequest>, UpdateRolValidation>("Update");
+            services.AddKeyedScoped<IValidator<RolRequest>, PartialRolValidation>("Partial");
 
             return services;
         }

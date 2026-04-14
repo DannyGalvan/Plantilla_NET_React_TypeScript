@@ -108,14 +108,16 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
             <div className="w-[80%] h-px bg-gray-200 dark:bg-zinc-800 my-2 mx-auto" />
 
             <div className="w-full space-y-1 px-3">
-              {operations?.map((menu) => (
-                <div
-                  key={menu.module.path}
-                  className="w-full sidebar-menu-item"
-                >
-                  <SubMenu data={menu} isCollapsed={!isOpen} />
-                </div>
-              ))}
+              {operations
+                ?.filter((menu) => menu.module.isVisible)
+                .map((menu) => (
+                  <div
+                    key={menu.module.path}
+                    className="w-full sidebar-menu-item"
+                  >
+                    <SubMenu data={menu} isCollapsed={!isOpen} />
+                  </div>
+                ))}
             </div>
           </div>
         </div>

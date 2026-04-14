@@ -1,11 +1,11 @@
 ﻿using FluentValidation;
 using Project.Server.Context;
-using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
 
 namespace Project.Server.Validations.Auth
 {
     using BC = BCrypt.Net.BCrypt;
+    using UserEntity = Project.Server.Entities.Models.User;
 
     /// <summary>
     /// Defines the <see cref="ResetPasswordValidations" />
@@ -44,7 +44,7 @@ namespace Project.Server.Validations.Auth
                 .WithMessage("La confirmación de la contraseña debe coincidir con la contraseña");
             RuleFor(x => x).Custom((model, context) =>
             {
-                User? user = _db.Users.FirstOrDefault(x => x.Id == model.IdUser);
+                Entities.Models.User? user = _db.Users.FirstOrDefault(x => x.Id == model.IdUser);
 
                 if (user != null)
                 {

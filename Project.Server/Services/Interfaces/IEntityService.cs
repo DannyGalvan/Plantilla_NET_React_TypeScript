@@ -34,14 +34,38 @@ namespace Project.Server.Services.Interfaces
         Response<List<TEntity>, List<ValidationFailure>> GetAll(string? filters, string[]? includes = null, int pageNumber = 1, int pageSize = 30, bool includeTotal = false);
 
         /// <summary>
+        /// The GetAllWhitOutMetadata
+        /// </summary>
+        /// <param name="filters">The filters<see>
+        ///         <cref>string?</cref>
+        ///     </see>
+        /// </param>
+        /// <param name="includes">The includes<see>
+        ///         <cref>string[]?</cref>
+        ///     </see>
+        /// </param>
+        /// <param name="pageNumber">The pageNumber<see cref="int"/></param>
+        /// <param name="pageSize">The pageSize<see cref="int"/></param>
+        /// <param name="includeTotal">The pageSize<see cref="bool"/></param>
+        /// <returns>The <see>
+        ///         <cref>Response{List{TEntity}, List{ValidationFailure}}</cref>
+        ///     </see>W
+        /// </returns>
+        Response<List<TEntity>, List<ValidationFailure>> GetAllWhitOutMetadata(string? filters, string[]? includes = null, int pageNumber = 1, int pageSize = 30, bool includeTotal = false);
+
+        /// <summary>
         /// The GetById
         /// </summary>
         /// <param name="id">The id<see cref="TId"/></param>
+        /// <param name="includes">The includes<see>
+        ///         <cref>string[]?</cref>
+        ///     </see>
+        /// </param>
         /// <returns>The <see>
         ///         <cref>Response{TEntity, List{ValidationFailure}}</cref>
         ///     </see>
         /// </returns>
-        Response<TEntity, List<ValidationFailure>> GetById(TId id);
+        Response<TEntity, List<ValidationFailure>> GetById(TId id, string[]? includes = null);
 
         /// <summary>
         /// The Create

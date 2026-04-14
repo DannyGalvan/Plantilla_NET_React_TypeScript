@@ -2,6 +2,7 @@ import { ZodError } from "zod";
 import type { ErrorObject } from "../hooks/useForm";
 import type { Authorizations } from "../types/Authorizations";
 import type { Operations } from "../types/Operations";
+import type { ValidationFailure } from "../types/ValidationFailure";
 
 export const toCamelCase = (inputString: string) => {
   return inputString.replace(
@@ -115,3 +116,137 @@ export const copyToClipboard = async (textToCopy: string) => {
     console.error("Error al copiar el texto: ", err);
   }
 };
+
+export const validationFailureToString = (
+  errors: ValidationFailure[] | null,
+) => {
+  if (!errors) return "";
+
+  return errors
+    .map((error) => `${error.propertyName}: ${error.errorMessage}`)
+    .join(", ");
+};
+
+export const errorObjectToString = (errorObject?: ErrorObject) => {
+  if (!errorObject) return "";
+
+  return Object.entries(errorObject)
+    .map(
+      ([key, value]) =>
+        `${key}: ${Array.isArray(value) ? value.join(", ") : value}`,
+    )
+    .join(", ");
+};
+
+export const mapValidationFailuresToFieldErrors = (
+  errors: ValidationFailure[] | null,
+) => {
+  const errorsConverted: ErrorObject = {};
+
+  if (errors == null) {
+    return errorsConverted;
+  }
+
+  errors.forEach((error) => {
+    errorsConverted[toCamelCase(error.propertyName)] = error.errorMessage;
+  });
+
+  if (Object.keys(errorsConverted).length !== 0) {
+    return errorsConverted;
+  }
+};
+
+export const constructFilters = (filters: string) => {
+  if (filters.startsWith(" AND ")) {
+    filters = filters.slice(5); // Eliminar el prefijo " AND " si existe
+  }
+
+  return filters;
+};
+
+type SimpleValue = string | number | boolean | null | Date;
+type FileLike = File | Blob;
+
+const isFileLike = (v: unknown): v is FileLike =>
+  v instanceof File || v instanceof Blob;
+
+const isSimple = (v: unknown): v is SimpleValue =>
+  typeof v === "string" ||
+  typeof v === "number" ||
+  typeof v === "boolean" ||
+  v === null ||
+  v instanceof Date;
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v) && !isFileLike(v);
+
+function appendSimple(form: FormData, key: string, value: SimpleValue): void {
+  if (value === null) return; // omite nulos
+  if (value instanceof Date) {
+    form.append(key, value.toISOString());
+  } else {
+    form.append(key, String(value));
+  }
+}
+
+/**
+ * Convierte un objeto arbitrario a FormData.
+ * - Arrays de archivos -> misma clave repetida (sin índices)
+ * - Otros arrays -> claves indexadas (key[0], key[1], ...)
+ * - Objetos anidados -> recursivo con "namespace.key"
+ */
+export function customToFormData(
+  obj: Record<string, unknown>,
+  form: FormData = new FormData(),
+  namespace = "",
+): FormData {
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (value === undefined || value === null) continue;
+
+    const formKey = namespace ? `${namespace}.${key}` : key;
+
+    if (isFileLike(value)) {
+      // Archivo suelto
+      form.append(formKey, value);
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      // ¿Array 100% de archivos?
+      if (value.every(isFileLike)) {
+        for (const item of value) {
+          // misma clave repetida
+          form.append(formKey, item);
+        }
+      } else {
+        // Array mixto (objetos, simples, y/o archivos sueltos)
+        value.forEach((item, index) => {
+          const arrayKey = `${formKey}[${index}]`;
+          if (isFileLike(item)) {
+            // por compatibilidad, repetimos la clave base (también puedes usar arrayKey)
+            form.append(formKey, item);
+          } else if (isPlainObject(item)) {
+            customToFormData(item, form, arrayKey);
+          } else if (isSimple(item)) {
+            appendSimple(form, arrayKey, item);
+          }
+          // items no compatibles se omiten
+        });
+      }
+      continue;
+    }
+
+    if (isPlainObject(value)) {
+      customToFormData(value, form, formKey);
+      continue;
+    }
+
+    if (isSimple(value)) {
+      appendSimple(form, formKey, value);
+      continue;
+    }
+  }
+
+  return form;
+}
