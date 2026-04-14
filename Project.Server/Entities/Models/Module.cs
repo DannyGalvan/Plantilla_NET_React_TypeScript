@@ -39,6 +39,11 @@ namespace Project.Server.Entities.Models
         public int State { get; set; }
 
         /// <summary>
+        /// Gets or sets the Order
+        /// </summary>
+        public int Order { get; set; } = 0;
+
+        /// <summary>
         /// Gets or sets the CreatedAt
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.Now;

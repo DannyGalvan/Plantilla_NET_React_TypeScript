@@ -1,4 +1,7 @@
-﻿using Project.Server.Services.Interfaces;
+﻿using Project.Server.Security;
+using Project.Server.Services.Background;
+using Project.Server.Services.Core;
+using Project.Server.Services.Interfaces;
 using SoluEmpleo.Server.Services.Core;
 
 
@@ -19,6 +22,17 @@ namespace Project.Server.Configs.Extensions
         {
             // entities services
             services.AddScoped<IAuthService, AuthService>();
+
+            // security services
+            services.AddScoped<ISecurityAuthService, SecurityAuthService>();
+            services.AddScoped<SessionAuthService>();
+            services.AddScoped<SessionAuthorizationFilter>();
+
+            // operation sync service
+            services.AddScoped<IOperationSyncService, OperationSyncService>();
+
+            // hosted service para sincronización al inicio
+            services.AddHostedService<OperationSyncHostedService>();
 
             // other services
             services.AddScoped<ISendMail, SendEmail>();

@@ -71,35 +71,6 @@ namespace Project.Server.Configs.Extensions
                     };
                 });
 
-            //    services.AddAuthorization(options =>
-            //    {
-            //        // Get the service from ICrmContext through the ServiceProvider
-            //        using var scope = services.BuildServiceProvider().CreateScope();
-
-            //        var bd = scope.ServiceProvider.GetRequiredService<DataContext>();
-
-            //        var operations = bd.Operations.ToList();
-
-            //        foreach (var operation in operations)
-            //        {
-            //            if (operation.Policy.Contains(policySettings.ContainsList) && operation.Policy != policySettings.NotEqualList)
-            //            {
-            //                // Add a custom policy that allows any of the claims.
-            //                options.AddPolicy(operation.Policy, policy =>
-            //                {
-            //                    policy.Requirements.Add(new MultipleClaimsRequirement([
-            //                        new KeyValuePair<string, string>(ClaimTypes.AuthorizationDecision, operation.Guid),
-            //                        new KeyValuePair<string, string>(ClaimTypes.AuthorizationDecision, policySettings.EqualValue)
-            //                    ]));
-            //                });
-            //            }
-            //            else
-            //            {
-            //                options.AddPolicy(operation.Policy, policy => policy.RequireClaim(claimType: ClaimTypes.AuthorizationDecision, operation.Guid));
-            //            }
-            //        }
-            //    });
-
             return services;
         }
 

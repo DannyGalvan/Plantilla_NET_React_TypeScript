@@ -1,4 +1,5 @@
-﻿using Project.Server.Entities.Interfaces;
+﻿using System.Text.Json.Serialization;
+using Project.Server.Entities.Interfaces;
 
 namespace Project.Server.Entities.Models
 {
@@ -63,6 +64,26 @@ namespace Project.Server.Entities.Models
         public string Number { get; set; } = string.Empty;
 
         /// <summary>
+        /// Gets or sets a value indicating whether MustChangePassword
+        /// </summary>
+        public bool MustChangePassword { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the LastPasswordChange
+        /// </summary>
+        public DateTime? LastPasswordChange { get; set; }
+
+        /// <summary>
+        /// Gets or sets the FailedLoginAttempts
+        /// </summary>
+        public int FailedLoginAttempts { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the LockoutEnd
+        /// </summary>
+        public DateTime? LockoutEnd { get; set; }
+
+        /// <summary>
         /// Gets or sets the State
         /// </summary>
         public int State { get; set; } = 1;
@@ -91,5 +112,17 @@ namespace Project.Server.Entities.Models
         /// Gets or sets the Rol
         /// </summary>
         public virtual Rol? Rol { get; set; }
+
+        /// <summary>
+        /// Gets or sets the LoginAudits
+        /// </summary>
+        [JsonIgnore]
+        public virtual ICollection<LoginAudit> LoginAudits { get; set; } = new List<LoginAudit>();
+
+        /// <summary>
+        /// Gets or sets the PasswordHistories
+        /// </summary>
+        [JsonIgnore]
+        public virtual ICollection<PasswordHistory> PasswordHistories { get; set; } = new List<PasswordHistory>();
     }
 }

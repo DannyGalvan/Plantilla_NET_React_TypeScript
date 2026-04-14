@@ -29,7 +29,7 @@ namespace Project.Server.Context
             optionsBuilder.ConfigureWarnings(warn => { warn.Default(WarningBehavior.Ignore); });
 
             if (!optionsBuilder.IsConfigured)
-                optionsBuilder.UseSqlServer("Name=ConnectionStrings:EsiSchoolPayments");
+                optionsBuilder.UseSqlServer("Name=ConnectionStrings:Default");
         }
 
         // Add DbSet for each entity
@@ -58,6 +58,16 @@ namespace Project.Server.Context
         /// Gets or sets the RolOperations
         /// </summary>
         public DbSet<RolOperation> RolOperations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the LoginAudits
+        /// </summary>
+        public DbSet<LoginAudit> LoginAudits { get; set; }
+
+        /// <summary>
+        /// Gets or sets the PasswordHistories
+        /// </summary>
+        public DbSet<PasswordHistory> PasswordHistories { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -221,10 +231,16 @@ namespace Project.Server.Context
                     .HasMaxLength(255);
                 entity.Property(e => e.Path)
                     .HasMaxLength(255);
-                entity.HasOne(e => e.Module)
-                    .WithMany(e => e.Operations)
-                    .HasForeignKey(e => e.ModuleId);
-
+                entity.Property(e => e.ControllerName)
+                    .HasMaxLength(255);
+                entity.Property(e => e.ActionName)
+                    .HasMaxLength(255);
+                entity.Property(e => e.HttpMethod)
+                    .HasMaxLength(50);
+                entity.Property(e => e.RouteTemplate)
+                    .HasMaxLength(500);
+                entity.Property(e => e.OperationKey)
+                    .HasMaxLength(255);
                 entity.HasOne(e => e.Module)
                     .WithMany(e => e.Operations)
                     .HasForeignKey(e => e.ModuleId);
@@ -567,6 +583,33 @@ namespace Project.Server.Context
                         UpdatedBy = null
                     }
                 );
+            });
+
+            modelBuilder.Entity<LoginAudit>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.UserName).HasMaxLength(255);
+                entity.Property(e => e.IpAddress).HasMaxLength(50);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                entity.Property(e => e.FailureReason).HasMaxLength(500);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(e => e.LoginAudits)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            modelBuilder.Entity<PasswordHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.PasswordHash).HasMaxLength(255);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(e => e.PasswordHistories)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
         }
     }

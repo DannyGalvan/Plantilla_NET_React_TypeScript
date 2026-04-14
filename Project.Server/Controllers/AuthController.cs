@@ -3,6 +3,7 @@ using Lombok.NET;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Project.Server.Attributes;
 using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
 using Project.Server.Entities.Response;
@@ -34,6 +35,7 @@ namespace Project.Server.Controllers
         /// </summary>
         /// <param name="model">The model<see cref="LoginRequest"/></param>
         /// <returns>The <see cref="ActionResult"/></returns>
+        [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPost]
         public ActionResult Login(LoginRequest model)
@@ -67,6 +69,7 @@ namespace Project.Server.Controllers
         /// </summary>
         /// <param name="model">The model<see cref="RegisterRequest"/></param>
         /// <returns>The <see cref="ActionResult"/></returns>
+        [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPost("Register")]
         public ActionResult Register(RegisterRequest model)
@@ -101,6 +104,7 @@ namespace Project.Server.Controllers
         /// </summary>
         /// <param name="token">The token<see cref="string"/></param>
         /// <returns>The <see cref="ActionResult"/></returns>
+        [ExcludeFromSync]
         [AllowAnonymous]
         [HttpGet("{token}")]
         public ActionResult GetToken(string token)
@@ -136,6 +140,7 @@ namespace Project.Server.Controllers
         ///         <cref>ActionResult{Response{string}}</cref>
         ///     </see>
         /// </returns>
+        [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPut("ChangePassword")]
         public ActionResult<Response<string>> ChangePassword(ChangePasswordRequest model)
@@ -205,6 +210,7 @@ namespace Project.Server.Controllers
         /// </summary>
         /// <param name="model">The model<see cref="RecoveryPasswordRequest"/></param>
         /// <returns>The <see cref="ActionResult"/></returns>
+        [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPost("RecoveryPassword")]
         public ActionResult PostRecoveryPassword([FromBody] RecoveryPasswordRequest model)

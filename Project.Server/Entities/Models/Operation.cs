@@ -58,6 +58,31 @@ namespace Project.Server.Entities.Models
         public int State { get; set; }
 
         /// <summary>
+        /// Gets or sets the ControllerName (Nombre del controlador)
+        /// </summary>
+        public string ControllerName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the ActionName (Nombre de la acción)
+        /// </summary>
+        public string ActionName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the HttpMethod (GET, POST, PUT, DELETE, PATCH)
+        /// </summary>
+        public string HttpMethod { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the RouteTemplate (Plantilla de ruta completa)
+        /// </summary>
+        public string RouteTemplate { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the OperationKey (Clave única: Controller.Action.HttpMethod)
+        /// </summary>
+        public string OperationKey { get; set; } = string.Empty;
+
+        /// <summary>
         /// Gets or sets the CreatedAt
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.Now;

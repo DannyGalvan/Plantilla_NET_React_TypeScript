@@ -38,6 +38,7 @@ namespace Project.Server
             builder.Services.AddValidationsGroup();
             builder.Services.AddServiceGroup();
             builder.Services.AddControllersConfiguration();
+            builder.Services.AddSessionSecurityConfiguration();
             //builder.Services.AddLoggerConfiguration(configuration);
 
             var app = builder.Build();

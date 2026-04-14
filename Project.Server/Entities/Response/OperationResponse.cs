@@ -53,6 +53,31 @@
         public int State { get; set; }
 
         /// <summary>
+        /// Gets or sets the ControllerName
+        /// </summary>
+        public string ControllerName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the ActionName
+        /// </summary>
+        public string ActionName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the HttpMethod
+        /// </summary>
+        public string HttpMethod { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the RouteTemplate
+        /// </summary>
+        public string RouteTemplate { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the OperationKey
+        /// </summary>
+        public string OperationKey { get; set; } = string.Empty;
+
+        /// <summary>
         /// Gets or sets the CreatedAt
         /// </summary>
         public string CreatedAt { get; set; } = string.Empty;
