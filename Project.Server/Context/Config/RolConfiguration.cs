@@ -21,7 +21,7 @@ namespace Project.Server.Context.Config
                     Name = "SA",
                     Description = "Super Administrator",
                     State = 1,
-                    CreatedAt = new DateTime(2025, 2, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                    CreatedAt = new DateTime(2025, 2, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                     CreatedBy = 1,
                     UpdatedAt = null,
                     UpdatedBy = null

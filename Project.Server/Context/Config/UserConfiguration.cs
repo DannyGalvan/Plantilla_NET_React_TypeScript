@@ -45,7 +45,7 @@ namespace Project.Server.Context.Config
                     RecoveryToken = "",
                     Reset = false,
                     State = 1,
-                    CreatedAt = new DateTime(2025, 2, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                    CreatedAt = new DateTime(2025, 2, 17, 0, 0, 0, 0, DateTimeKind.Utc),
                     CreatedBy = 1,
                     DateToken = null,
                     UpdatedAt = null,

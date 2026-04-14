@@ -224,7 +224,7 @@ namespace Project.Server.Services.Core
 
                 userId = entity.CreatedBy.ToString();
 
-                entity.CreatedAt = DateTime.Now;
+                entity.CreatedAt = DateTime.UtcNow;
                 entity.UpdatedAt = null;
                 entity.UpdatedBy = null;
 
@@ -320,7 +320,7 @@ namespace Project.Server.Services.Core
 
                 Util.UpdateProperties(entityToUpdate, entity);
 
-                entityToUpdate.UpdatedAt = DateTime.Now;
+                entityToUpdate.UpdatedAt = DateTime.UtcNow;
                 entityToUpdate.CreatedAt = createdAt;
 
                 database.Entry(entityToUpdate).State = EntityState.Detached;
@@ -416,7 +416,7 @@ namespace Project.Server.Services.Core
 
                 DateTime createdAt = entityToUpdate.CreatedAt;
                 Util.UpdateProperties(entityToUpdate, entity);
-                entityToUpdate.UpdatedAt = DateTime.Now;
+                entityToUpdate.UpdatedAt = DateTime.UtcNow;
                 entityToUpdate.CreatedAt = createdAt;
 
                 database.Update(entityToUpdate);

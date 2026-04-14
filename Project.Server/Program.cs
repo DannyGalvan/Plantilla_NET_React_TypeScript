@@ -1,5 +1,6 @@
 using Project.Server.Configs.Extensions;
 using Project.Server.Configs.Models;
+using Project.Server.Infrastructure.Extensions;
 
 namespace Project.Server
 {
@@ -42,6 +43,9 @@ namespace Project.Server
             //builder.Services.AddLoggerConfiguration(configuration);
 
             var app = builder.Build();
+
+            // Aplicar migraciones automáticas si está configurado
+            app.ApplyMigrations(configuration);
 
             app.UseDefaultFiles();
             app.UseStaticFiles();

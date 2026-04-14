@@ -21,15 +21,12 @@ namespace Project.Server.Context
         }
 
         /// <summary>
-        /// The OnConfiguring
+        /// Configura las advertencias del contexto
         /// </summary>
-        /// <param name="optionsBuilder">The optionsBuilder<see cref="DbContextOptionsBuilder"/></param>
+        /// <param name="optionsBuilder">El constructor de opciones</param>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.ConfigureWarnings(warn => { warn.Default(WarningBehavior.Ignore); });
-
-            if (!optionsBuilder.IsConfigured)
-                optionsBuilder.UseSqlServer("Name=ConnectionStrings:Default");
         }
 
         // Add DbSet for each entity

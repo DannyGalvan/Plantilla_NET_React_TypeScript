@@ -19,6 +19,8 @@ const certificateName = "project.client";
 const certFilePath = join(baseFolder, `${certificateName}.pem`);
 const keyFilePath = join(baseFolder, `${certificateName}.key`);
 
+console.log(baseFolder);
+
 if (!existsSync(baseFolder)) {
   mkdirSync(baseFolder, { recursive: true });
 }

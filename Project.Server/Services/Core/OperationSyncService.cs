@@ -97,7 +97,7 @@ namespace Project.Server.Services.Core
                             State = 1,
                             Order = moduleInfo?.Order ?? 0,
                             CreatedBy = 1,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = DateTime.UtcNow
                         };
 
                         _db.Modules.Add(module);
@@ -119,7 +119,7 @@ namespace Project.Server.Services.Core
                             module.Path = moduleInfo.Path;
                             module.Order = moduleInfo.Order;
                             module.UpdatedBy = 1;
-                            module.UpdatedAt = DateTime.Now;
+                            module.UpdatedAt = DateTime.UtcNow;
                         }
                     }
 
@@ -159,7 +159,7 @@ namespace Project.Server.Services.Core
                             IsVisible = isVisible,
                             State = 1,
                             CreatedBy = 1,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = DateTime.UtcNow
                         };
 
                         _db.Operations.Add(operation);
@@ -183,7 +183,7 @@ namespace Project.Server.Services.Core
                         existingOperation.IsVisible = isVisible;
                         existingOperation.State = 1;
                         existingOperation.UpdatedBy = 1;
-                        existingOperation.UpdatedAt = DateTime.Now;
+                        existingOperation.UpdatedAt = DateTime.UtcNow;
 
                         _logger.LogDebug("Operación actualizada: {OperationKey}", key);
                     }
@@ -236,7 +236,7 @@ namespace Project.Server.Services.Core
                         OperationId = o.Id,
                         State = 1,
                         CreatedBy = 1,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = DateTime.UtcNow
                     })
                     .ToList();
 

@@ -2,6 +2,8 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Project.Server.Context;
+    using Project.Server.Infrastructure.Database;
+    using Project.Server.Infrastructure.Extensions;
 
     /// <summary>
     /// Defines the <see cref="ContextGroup" />
@@ -9,18 +11,14 @@
     public static class ContextGroup
     {
         /// <summary>
-        /// The AddContextGroup
+        /// Configura el contexto de base de datos con soporte para múltiples proveedores
         /// </summary>
-        /// <param name="services">The services<see cref="IServiceCollection"/></param>
-        /// <param name="configuration">The configuration<see cref="IConfiguration"/></param>
-        /// <returns>The <see cref="IServiceCollection"/></returns>
+        /// <param name="services">Los servicios</param>
+        /// <param name="configuration">La configuración</param>
+        /// <returns>Los servicios configurados</returns>
         public static IServiceCollection AddContextGroup(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<DataContext>(options =>
-            {
-                options.UseSqlServer(configuration.GetConnectionString("EsiSchoolPayments"));
-            });
-
+            services.AddMultiDatabaseSupport(configuration);
             return services;
         }
     }
