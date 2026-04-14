@@ -180,6 +180,7 @@ Este archivo se actualiza conforme se añadan nuevas herramientas y agentes al w
 ```
 - siempre se debe de respetar la convencion para crear los servicios crud
 - siempre que te dirigas a mi en el chat dirigete como Danny
+- cada que se cree una entidad nueva en bd la configuracion no debe estar en el DataContext.cs si no en la carpeta Context/Configurations como las otras entidades.
 
 ## Sistema de Permisos con Sincronización Automática
 
