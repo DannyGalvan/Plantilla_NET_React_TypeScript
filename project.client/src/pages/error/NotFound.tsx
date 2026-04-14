@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { Col } from "../../components/grid/Col";
@@ -24,9 +24,9 @@ export function NotFound({ Message, Number }: NotFoundProps) {
       logout();
       navigate(nameRoutes.login);
     }
-  }, [Number]);
+  }, [Number, logout, navigate]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (Number === "404") {
       if (isLoggedIn) {
         navigate(-1);
@@ -36,7 +36,7 @@ export function NotFound({ Message, Number }: NotFoundProps) {
     } else if (Number === "403") {
       navigate(-3);
     }
-  };
+  }, [Number, isLoggedIn, navigate]);
 
   return (
     <div className="container mx-auto my-auto">

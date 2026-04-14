@@ -1,11 +1,10 @@
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
+import { Button, Label, TextField } from "@heroui/react";
+import type { ChangeEvent } from "react";
+import { useCallback } from "react";
 import { Col } from "../../components/grid/Col";
-import { Icon } from "../../components/icons/Icon";
 import { Response } from "../../components/messages/Response";
 import { useAuth } from "../../hooks/useAuth";
 import { useForm } from "../../hooks/useForm";
-import { useToggle } from "../../hooks/useToggle";
 import ProtectedPublic from "../../routes/middlewares/ProtectedPublic";
 import { changePassword } from "../../services/authService";
 import { validateChangePassword } from "../../validations/changePasswordValidation";
@@ -24,8 +23,6 @@ const initialForm: ChangePasswordForm = {
 
 export function Component() {
   const { userId, logout } = useAuth();
-  const { open: password, toggle: togglePassword } = useToggle();
-  const { open: confirm, toggle: toggleConfirm } = useToggle();
 
   const sendForm = async (form: ChangePasswordForm) => {
     form.idUser = userId;
@@ -36,15 +33,29 @@ export function Component() {
     return response;
   };
 
-  const {
-    form,
-    errors,
-    handleChange,
-    handleSubmit,
-    success,
-    loading,
-    message,
-  } = useForm(initialForm, validateChangePassword, sendForm);
+  const { form, handleChange, handleSubmit, success, message } = useForm(
+    initialForm,
+    validateChangePassword,
+    sendForm,
+  );
+
+  const handlePasswordChange = useCallback(
+    (val: string) => {
+      handleChange({
+        target: { name: "password", value: val },
+      } as unknown as ChangeEvent<HTMLInputElement>);
+    },
+    [handleChange],
+  );
+
+  const handleConfirmPasswordChange = useCallback(
+    (val: string) => {
+      handleChange({
+        target: { name: "confirmPassword", value: val },
+      } as unknown as ChangeEvent<HTMLInputElement>);
+    },
+    [handleChange],
+  );
 
   return (
     <ProtectedPublic>
@@ -58,71 +69,33 @@ export function Component() {
           onSubmit={handleSubmit}
         >
           <Col md={12}>
-            <Input
+            <Label className="font-bold">Contraseña</Label>
+            <TextField
               isRequired
               className="py-4"
-              endContent={
-                <button
-                  className="focus:outline-none"
-                  type="button"
-                  onClick={togglePassword}
-                >
-                  {password ? (
-                    <Icon name="bi bi-eye-slash-fill text-2xl text-dark pointer-events-none" />
-                  ) : (
-                    <Icon name="bi bi-eye-fill text-2xl text-dark pointer-events-none" />
-                  )}
-                </button>
-              }
-              errorMessage={errors?.password}
-              isInvalid={!!errors?.password}
-              label="Contraseña"
               name="password"
-              size="lg"
-              type={password ? "text" : "password"}
+              type="password"
               value={form.password}
-              variant="bordered"
-              onChange={handleChange}
+              onChange={handlePasswordChange}
             />
           </Col>
           <Col md={12}>
-            <Input
+            <Label className="font-bold">Confirmacion de contraseña</Label>
+            <TextField
               isRequired
               className="py-4"
-              endContent={
-                <button
-                  className="focus:outline-none"
-                  type="button"
-                  onClick={toggleConfirm}
-                >
-                  {confirm ? (
-                    <Icon name="bi bi-eye-slash-fill text-2xl text-dark pointer-events-none" />
-                  ) : (
-                    <Icon name="bi bi-eye-fill text-2xl text-dark pointer-events-none" />
-                  )}
-                </button>
-              }
-              errorMessage={errors?.confirmPassword}
-              isInvalid={!!errors?.confirmPassword}
-              label="Confirmacion de contraseña"
               name="confirmPassword"
-              size="lg"
-              type={confirm ? "text" : "password"}
+              type="password"
               value={form.confirmPassword}
-              variant="bordered"
-              onChange={handleChange}
+              onChange={handleConfirmPasswordChange}
             />
           </Col>
           <Col className="mt-5" md={12}>
             <Button
-              fullWidth
-              className="py-4 mt-4 font-bold"
-              color="primary"
-              isLoading={loading}
-              radius="md"
+              className="py-4 mt-4 font-bold w-full"
               size="lg"
               type="submit"
-              variant="shadow"
+              variant="primary"
             >
               Cambiar contraseña
             </Button>

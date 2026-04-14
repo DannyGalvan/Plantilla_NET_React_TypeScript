@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { Col } from "../../components/grid/Col";
@@ -23,9 +23,9 @@ export function Component() {
       logout();
       navigate(nameRoutes.login);
     }
-  }, [error]);
+  }, [error, resetError, logout, navigate]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     resetError();
     if (error?.statusCode === "404") {
       if (isLoggedIn) {
@@ -38,7 +38,7 @@ export function Component() {
     } else {
       navigate(-1);
     }
-  };
+  }, [error, resetError, navigate, isLoggedIn]);
 
   return (
     <ProtectedError>

@@ -2,6 +2,7 @@
 
 /* Tailwind Layers */
 @import "tailwindcss";
+@import "@heroui/styles";
 @import "./components.css";
 @import "./flex.css";
 @import "./grid.css";

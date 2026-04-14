@@ -1,4 +1,4 @@
-import type { DateValue, RangeValue } from "@heroui/calendar";
+import type { DateValue, RangeValue } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { create } from "zustand";
 

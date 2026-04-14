@@ -1,4 +1,4 @@
-import { Button } from "@heroui/button";
+import { Button } from "@heroui/react";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState } from "react";
 
@@ -41,8 +41,8 @@ export function Header({ toggleSidebar }: HeaderProps) {
       <div className="flex items-center gap-4">
         {mounted ? (
           <Button
+            aria-label="Alternar tema"
             className="flex h-10 w-10 min-w-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700 transition-colors"
-            title="Alternar tema"
             onClick={handleThemeChange}
           >
             {resolvedTheme === "dark" ? (

@@ -1,7 +1,6 @@
-import { HeroUIProvider } from "@heroui/system";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { lazy, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import ErrorBoundary from "../pages/error/ErrorBoundary";
@@ -40,14 +39,12 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <HeroUIProvider locale="es-ES">
-        <NextThemesProvider attribute="class" defaultTheme="system">
-          <QueryClientProvider client={client}>
-            {loading ? <LoadingPage /> : <LazyAppRoutes />}
-            <ReactQueryDevtools initialIsOpen={false} />
-          </QueryClientProvider>
-        </NextThemesProvider>
-      </HeroUIProvider>
+      <NextThemesProvider attribute="class" defaultTheme="system">
+        <QueryClientProvider client={client}>
+          {loading ? <LoadingPage /> : <LazyAppRoutes />}
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+      </NextThemesProvider>
     </ErrorBoundary>
   );
 }

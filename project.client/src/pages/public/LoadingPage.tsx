@@ -3,7 +3,7 @@ import { Col } from "../../components/grid/Col";
 
 function LoadingPage() {
   return (
-    <div className="flex h-[100vh] flex-row items-center">
+    <div className="flex h-screen flex-row items-center">
       <div className="container mx-auto">
         <div className="flex flex-row justify-center">
           <Col md={4} sm={4} xs={8}>

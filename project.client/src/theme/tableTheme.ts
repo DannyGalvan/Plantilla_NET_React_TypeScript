@@ -1,30 +1,34 @@
 import { createTheme, defaultThemes } from "react-data-table-component";
 
-createTheme('solusersa-theme', {
-  text: {
-    primary: 'var(--bs-dark)',       
-    secondary: 'var(--bs-dark)',     
+createTheme(
+  "solusersa-theme",
+  {
+    text: {
+      primary: "var(--bs-dark)",
+      secondary: "var(--bs-dark)",
+    },
+    background: {
+      default: "var(--bs-white)",
+    },
+    context: {
+      background: "var(--solusersa-head)",
+      text: "var(--bs-white)",
+    },
+    divider: {
+      default: "var(--bs-gray-300)",
+    },
+    button: {
+      default: "var(--bs-dark)",
+      hover: "var(--bs-gray-300)",
+      focus: "var(--bs-gray-300)",
+      disabled: "var(--bs-gray-300)",
+    },
+    sortFocus: {
+      default: "var(--bs-dark)",
+    },
   },
-  background: {
-    default: 'var(--bs-white)',      
-  },
-  context: {
-    background: 'var(--solusersa-head)', 
-    text: 'var(--bs-white)',
-  },
-  divider: {
-    default: 'var(--bs-gray-300)',
-  },
-  button: {
-    default: 'var(--bs-dark)',
-    hover: 'var(--bs-gray-300)',
-    focus: 'var(--bs-gray-300)',
-    disabled: 'var(--bs-gray-300)',
-  },
-  sortFocus: {
-    default: 'var(--bs-dark)',
-  },
-}, 'default');
+  "default",
+);
 
 export const customStyles = {
   header: {

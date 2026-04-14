@@ -1,4 +1,4 @@
-import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
+import { Modal } from "@heroui/react";
 import type { TableColumn } from "react-data-table-component";
 import { ColumnItem } from "../pure/ColumnItem";
 
@@ -16,21 +16,28 @@ export function ModalTable<T>({
   toggle,
 }: ModalTableProps<T>) {
   return (
-    <Modal isOpen={open} size="3xl" onClose={toggle}>
-      <ModalContent>
-        <ModalHeader>Campos Visibles</ModalHeader>
-        <ModalBody>
-          <div className="grid grid-cols-2 gap-4 p-6">
-            {columns.map((column) => (
-              <ColumnItem
-                key={column.id}
-                changeVisibilitiColumn={changeVisibilitiColumn}
-                column={column}
-              />
-            ))}
-          </div>
-        </ModalBody>
-      </ModalContent>
+    <Modal isOpen={open} onOpenChange={toggle}>
+      <Modal.Backdrop>
+        <Modal.Container>
+          <Modal.Dialog className="max-w-3xl w-full">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading>Campos Visibles</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              <div className="grid grid-cols-2 gap-4 p-6">
+                {columns.map((column) => (
+                  <ColumnItem
+                    key={column.id}
+                    changeVisibilitiColumn={changeVisibilitiColumn}
+                    column={column}
+                  />
+                ))}
+              </div>
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

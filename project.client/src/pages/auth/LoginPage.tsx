@@ -1,19 +1,13 @@
-import { Button } from "@heroui/button";
-import { Card, CardBody } from "@heroui/card";
-import { Form } from "@heroui/form";
-import { Input } from "@heroui/input";
-
-import { Image } from "@heroui/image";
+import { Button, Card, Form, TextField } from "@heroui/react";
+import { useCallback, type ChangeEvent } from "react";
 import { Link } from "react-router";
 
-import { Icon } from "../../components/icons/Icon";
 import { Response } from "../../components/messages/Response";
 
 import { Images } from "../../assets/images/images";
 import { nameRoutes } from "../../configs/constants";
 import { useAuth } from "../../hooks/useAuth";
 import { useForm } from "../../hooks/useForm";
-import { useToggle } from "../../hooks/useToggle";
 import ProtectedLogin from "../../routes/middlewares/ProtectedLogin";
 import { authenticateUser } from "../../services/authService";
 import { validateLogin } from "../../validations/loginValidation";
@@ -30,7 +24,6 @@ const initialForm = {
 
 export function Component() {
   const { signIn } = useAuth();
-  const { open, toggle } = useToggle();
 
   const petition = async (form: LoginForm) => {
     const response = await authenticateUser(form);
@@ -54,84 +47,72 @@ export function Component() {
     return response;
   };
 
-  const {
-    form,
-    errors,
-    handleChange,
-    handleSubmit,
-    success,
-    loading,
-    message,
-  } = useForm<LoginForm, unknown>(initialForm, validateLogin, petition);
+  const { form, errors, handleChange, handleSubmit, success, message } =
+    useForm<LoginForm, unknown>(initialForm, validateLogin, petition);
+
+  const handleUserNameChange = useCallback(
+    (val: string) => {
+      handleChange({
+        target: { name: "userName", value: val },
+      } as unknown as ChangeEvent<HTMLInputElement>);
+    },
+    [handleChange],
+  );
+
+  const handlePasswordChange = useCallback(
+    (val: string) => {
+      handleChange({
+        target: { name: "password", value: val },
+      } as unknown as ChangeEvent<HTMLInputElement>);
+    },
+    [handleChange],
+  );
 
   return (
     <ProtectedLogin>
       <section className="flex flex-col md:flex-row justify-center items-center w-screen h-screen">
         <div className="flex items-center px-6 md:mx-auto w-full md:max-w-md lg:max-w-lg xl:max-w-xl">
           <Card className="w-full shadow-[0px_20px_20px_10px_#A0AEC0]">
-            <CardBody className="p-10">
+            <div className="p-10 flex flex-col w-full">
               {success != null && <Response message={message} type={success} />}
               <div className="flex justify-center">
-                <Image
-                  isBlurred
-                  isZoomed
+                <img
                   alt="Esi Logo"
                   className=""
                   src={Images.logo}
                   width={240}
                 />
               </div>
-              <Form validationErrors={errors} onSubmit={handleSubmit}>
-                <Input
+              <Form
+                className="flex flex-col w-full"
+                validationErrors={errors}
+                onSubmit={handleSubmit}
+              >
+                <label className="font-bold">Nombre de usuario</label>
+                <TextField
                   isRequired
                   className="py-4"
-                  errorMessage={errors?.userName}
                   id="email"
-                  isInvalid={!!errors?.userName}
-                  label="Nombre de usuario"
                   name="userName"
-                  size="lg"
                   type="text"
                   value={form.userName}
-                  variant="bordered"
-                  onChange={handleChange}
+                  onChange={handleUserNameChange}
                 />
-                <Input
+                <label className="font-bold">Contraseña</label>
+                <TextField
                   isRequired
                   className="py-4"
-                  endContent={
-                    <button
-                      className="focus:outline-none"
-                      type="button"
-                      onClick={toggle}
-                    >
-                      {open ? (
-                        <Icon name="bi bi-eye-slash-fill text-2xl text-dark pointer-events-none" />
-                      ) : (
-                        <Icon name="bi bi-eye-fill text-2xl text-dark pointer-events-none" />
-                      )}
-                    </button>
-                  }
-                  errorMessage={errors?.password}
                   id="password"
-                  isInvalid={!!errors?.password}
-                  label="Contraseña"
                   name="password"
-                  size="lg"
-                  type={open ? "text" : "password"}
+                  type="password"
                   value={form.password}
-                  variant="bordered"
-                  onChange={handleChange}
+                  onChange={handlePasswordChange}
                 />
                 <Button
-                  fullWidth
-                  className="py-4 mt-4 font-bold"
-                  color="primary"
-                  isLoading={loading}
-                  radius="md"
+                  className="py-4 mt-4 font-bold w-full"
                   size="lg"
                   type="submit"
-                  variant="shadow"
+                  variant="primary"
                 >
                   Iniciar Sesión
                 </Button>
@@ -150,7 +131,7 @@ export function Component() {
                   No tienes cuenta? Registrate
                 </Link>
               </div>
-            </CardBody>
+            </div>
           </Card>
         </div>
       </section>

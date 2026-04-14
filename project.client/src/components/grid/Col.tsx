@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 
 interface ColProps {
-  children?: ReactNode;
-  xs?: number;
-  sm?: number;
-  md?: number;
-  lg?: number;
-  xl?: number;
-  className?: string;
+  readonly children?: ReactNode;
+  readonly xs?: number;
+  readonly sm?: number;
+  readonly md?: number;
+  readonly lg?: number;
+  readonly xl?: number;
+  readonly className?: string;
 }
 
 export function Col({ children, xs, sm, md, lg, xl, className }: ColProps) {

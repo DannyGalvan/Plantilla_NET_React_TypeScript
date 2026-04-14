@@ -1,7 +1,5 @@
 /* eslint-disable react/jsx-max-depth */
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
-import { Tooltip } from "@heroui/tooltip";
+import { Button, Tooltip } from "@heroui/react";
 import { useCallback, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Images } from "../../assets/images/images";
@@ -34,17 +32,17 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
     <>
       {/* Overlay para móviles */}
       <div
-        className={`fixed inset-0 z-[47] bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-47 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={closeSidebar}
       />
 
       <aside
-        className={`fixed left-0 top-0 z-[48] flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300 ease-in-out dark:border-zinc-800 dark:bg-[#18181b] md:sticky whitespace-nowrap ${
+        className={`fixed left-0 top-0 z-48 flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300 ease-in-out dark:border-zinc-800 dark:bg-[#18181b] md:sticky whitespace-nowrap ${
           isOpen
             ? "w-[16rem] translate-x-0 shadow-xl md:shadow-none"
-            : "w-[4.5rem] -translate-x-full md:translate-x-0"
+            : "w-18 -translate-x-full md:translate-x-0"
         }`}
       >
         <div className="flex h-16 shrink-0 items-center justify-center border-b border-gray-200 dark:border-zinc-800 relative w-full overflow-hidden">
@@ -54,9 +52,9 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
             to={nameRoutes.root}
           >
             <div
-              className={`relative flex items-center justify-center transition-all duration-300 ${isOpen ? "w-[120px]" : "w-10"}`}
+              className={`relative flex items-center justify-center transition-all duration-300 ${isOpen ? "w-30" : "w-10"}`}
             >
-              <Image
+              <img
                 alt="Logo"
                 className={`object-contain transition-all duration-300 ${isOpen ? "w-full rounded-xl" : "w-8 h-8 rounded-md"}`}
                 src={Images.logo}
@@ -74,23 +72,17 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 flex flex-col w-full scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-zinc-700 pb-20">
           <div className="flex flex-col items-center w-full space-y-1">
             <div className="w-full px-3">
-              <Tooltip
-                showArrow
-                color="foreground"
-                content="Inicio"
-                isDisabled={isOpen}
-                placement="right"
-              >
+              <Tooltip closeDelay={0} delay={0} isDisabled={isOpen}>
                 <Link
                   viewTransition
                   className={`relative flex items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all w-full
-                      ${
-                        pathname === nameRoutes.root
-                          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                          : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
-                      } 
-                      ${isOpen ? "justify-start px-3" : "justify-center px-0"}
-                    `}
+                        ${
+                          pathname === nameRoutes.root
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
+                        } 
+                        ${isOpen ? "justify-start px-3" : "justify-center px-0"}
+                      `}
                   to={nameRoutes.root}
                 >
                   <div className="flex items-center justify-center w-6 h-6 shrink-0">
@@ -102,6 +94,14 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                     <span>Inicio</span>
                   </div>
                 </Link>
+
+                <Tooltip.Content
+                  className="bg-gray-900 text-white dark:bg-zinc-800 rounded-md px-2 py-1 text-sm"
+                  placement="right"
+                >
+                  <Tooltip.Arrow className="fill-gray-900 dark:fill-zinc-800" />
+                  Inicio
+                </Tooltip.Content>
               </Tooltip>
             </div>
 
@@ -120,28 +120,32 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
           </div>
         </div>
 
-        <div className="border-t border-gray-200 dark:border-zinc-800 p-4 shrink-0 transition-all w-full flex justify-center">
-          <Tooltip
-            showArrow
-            color="danger"
-            content="Cerrar sesión"
-            isDisabled={isOpen}
-            placement="right"
-          >
-            <Button
-              className={`relative flex items-center rounded-lg py-2 text-[0.9rem] font-bold text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 bg-transparent w-full ${isOpen ? "justify-start px-3" : "justify-center px-0"}`}
-              onClick={closeSesion}
-            >
-              <div className="flex items-center justify-center w-6 h-6 shrink-0">
-                <i className="bi bi-box-arrow-left text-xl" />
-              </div>
-              <div
-                className={`flex items-center overflow-hidden transition-all duration-300 ${isOpen ? "w-auto opacity-100 ml-3" : "w-0 opacity-0"}`}
+        <div className="border-t border-gray-200 dark:border-zinc-800 p-4 shrink-0 w-full flex justify-center">
+          <div className="w-full">
+            <Tooltip closeDelay={0} delay={0} isDisabled={isOpen}>
+              <Button
+                className={`relative flex items-center rounded-lg py-2 text-[0.9rem] font-bold text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 bg-transparent w-full ${isOpen ? "justify-start px-3" : "justify-center px-0!"}`}
+                onClick={closeSesion}
               >
-                <span>Salir</span>
-              </div>
-            </Button>
-          </Tooltip>
+                <div className="flex items-center justify-center w-6 h-6 shrink-0">
+                  <i className="bi bi-box-arrow-left text-xl" />
+                </div>
+                <div
+                  className={`flex items-center overflow-hidden transition-all duration-300 ${isOpen ? "w-auto opacity-100 ml-3" : "w-0 opacity-0"}`}
+                >
+                  <span>Salir</span>
+                </div>
+              </Button>
+
+              <Tooltip.Content
+                className="bg-red-600 text-white rounded-md px-2 py-1 text-sm shadow-md"
+                placement="right"
+              >
+                <Tooltip.Arrow className="fill-red-600" />
+                Cerrar sesión
+              </Tooltip.Content>
+            </Tooltip>
+          </div>
         </div>
       </aside>
     </>

@@ -169,7 +169,7 @@ export function TableServer<T extends object>({
           selectedField={selectedField}
         />
       ) : null}
-      <div className="min-h-[495px] overflow-auto">
+      <div className="min-h-123.75 overflow-auto">
         <DataTable
           fixedHeader
           highlightOnHover

@@ -1,4 +1,4 @@
-import { Button } from "@heroui/button";
+import { Button } from "@heroui/react";
 import { useAuth } from "../../hooks/useAuth";
 
 export function TestPage() {
@@ -9,7 +9,7 @@ export function TestPage() {
       <h1 className="font-bold text-2xl">Test Page</h1>
       <p>This is a test page to check the integration of Hero UI.</p>
       <p>Click the button below:</p>
-      <Button color="primary" onPress={logout}>
+      <Button variant="primary" onPress={logout}>
         Sing Out
       </Button>
       <p>Operations: {JSON.stringify(operations, null, 5)}</p>

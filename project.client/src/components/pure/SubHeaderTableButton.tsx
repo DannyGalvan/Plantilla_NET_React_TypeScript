@@ -1,5 +1,4 @@
-import { Button } from "@heroui/button";
-import { Tooltip } from "@heroui/tooltip";
+import { Button, Tooltip } from "@heroui/react";
 import { Icon } from "../icons/Icon";
 
 interface SubHeaderTableButtonProps {
@@ -8,39 +7,18 @@ interface SubHeaderTableButtonProps {
 
 export function SubHeaderTableButton({ onClick }: SubHeaderTableButtonProps) {
   return (
-    <Tooltip
-      closeDelay={0}
-      content="Campos Visibles"
-      delay={0}
-      motionProps={{
-        variants: {
-          exit: {
-            opacity: 0,
-            transition: {
-              duration: 0.1,
-              ease: "easeIn",
-            },
-          },
-          enter: {
-            opacity: 1,
-            transition: {
-              duration: 0.15,
-              ease: "easeOut",
-            },
-          },
-        },
-      }}
-      placement="top"
-    >
+    <Tooltip closeDelay={0} delay={0}>
       <Button
         isIconOnly
-        className="bg-transparent text-white"
-        radius="sm"
+        className="bg-transparent text-white rounded-sm"
         type="button"
         onClick={onClick}
       >
         <Icon name="bi bi-three-dots-vertical" />
       </Button>
+      <Tooltip.Content className="px-2 py-1 bg-gray-900 text-white rounded-md text-sm">
+        Campos Visibles
+      </Tooltip.Content>
     </Tooltip>
   );
 }

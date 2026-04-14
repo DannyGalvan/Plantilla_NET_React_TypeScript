@@ -1,6 +1,12 @@
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import type { Key } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { useCallback, type Ref } from "react";
 
 import type { TableColumnWithFilters } from "../../types/TableColumnWithFilters";
@@ -35,40 +41,55 @@ export function TableSearch<T extends object>({
     filterData();
   }, [filterData]);
 
+  const handleChange = useCallback(
+    (value: Key | null) => {
+      if (value) {
+        selectedField({
+          target: { value: value as string },
+        } as React.ChangeEvent<HTMLSelectElement>);
+      }
+    },
+    [selectedField],
+  );
+
   return (
     <Row className="mt-4">
       <Col md={6} sm={12}>
         <Select
-          aria-label="Filtrar por campo"
-          className="py-4"
-          label="Filtrar por campo"
-          size="sm"
-          variant="bordered"
-          onChange={selectedField}
+          className="py-4 w-full"
+          placeholder="Filtrar por campo"
+          onChange={handleChange}
         >
-          {columns
-            .filter((x) => x.hasFilter)
-            .map((item) => (
-              <SelectItem key={item.id}>{item.name}</SelectItem>
-            ))}
+          <Label className="sr-only">Filtrar por campo</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {columns
+                .filter((x) => x.hasFilter)
+                .map((item) => (
+                  <ListBox.Item
+                    key={item.id}
+                    id={item.id}
+                    textValue={item.name as string}
+                  >
+                    {item.name}
+                  </ListBox.Item>
+                ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       </Col>
       <Col md={6} sm={12}>
         <article className="flex justify-end items-center gap-2">
-          <Input
-            ref={searchField}
-            className="py-4"
-            label="Buscar..."
-            name="search"
-            size="sm"
-            type="search"
-            variant="bordered"
-            onKeyDown={handleOnKeyDown}
-          />
+          <TextField className="py-4" name="search" onKeyDown={handleOnKeyDown}>
+            <Label className="sr-only">Buscar...</Label>
+            <Input ref={searchField} placeholder="Buscar..." type="search" />
+          </TextField>
           <Button
             className="p-6"
-            color="primary"
-            radius="sm"
             size="sm"
             type="button"
             onPress={handleOnClick}
