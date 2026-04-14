@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Project.Server.Configs.Models;
 using Project.Server.Services.Interfaces;
 
-namespace SoluEmpleo.Server.Services.Core
+namespace Project.Server.Services.Core
 {
     /// <summary>
     /// Defines the <see cref="SendEmail" />

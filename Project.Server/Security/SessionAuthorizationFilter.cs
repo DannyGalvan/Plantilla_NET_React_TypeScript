@@ -1,4 +1,3 @@
-using Lombok.NET;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -9,6 +8,12 @@ namespace Project.Server.Security
     /// <summary>
     /// Defines the <see cref="SessionAuthorizationFilter" />
     /// </summary>
+    /// <remarks>
+    /// [OBSOLETE] This filter is no longer used. The application now uses JWT-based authentication
+    /// with OperationAuthorizationHandler for granular permission control.
+    /// See: Project.Server.Security.Authorization.OperationAuthorizationHandler
+    /// </remarks>
+    [Obsolete("Use JWT authentication with [Authorize] and [RequireOperation] attributes instead. See OperationAuthorizationHandler.")]
     public class SessionAuthorizationFilter : IAsyncAuthorizationFilter
     {
         /// <summary>

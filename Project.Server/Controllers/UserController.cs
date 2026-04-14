@@ -1,9 +1,11 @@
 using MapsterMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Project.Server.Attributes;
 using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
 using Project.Server.Entities.Response;
+using Project.Server.Security.Authorization;
 using Project.Server.Services.Interfaces;
 
 namespace Project.Server.Controllers
@@ -39,6 +41,7 @@ namespace Project.Server.Controllers
         /// GET: api/v1/User
         /// </summary>
         [HttpGet]
+        [RequireOperation]
         [OperationInfo(
             DisplayName = "Listar Usuarios",
             Description = "Obtiene la lista de usuarios con paginación y filtros",
@@ -56,6 +59,7 @@ namespace Project.Server.Controllers
         /// GET: api/v1/User/{id}
         /// </summary>
         [HttpGet("{id}")]
+        [RequireOperation]
         [OperationInfo(
             DisplayName = "Ver Usuario",
             Description = "Obtiene los detalles de un usuario específico",
@@ -73,6 +77,7 @@ namespace Project.Server.Controllers
         /// POST: api/v1/User
         /// </summary>
         [HttpPost]
+        [RequireOperation]
         [OperationInfo(
             DisplayName = "Crear Usuario",
             Description = "Crea un nuevo usuario en el sistema",
@@ -90,6 +95,7 @@ namespace Project.Server.Controllers
         /// PUT: api/v1/User
         /// </summary>
         [HttpPut]
+        [RequireOperation]
         [OperationInfo(
             DisplayName = "Actualizar Usuario",
             Description = "Actualiza completamente un usuario existente",
@@ -107,6 +113,7 @@ namespace Project.Server.Controllers
         /// PATCH: api/v1/User
         /// </summary>
         [HttpPatch]
+        [RequireOperation]
         [OperationInfo(
             DisplayName = "Actualización Parcial Usuario",
             Description = "Actualiza parcialmente un usuario existente",
@@ -124,6 +131,7 @@ namespace Project.Server.Controllers
         /// DELETE: api/v1/User/{id}
         /// </summary>
         [HttpDelete("{id}")]
+        [RequireOperation] // Valida permiso basado en User.Delete.DELETE
         [OperationInfo(
             DisplayName = "Eliminar Usuario",
             Description = "Elimina lógicamente un usuario del sistema",

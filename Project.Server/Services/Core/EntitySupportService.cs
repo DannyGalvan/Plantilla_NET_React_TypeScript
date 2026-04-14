@@ -33,6 +33,13 @@ namespace Project.Server.Services.Core
                 .OrderBy(i => i.GetType().GetCustomAttribute<OrderAttribute>()?.Priority ?? int.MaxValue);
         }
 
+        public IEnumerable<IEntityBeforeUpdateInterceptor<TEntity, TRequest>> GetBeforeUpdateInterceptors<TEntity, TRequest>()
+        {
+            return _serviceProvider
+                .GetServices<IEntityBeforeUpdateInterceptor<TEntity, TRequest>>()
+                .OrderBy(i => i.GetType().GetCustomAttribute<OrderAttribute>()?.Priority ?? int.MaxValue);
+        }
+
         public IEnumerable<IEntityAfterUpdateInterceptor<TEntity, TRequest>> GetAfterUpdateInterceptors<TEntity, TRequest>()
         {
             return _serviceProvider

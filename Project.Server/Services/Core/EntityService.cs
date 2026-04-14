@@ -417,6 +417,19 @@ namespace Project.Server.Services.Core
                 entityToUpdate.UpdatedAt = DateTime.UtcNow;
                 entityToUpdate.CreatedAt = createdAt;
 
+                // Execute BeforeUpdate interceptors
+                response.Data = entityToUpdate;
+                foreach (var interceptor in _entitySupportService.GetBeforeUpdateInterceptors<TEntity, TRequest>())
+                {
+                    if (!response.Success) return response;
+
+                    response = interceptor.Execute(response, model);
+
+                    entityToUpdate = response.Data!;
+                }
+
+                if (!response.Success) return response;
+
                 database.Entry(entityToUpdate).State = EntityState.Detached;
 
                 database.Update(entityToUpdate);
@@ -512,6 +525,19 @@ namespace Project.Server.Services.Core
                 Util.UpdateProperties(entityToUpdate, entity);
                 entityToUpdate.UpdatedAt = DateTime.UtcNow;
                 entityToUpdate.CreatedAt = createdAt;
+
+                // Execute BeforeUpdate interceptors
+                response.Data = entityToUpdate;
+                foreach (var interceptor in _entitySupportService.GetBeforeUpdateInterceptors<TEntity, TRequest>())
+                {
+                    if (!response.Success) return response;
+
+                    response = interceptor.Execute(response, model);
+
+                    entityToUpdate = response.Data!;
+                }
+
+                if (!response.Success) return response;
 
                 database.Update(entityToUpdate);
                 _db.SaveChanges();

@@ -1,9 +1,11 @@
 using MapsterMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Project.Server.Attributes;
 using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
 using Project.Server.Entities.Response;
+using Project.Server.Security.Authorization;
 using Project.Server.Services.Interfaces;
 
 namespace Project.Server.Controllers
@@ -13,6 +15,7 @@ namespace Project.Server.Controllers
     /// </summary>
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize] // Requiere autenticación JWT
     [ModuleInfo(
         DisplayName = "Rol Operations",
         Description = "Gestión de operaciones asignadas a roles",
@@ -39,6 +42,7 @@ namespace Project.Server.Controllers
         /// GET: api/v1/RolOperation
         /// </summary>
         [HttpGet]
+        [RequireOperation] // Valida permiso basado en RolOperation.GetAll.GET
         [OperationInfo(
             DisplayName = "Listar Operaciones de Rol",
             Description = "Obtiene la lista de operaciones asignadas a roles con paginación y filtros",
@@ -56,6 +60,7 @@ namespace Project.Server.Controllers
         /// GET: api/v1/RolOperation/{id}
         /// </summary>
         [HttpGet("{id}")]
+        [RequireOperation] // Valida permiso basado en RolOperation.Get.GET
         [OperationInfo(
             DisplayName = "Ver Operación de Rol",
             Description = "Obtiene los detalles de una operación de rol específica",
@@ -73,6 +78,7 @@ namespace Project.Server.Controllers
         /// POST: api/v1/RolOperation
         /// </summary>
         [HttpPost]
+        [RequireOperation] // Valida permiso basado en RolOperation.Create.POST
         [OperationInfo(
             DisplayName = "Crear Operación de Rol",
             Description = "Asigna una nueva operación a un rol",
@@ -90,6 +96,7 @@ namespace Project.Server.Controllers
         /// PUT: api/v1/RolOperation
         /// </summary>
         [HttpPut]
+        [RequireOperation] // Valida permiso basado en RolOperation.Update.PUT
         [OperationInfo(
             DisplayName = "Actualizar Operación de Rol",
             Description = "Actualiza todos los campos de una operación de rol existente",
@@ -107,6 +114,7 @@ namespace Project.Server.Controllers
         /// PATCH: api/v1/RolOperation
         /// </summary>
         [HttpPatch]
+        [RequireOperation] // Valida permiso basado en RolOperation.PartialUpdate.PATCH
         [OperationInfo(
             DisplayName = "Actualizar Parcialmente Operación de Rol",
             Description = "Actualiza campos específicos de una operación de rol existente",
@@ -124,6 +132,7 @@ namespace Project.Server.Controllers
         /// DELETE: api/v1/RolOperation/{id}
         /// </summary>
         [HttpDelete("{id}")]
+        [RequireOperation] // Valida permiso basado en RolOperation.Delete.DELETE
         [OperationInfo(
             DisplayName = "Eliminar Operación de Rol",
             Description = "Elimina una operación asignada a un rol",

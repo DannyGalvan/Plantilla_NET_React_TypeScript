@@ -1,9 +1,11 @@
 using MapsterMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Project.Server.Attributes;
 using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
 using Project.Server.Entities.Response;
+using Project.Server.Security.Authorization;
 using Project.Server.Services.Interfaces;
 
 namespace Project.Server.Controllers
@@ -13,6 +15,7 @@ namespace Project.Server.Controllers
     /// </summary>
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize] // Requiere autenticación JWT
     [ModuleInfo(
         DisplayName = "Operations",
         Description = "Gestión de operaciones del sistema",
@@ -39,6 +42,7 @@ namespace Project.Server.Controllers
         /// GET: api/v1/Operation
         /// </summary>
         [HttpGet]
+        [RequireOperation] // Valida permiso basado en Operation.GetAll.GET
         [OperationInfo(
             DisplayName = "Listar Operaciones",
             Description = "Obtiene la lista de operaciones con paginación y filtros",
@@ -56,6 +60,7 @@ namespace Project.Server.Controllers
         /// GET: api/v1/Operation/{id}
         /// </summary>
         [HttpGet("{id}")]
+        [RequireOperation] // Valida permiso basado en Operation.Get.GET
         [OperationInfo(
             DisplayName = "Ver Operación",
             Description = "Obtiene los detalles de una operación específica",
@@ -73,6 +78,7 @@ namespace Project.Server.Controllers
         /// POST: api/v1/Operation
         /// </summary>
         [HttpPost]
+        [RequireOperation] // Valida permiso basado en Operation.Create.POST
         [OperationInfo(
             DisplayName = "Crear Operación",
             Description = "Crea una nueva operación en el sistema",
@@ -90,6 +96,7 @@ namespace Project.Server.Controllers
         /// PUT: api/v1/Operation
         /// </summary>
         [HttpPut]
+        [RequireOperation] // Valida permiso basado en Operation.Update.PUT
         [OperationInfo(
             DisplayName = "Actualizar Operación",
             Description = "Actualiza todos los campos de una operación existente",
@@ -107,6 +114,7 @@ namespace Project.Server.Controllers
         /// PATCH: api/v1/Operation
         /// </summary>
         [HttpPatch]
+        [RequireOperation] // Valida permiso basado en Operation.PartialUpdate.PATCH
         [OperationInfo(
             DisplayName = "Actualizar Parcialmente Operación",
             Description = "Actualiza campos específicos de una operación existente",
@@ -124,6 +132,7 @@ namespace Project.Server.Controllers
         /// DELETE: api/v1/Operation/{id}
         /// </summary>
         [HttpDelete("{id}")]
+        [RequireOperation] // Valida permiso basado en Operation.Delete.DELETE
         [OperationInfo(
             DisplayName = "Eliminar Operación",
             Description = "Elimina una operación del sistema",

@@ -1,11 +1,14 @@
 ﻿using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
+using Project.Server.Interceptors.Interfaces;
+using Project.Server.Interceptors.UserInterceptors;
 using Project.Server.Security;
 using Project.Server.Services.Background;
 using Project.Server.Services.Core;
 using Project.Server.Services.Interfaces;
 using Project.Server.Utils;
-using SoluEmpleo.Server.Services.Core;
+using AuthService = Project.Server.Services.Core.AuthService;
+using SendEmail = Project.Server.Services.Core.SendEmail;
 
 
 namespace Project.Server.Configs.Extensions
@@ -32,10 +35,15 @@ namespace Project.Server.Configs.Extensions
             services.AddScoped<IEntityService<Operation, OperationRequest, long>, EntityService<Operation, OperationRequest, long>>();
             services.AddScoped<IEntityService<RolOperation, RolOperationRequest, long>, EntityService<RolOperation, RolOperationRequest, long>>();
 
+            // User interceptors
+            services.AddScoped<IEntityBeforeCreateInterceptor<User, UserRequest>, UserBeforeCreateInterceptor>();
+            services.AddScoped<IEntityBeforeUpdateInterceptor<User, UserRequest>, UserBeforeUpdateInterceptor>();
+
             // security services
             services.AddScoped<ISecurityAuthService, SecurityAuthService>();
-            services.AddScoped<SessionAuthService>();
-            services.AddScoped<SessionAuthorizationFilter>();
+            // SessionAuthService and SessionAuthorizationFilter removed - using JWT authorization
+            // services.AddScoped<SessionAuthService>();
+            // services.AddScoped<SessionAuthorizationFilter>();
 
             // operation sync service
             services.AddScoped<IOperationSyncService, OperationSyncService>();

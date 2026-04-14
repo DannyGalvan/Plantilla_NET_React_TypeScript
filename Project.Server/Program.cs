@@ -34,12 +34,14 @@ namespace Project.Server
             builder.Services.AddSwaggerGen();
             builder.Services.AddMapsterSettings();
             builder.Services.AddJwtConfiguration(appSettingsConfig);
+            builder.Services.AddOperationAuthorization(); // JWT-based operation authorization
             builder.Services.AddSwaggerConfiguration();
             builder.Services.AddContextGroup(configuration);
             builder.Services.AddValidationsGroup();
             builder.Services.AddServiceGroup();
             builder.Services.AddControllersConfiguration();
-            builder.Services.AddSessionSecurityConfiguration();
+            // Session configuration removed - using JWT stateless authentication
+            //builder.Services.AddSessionSecurityConfiguration();
             //builder.Services.AddLoggerConfiguration(configuration);
 
             var app = builder.Build();

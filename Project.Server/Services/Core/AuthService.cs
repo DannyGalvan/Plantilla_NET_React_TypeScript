@@ -4,20 +4,20 @@ using System.Text;
 using FluentValidation;
 using FluentValidation.Results;
 using Lombok.NET;
+using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using BC = BCrypt.Net;
-using ValidationFailure = FluentValidation.Results.ValidationFailure;
-using MapsterMapper;
-using Project.Server.Entities.Request;
-using Project.Server.Entities.Models;
-using Project.Server.Entities.Response;
-using Project.Server.Services.Interfaces;
 using Project.Server.Configs.Models;
 using Project.Server.Context;
+using Project.Server.Entities.Models;
+using Project.Server.Entities.Request;
+using Project.Server.Entities.Response;
+using Project.Server.Services.Interfaces;
+using BC = BCrypt.Net;
+using ValidationFailure = FluentValidation.Results.ValidationFailure;
 
-namespace SoluEmpleo.Server.Services.Core
+namespace Project.Server.Services.Core
 {
     /// <summary>
     /// Defines the <see cref="AuthService" />
@@ -561,7 +561,17 @@ namespace SoluEmpleo.Server.Services.Core
 
                 if (user.Rol!.RolOperations.Count != 0)
                 {
+                    // Agregar IDs de operaciones como claims de tipo Role (para compatibilidad)
                     claims.AddRange(user.Rol!.RolOperations.Select(item => new Claim(ClaimTypes.Role, item.OperationId.ToString())));
+
+                    // Agregar OperationKeys para autorización granular (Controller.Action.HttpMethod)
+                    foreach (var rolOp in user.Rol!.RolOperations.Where(ro => ro.Operation != null))
+                    {
+                        if (!string.IsNullOrWhiteSpace(rolOp.Operation!.OperationKey))
+                        {
+                            claims.Add(new Claim("OperationKey", rolOp.Operation.OperationKey));
+                        }
+                    }
                 }
 
                 var tokenDescriptor = new SecurityTokenDescriptor
