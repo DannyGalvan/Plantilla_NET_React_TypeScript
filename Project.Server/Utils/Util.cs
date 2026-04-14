@@ -72,32 +72,38 @@ namespace Project.Server.Utils
         /// The SetPropertyValue
         /// </summary>
         /// <param name="objType">The objType<see cref="Type"/></param>
-        /// <param name="propertyName">The propertyName<see cref="string"/></param>
+        /// <param name="propertyPath">The propertyName<see cref="string"/></param>
         /// <param name="valueToConvert">The valueToConvert<see cref="string"/></param>
-        /// <returns>The <see cref="dynamic?"/></returns>
-        public static dynamic? SetPropertyValue(Type objType, string propertyName, string valueToConvert)
+        /// <returns>The <see>
+        ///         <cref>dynamic?</cref>
+        ///     </see>
+        /// </returns>
+        public static dynamic? SetPropertyValue(Type objType, string propertyPath, string valueToConvert)
         {
-            // Obtener la propiedad a través de reflexión
-            PropertyInfo? property = objType.GetProperty(propertyName);
-            if (property == null)
+            // Navegar por la ruta anidada (ej: "Empleado.Nombre")
+            string[] parts = propertyPath.Split('.');
+            Type? currentType = objType;
+            PropertyInfo? property = null;
+
+            foreach (var part in parts)
             {
-                Console.WriteLine($"La propiedad {propertyName} no se encontró en el tipo {objType.Name}");
-                return null;
+                property = currentType?.GetProperty(part);
+                if (property == null)
+                {
+                    Console.WriteLine($"La propiedad '{part}' no se encontró en el tipo '{currentType?.Name}'");
+                    return null;
+                }
+                currentType = property.PropertyType;
             }
 
-            // Obtener el tipo de la propiedad
-            Type propertyType = property.PropertyType;
+            if (property == null) return null;
 
-            // Convertir el valor de string al tipo de la propiedad
-            object? parsedValue = ConvertToType(valueToConvert, propertyType);
+            // Obtener el tipo final
+            Type targetType = property.PropertyType;
 
-            // Asignar el valor convertido a la propiedad
-            if (parsedValue != null)
-            {
-                return parsedValue;
-            }
-
-            return null;
+            // Convertir el valor
+            object? parsedValue = ConvertToType(valueToConvert, targetType);
+            return parsedValue;
         }
 
         /// <summary>

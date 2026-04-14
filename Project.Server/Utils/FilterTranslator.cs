@@ -54,6 +54,19 @@ namespace Project.Server.Utils
             return combinedAndFilter;
         }
 
+        private MemberExpression GetNestedMemberExpression(Expression parameter, string propertyPath)
+        {
+            Expression current = parameter;
+
+            foreach (var prop in propertyPath.Split('.'))
+            {
+                current = Expression.PropertyOrField(current, prop);
+            }
+
+            return (MemberExpression)current;
+        }
+
+
         /// <summary>
         /// The TranslateConditionToEfFilter
         /// </summary>
@@ -72,12 +85,12 @@ namespace Project.Server.Utils
             string value = parts[2];
 
             var parameter = Expression.Parameter(typeof(TEntity), "x");
-            var member = Expression.PropertyOrField(parameter, field);
+            var member = GetNestedMemberExpression(parameter, field);
 
             // Convertir el valor si es necesario (por ejemplo, si es fecha o un número)
-            dynamic? convertedValue = "";
+            dynamic? convertedValue;
 
-            if (op != "in" && op != "notin") 
+            if (op != "in" && op != "notin")
             {
                 convertedValue = Util.SetPropertyValue(typeof(TEntity), field, value);
             }
@@ -86,8 +99,8 @@ namespace Project.Server.Utils
                 convertedValue = Util.SetPropertyValue(typeof(TEntity), field, value.Split(",")[0]);
             }
 
-                // Convertir el valor a una constante
-                var constant = Expression.Constant(convertedValue, member.Type);
+            // Convertir el valor a una constante
+            var constant = Expression.Constant(convertedValue, member.Type);
 
             // Asegurarse de que los tipos sean compatibles (nullable vs no nullable)
             Expression comparison;
@@ -124,71 +137,77 @@ namespace Project.Server.Utils
                 case "lt":
                     comparison = Expression.LessThan(memberExpression, constantExpression);
                     break;
+                case "gte":
+                    comparison = Expression.GreaterThanOrEqual(memberExpression, constantExpression);
+                    break;
+                case "lte":
+                    comparison = Expression.LessThanOrEqual(memberExpression, constantExpression);
+                    break;
                 case "like":
-                    var method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+                    var method = typeof(string).GetMethod("Contains", [typeof(string)]);
                     comparison = Expression.Call(memberExpression, method!, constantExpression);
                     break;
                 case "notin":
-                {
-                    var values = value.Split(',');
-
-                    // Obtener tipo real del miembro
-                    Type targetType = Nullable.GetUnderlyingType(member.Type) ?? member.Type;
-
-                    // Convertir todos los valores
-                    var typedValues = Array.CreateInstance(targetType, values.Length);
-                    for (int i = 0; i < values.Length; i++)
                     {
-                        var converted = Util.SetPropertyValue(typeof(TEntity), field, values[i]);
-                        typedValues.SetValue(converted, i);
+                        var values = value.Split(',');
+
+                        // Obtener tipo real del miembro
+                        Type targetType = Nullable.GetUnderlyingType(member.Type) ?? member.Type;
+
+                        // Convertir todos los valores
+                        var typedValues = Array.CreateInstance(targetType, values.Length);
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            var converted = Util.SetPropertyValue(typeof(TEntity), field, values[i]);
+                            typedValues.SetValue(converted, i);
+                        }
+
+                        var arrayExpr = Expression.Constant(typedValues, typedValues.GetType());
+
+                        var containsMethod = typeof(Enumerable)
+                            .GetMethods(BindingFlags.Static | BindingFlags.Public)
+                            .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
+                            .MakeGenericMethod(targetType);
+
+                        if (member.Type != targetType)
+                            memberExpression = Expression.Convert(member, targetType);
+
+                        // Aquí está la diferencia con "in"
+                        var containsCall = Expression.Call(containsMethod, arrayExpr, memberExpression);
+                        comparison = Expression.Not(containsCall);
+                        break;
                     }
-
-                    var arrayExpr = Expression.Constant(typedValues, typedValues.GetType());
-
-                    var containsMethod = typeof(Enumerable)
-                        .GetMethods(BindingFlags.Static | BindingFlags.Public)
-                        .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
-                        .MakeGenericMethod(targetType);
-
-                    if (member.Type != targetType)
-                        memberExpression = Expression.Convert(member, targetType);
-
-                    // Aquí está la diferencia con "in"
-                    var containsCall = Expression.Call(containsMethod, arrayExpr, memberExpression);
-                    comparison = Expression.Not(containsCall);
-                    break;
-                }
                 case "in":
-                {
-                    var values = value.Split(',');
-
-                    // Obtener tipo real de la propiedad
-                    Type targetType = Nullable.GetUnderlyingType(member.Type) ?? member.Type;
-
-                    // Convertir cada valor al tipo correcto
-                    var typedValues = Array.CreateInstance(targetType, values.Length);
-                    for (int i = 0; i < values.Length; i++)
                     {
-                        var converted = Util.SetPropertyValue(typeof(TEntity), field, values[i]);
-                        typedValues.SetValue(converted, i);
+                        var values = value.Split(',');
+
+                        // Obtener tipo real de la propiedad
+                        Type targetType = Nullable.GetUnderlyingType(member.Type) ?? member.Type;
+
+                        // Convertir cada valor al tipo correcto
+                        var typedValues = Array.CreateInstance(targetType, values.Length);
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            var converted = Util.SetPropertyValue(typeof(TEntity), field, values[i]);
+                            typedValues.SetValue(converted, i);
+                        }
+
+                        // Crear Expression.Constant con el array fuertemente tipado
+                        var arrayExpr = Expression.Constant(typedValues, typedValues.GetType());
+
+                        // Obtener método Enumerable.Contains<T>
+                        var containsMethod = typeof(Enumerable)
+                            .GetMethods(BindingFlags.Static | BindingFlags.Public)
+                            .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
+                            .MakeGenericMethod(targetType);
+
+                        // Asegurar que el miembro tenga el tipo correcto
+                        if (member.Type != targetType)
+                            memberExpression = Expression.Convert(member, targetType);
+
+                        comparison = Expression.Call(containsMethod, arrayExpr, memberExpression);
+                        break;
                     }
-
-                    // Crear Expression.Constant con el array fuertemente tipado
-                    var arrayExpr = Expression.Constant(typedValues, typedValues.GetType());
-
-                    // Obtener método Enumerable.Contains<T>
-                    var containsMethod = typeof(Enumerable)
-                        .GetMethods(BindingFlags.Static | BindingFlags.Public)
-                        .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
-                        .MakeGenericMethod(targetType);
-
-                    // Asegurar que el miembro tenga el tipo correcto
-                    if (member.Type != targetType)
-                        memberExpression = Expression.Convert(member, targetType);
-
-                    comparison = Expression.Call(containsMethod, arrayExpr, memberExpression);
-                    break;
-                }
 
                 default:
                     throw new ArgumentException($"Operador no soportado: {op}");

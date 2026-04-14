@@ -90,6 +90,15 @@ namespace Project.Server.Mappers
             TypeAdapterConfig<Rol, Rol>.NewConfig();
 
             //Mapper RolOperation
+            TypeAdapterConfig<RolOperationRequest, RolOperation>.NewConfig()
+                .Map(dest => dest.OperationId, src => src.OperationId)
+                .Map(dest => dest.RolId, src => src.RolId)
+                .Map(dest => dest.State, src => src.State)
+                .Map(dest => dest.CreatedBy, src => src.CreatedBy)
+                .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt!);
+
             TypeAdapterConfig<RolOperation, RolOperationResponse>.NewConfig()
                 .Map(dest => dest.Id, src => src.Id)
                 .Map(dest => dest.OperationId, src => src.OperationId)
@@ -119,10 +128,28 @@ namespace Project.Server.Mappers
                 .Map(dest => dest.UpdatedAt, src => src.Operation!.UpdatedAt)
                 .Ignore(dest => dest.RolOperations);
 
+            TypeAdapterConfig<RolOperation, RolOperation>.NewConfig();
+
             //Mapper Operation
+            TypeAdapterConfig<OperationRequest, Operation>.NewConfig()
+                .Map(dest => dest.Name, src => src.Name)
+                .Map(dest => dest.Guid, src => src.Guid)
+                .Map(dest => dest.Description, src => src.Description)
+                .Map(dest => dest.Policy, src => src.Policy)
+                .Map(dest => dest.Icon, src => src.Icon)
+                .Map(dest => dest.Path, src => src.Path)
+                .Map(dest => dest.ModuleId, src => src.ModuleId)
+                .Map(dest => dest.IsVisible, src => src.IsVisible)
+                .Map(dest => dest.State, src => src.State)
+                .Map(dest => dest.CreatedBy, src => src.CreatedBy)
+                .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
+                .Ignore(dest => dest.CreatedAt)
+                .Ignore(dest => dest.UpdatedAt!);
+
             TypeAdapterConfig<Operation, OperationResponse>.NewConfig()
                 .Map(dest => dest.Id, src => src.Id)
                 .Map(dest => dest.Name, src => src.Name)
+                .Map(dest => dest.Guid, src => src.Guid)
                 .Map(dest => dest.Description, src => src.Description)
                 .Map(dest => dest.Policy, src => src.Policy)
                 .Map(dest => dest.Icon, src => src.Icon)
@@ -134,7 +161,10 @@ namespace Project.Server.Mappers
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
                 .Map(dest => dest.CreatedAt, src => src.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
                 .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null)
-                .Ignore(dest => dest.RolOperations); // Ignorar navegación circular
+                .Ignore(dest => dest.RolOperations) // Ignorar navegación circular
+                .Map(dest => dest.Module, src => src.Module);
+
+            TypeAdapterConfig<Operation, Operation>.NewConfig();    
 
             //Mapper Module
             TypeAdapterConfig<Module, ModuleResponse>.NewConfig()

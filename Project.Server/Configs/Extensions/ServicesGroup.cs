@@ -29,6 +29,8 @@ namespace Project.Server.Configs.Extensions
             // CRUD services
             services.AddScoped<IEntityService<User, UserRequest, long>, EntityService<User, UserRequest, long>>();
             services.AddScoped<IEntityService<Rol, RolRequest, long>, EntityService<Rol, RolRequest, long>>();
+            services.AddScoped<IEntityService<Operation, OperationRequest, long>, EntityService<Operation, OperationRequest, long>>();
+            services.AddScoped<IEntityService<RolOperation, RolOperationRequest, long>, EntityService<RolOperation, RolOperationRequest, long>>();
 
             // security services
             services.AddScoped<ISecurityAuthService, SecurityAuthService>();

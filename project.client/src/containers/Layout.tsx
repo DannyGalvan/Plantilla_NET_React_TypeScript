@@ -1,5 +1,8 @@
+import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useCallback, useState } from "react";
+import { useLocation } from "react-router";
+
 import { Footer } from "../components/layout/Footer";
 import { Header } from "../components/layout/Header";
 import { Sidebar } from "../components/layout/Sidebar";
@@ -15,6 +18,8 @@ export function Layout({ children }: LayoutProps) {
     }
     return false;
   });
+
+  const location = useLocation();
 
   const closeSidebar = useCallback(() => {
     setSidebarOpen(false);
@@ -36,7 +41,18 @@ export function Layout({ children }: LayoutProps) {
           id="scroll"
           style={{ scrollBehavior: "smooth" }}
         >
-          <main className="h-full w-full">{children}</main>
+          <AnimatePresence mode="wait">
+            <motion.main
+              key={location.pathname}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="h-full w-full"
+            >
+              {children}
+            </motion.main>
+          </AnimatePresence>
         </div>
 
         {/* Footer movido fuera del contenedor scrollable para que sea Fixed (siempre visible abajo) */}

@@ -1,3 +1,4 @@
+import { Toast } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
@@ -40,6 +41,7 @@ function App() {
   return (
     <ErrorBoundary>
       <NextThemesProvider attribute="class" defaultTheme="system">
+        <Toast.Provider />
         <QueryClientProvider client={client}>
           {loading ? <LoadingPage /> : <LazyAppRoutes />}
           <ReactQueryDevtools initialIsOpen={false} />

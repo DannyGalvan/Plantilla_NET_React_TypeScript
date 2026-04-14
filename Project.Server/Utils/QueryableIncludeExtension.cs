@@ -9,7 +9,7 @@ namespace Project.Server.Utils
         {
             foreach (var include in includes)
             {
-                query = query.IncludeNested<TEntity>(include);
+                query = query.IncludeNested(include);
             }
 
             return query;
@@ -36,7 +36,7 @@ namespace Project.Server.Utils
                     typeof(ICollection<>).IsAssignableFrom(property.PropertyType.GetGenericTypeDefinition());
 
                 bool isNavigationProperty =
-                    (property.PropertyType.IsClass && property.PropertyType != typeof(string)) || isCollection;
+                    property.PropertyType.IsClass && property.PropertyType != typeof(string) || isCollection;
 
                 if (!isNavigationProperty)
                     throw new InvalidOperationException($"La propiedad '{part}' en el tipo '{currentType.Name}' no es una propiedad de navegación válida.");
@@ -51,6 +51,5 @@ namespace Project.Server.Utils
             string validatedIncludePath = string.Join(".", validatedParts);
             return query.Include(validatedIncludePath);
         }
-
     }
 }

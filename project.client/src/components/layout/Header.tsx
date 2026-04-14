@@ -15,17 +15,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
   }, []);
 
   const handleThemeChange = useCallback(() => {
-    // Si la transición de vista de la API del navegador daba saltos visuales
-    // a veces es porque NextThemes cambia la clase fuera del ciclo de reconciliación de React.
-    // Ahora le indicaremos explicitamente el cambio de light/dark.
-    const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-    if (document.startViewTransition) {
-      document.startViewTransition(() => {
-        setTheme(newTheme);
-      });
-    } else {
-      setTheme(newTheme);
-    }
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }, [setTheme, resolvedTheme]);
 
   return (

@@ -1,6 +1,6 @@
-import { Popover } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router";
 import type { Authorizations } from "../../types/Authorizations";
 
@@ -14,7 +14,13 @@ export function SubMenu({
   const { pathname } = useLocation();
   const [subMenuOpen, setSubMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [btnRect, setBtnRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const toggleSubMenu = useCallback(() => {
     if (!isCollapsed) setSubMenuOpen((prev) => !prev);
@@ -24,17 +30,17 @@ export function SubMenu({
 
   const handleMouseEnter = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (isCollapsed) setIsHovered(true);
+    if (isCollapsed && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setBtnRect({ top: rect.top, left: rect.left, width: rect.width });
+      setIsHovered(true);
+    }
   }, [isCollapsed]);
 
   const handleMouseLeave = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 400);
-  }, []);
-
-  const handleOpenChange = useCallback((open: boolean) => {
-    if (!open) setIsHovered(false);
+    }, 100);
   }, []);
 
   const handleLinkClick = useCallback(() => {
@@ -42,89 +48,96 @@ export function SubMenu({
   }, []);
 
   return (
-    <li className="relative flex flex-col list-none w-full">
-      <Popover
-        isOpen={isCollapsed ? isHovered : undefined}
-        onOpenChange={handleOpenChange}
+    <li
+      className="relative flex flex-col list-none w-full"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <button
+        ref={buttonRef}
+        className={`relative flex w-full items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all
+            ${
+              isActive || subMenuOpen
+                ? "bg-blue-50/50 text-blue-700 dark:bg-zinc-800/80 dark:text-blue-400"
+                : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
+            }
+            ${isCollapsed ? "justify-center px-0" : "justify-between px-3"}
+          `}
+        type="button"
+        onClick={toggleSubMenu}
       >
-        <Popover.Trigger>
-          <button
-            className={`relative flex w-full items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all
-                ${
-                  isActive || subMenuOpen
-                    ? "bg-blue-50/50 text-blue-700 dark:bg-zinc-800/80 dark:text-blue-400"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
-                }
-                ${isCollapsed ? "justify-center px-0" : "justify-between px-3"}
-              `}
-            type="button"
-            onClick={toggleSubMenu}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+        <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center w-6 h-6 shrink-0">
+            <i className={`${data.module.image} text-xl`} />
+          </div>
+
+          <div
+            className={`flex items-center transition-all duration-300 overflow-hidden ${isCollapsed ? "opacity-0 w-0" : "w-auto opacity-100 ml-3"}`}
           >
-            <div className="flex items-center justify-center">
-              <div className="flex items-center justify-center w-6 h-6 shrink-0">
-                <i className={`${data.module.image} text-xl`} />
-              </div>
+            <span className="tracking-wide whitespace-nowrap">
+              {data.module.name}
+            </span>
+          </div>
+        </div>
 
-              <div
-                className={`flex items-center transition-all duration-300 overflow-hidden ${isCollapsed ? "opacity-0 w-0" : "w-auto opacity-100 ml-3"}`}
+        {/* Chevron para versión expandida */}
+        {!isCollapsed && (
+          <div className="flex items-center transition-all opacity-100">
+            <i
+              className={`bi bi-chevron-down text-sm transition-transform duration-300 ${subMenuOpen ? "rotate-180" : ""}`}
+            />
+          </div>
+        )}
+      </button>
+
+      {/* --- MENÚ FLOTANTE CUSTOM (SIN PARPADEO Y SIN REACT ARIA POPOVER) --- */}
+      {isCollapsed && isHovered && btnRect && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed z-[9999] pl-3"
+              style={{
+                top: btnRect.top - 8,
+                left: btnRect.left + btnRect.width,
+              }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              <motion.div
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                className="relative border border-gray-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 rounded-lg min-w-50"
+                initial={{ opacity: 0, x: -5, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
               >
-                <span className="tracking-wide whitespace-nowrap">
+                {/* Flecha apuntando al icono */}
+                <div className="absolute top-[1.1rem] -left-[5.5px] w-2.5 h-2.5 rotate-45 border-b border-l border-gray-200 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
+
+                <div className="mb-2 border-b border-gray-100 pb-2 px-2 text-[0.7rem] font-black uppercase text-gray-500 dark:border-zinc-800 dark:text-gray-400">
                   {data.module.name}
-                </span>
-              </div>
-            </div>
-
-            {/* Chevron para versión expandida */}
-            {!isCollapsed && (
-              <div className="flex items-center transition-all opacity-100">
-                <i
-                  className={`bi bi-chevron-down text-sm transition-transform duration-300 ${subMenuOpen ? "rotate-180" : ""}`}
-                />
-              </div>
-            )}
-          </button>
-        </Popover.Trigger>
-
-        {/* --- MENÚ FLOTANTE VÍA POPOVER (PORTAL - NO SE CORTA) --- */}
-        <Popover.Content
-          className="relative border border-gray-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 rounded-lg min-w-50 before:absolute before:-left-3 before:-top-3 before:-bottom-3 before:w-6 before:bg-transparent"
-          offset={4}
-          placement="right"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          <Popover.Arrow className="fill-gray-200 dark:fill-zinc-700" />
-          <Popover.Dialog className="w-full outline-none">
-            <div className="w-full">
-              <div className="mb-2 border-b border-gray-100 pb-2 px-2 text-[0.7rem] font-black uppercase text-gray-500 dark:border-zinc-800 dark:text-gray-400">
-                {data.module.name}
-              </div>
-              <ul className="flex flex-col gap-0.5 w-full">
-                {data.operations
-                  .filter((x) => x.isVisible)
-                  .map((menu) => (
-                    <li key={menu.path} className="w-full">
-                      <Link
-                        viewTransition
-                        className={`block w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                          pathname === menu.path
-                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/80"
-                        }`}
-                        to={menu.path}
-                        onClick={handleLinkClick}
-                      >
-                        {menu.name}
-                      </Link>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          </Popover.Dialog>
-        </Popover.Content>
-      </Popover>
+                </div>
+                <ul className="flex flex-col gap-0.5 w-full">
+                  {data.operations
+                    .filter((x) => x.isVisible)
+                    .map((menu) => (
+                      <li key={menu.path} className="w-full">
+                        <Link
+                          className={`block w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                            pathname === menu.path
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/80"
+                          }`}
+                          to={menu.path}
+                          onClick={handleLinkClick}
+                        >
+                          {menu.name}
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </motion.div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {/* --- ACORDEÓN INLINE (ESTADO EXPANDIDO) --- */}
       <AnimatePresence>
@@ -141,7 +154,6 @@ export function SubMenu({
               .map((menu) => (
                 <li key={menu.path}>
                   <Link
-                    viewTransition
                     className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       pathname === menu.path
                         ? "bg-blue-100/50 text-blue-700 dark:bg-zinc-800 dark:text-blue-400"

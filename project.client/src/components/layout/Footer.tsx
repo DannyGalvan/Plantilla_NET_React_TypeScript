@@ -9,7 +9,6 @@ export function Footer() {
       <div className="flex flex-col sm:flex-row items-center gap-1">
         <span className="font-semibold text-gray-900 dark:text-white">
           <Link
-            viewTransition
             className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             to={nameRoutes.root}
           >

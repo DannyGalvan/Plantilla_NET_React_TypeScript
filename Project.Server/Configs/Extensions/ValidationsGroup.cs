@@ -3,7 +3,9 @@
     using FluentValidation;
     using Project.Server.Entities.Request;
     using Project.Server.Validations.Auth;
+    using Project.Server.Validations.Operation;
     using Project.Server.Validations.Rol;
+    using Project.Server.Validations.RolOperation;
     using Project.Server.Validations.User;
 
     /// <summary>
@@ -34,6 +36,16 @@
             services.AddKeyedScoped<IValidator<RolRequest>, CreateRolValidation>("Create");
             services.AddKeyedScoped<IValidator<RolRequest>, UpdateRolValidation>("Update");
             services.AddKeyedScoped<IValidator<RolRequest>, PartialRolValidation>("Partial");
+
+            //rolOperation validations
+            services.AddKeyedScoped<IValidator<RolOperationRequest>, CreateRolOperationValidation>("Create");
+            services.AddKeyedScoped<IValidator<RolOperationRequest>, UpdateRolOperationValidation>("Update");
+            services.AddKeyedScoped<IValidator<RolOperationRequest>, PartialRolOperationValidation>("Partial");
+
+            //operation validations
+            services.AddKeyedScoped<IValidator<OperationRequest>, CreateOperationValidation>("Create");
+            services.AddKeyedScoped<IValidator<OperationRequest>, UpdateOperationValidation>("Update");
+            services.AddKeyedScoped<IValidator<OperationRequest>, PartialOperationValidation>("Partial");
 
             return services;
         }

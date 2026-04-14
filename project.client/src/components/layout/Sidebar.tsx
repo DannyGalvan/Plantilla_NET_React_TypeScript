@@ -47,7 +47,6 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       >
         <div className="flex h-16 shrink-0 items-center justify-center border-b border-gray-200 dark:border-zinc-800 relative w-full overflow-hidden">
           <Link
-            viewTransition
             className="flex items-center justify-center h-full transition-all duration-300 w-full"
             to={nameRoutes.root}
           >
@@ -74,7 +73,6 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
             <div className="w-full px-3">
               <Tooltip closeDelay={0} delay={0} isDisabled={isOpen}>
                 <Link
-                  viewTransition
                   className={`relative flex items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all w-full
                         ${
                           pathname === nameRoutes.root
