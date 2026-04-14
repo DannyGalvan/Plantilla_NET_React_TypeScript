@@ -4,11 +4,23 @@ import { heroui } from "@heroui/theme";
 module.exports = {
   content: [
     "./index.html",
-    "./src/**/*.{html,js,ts,jsx,tsx,css}",
-    "./node_modules/@heroui/theme/dist/components/(button|card|checkbox|form|image|input|select|spinner|toast|ripple|listbox|divider|popover|scroll-shadow).js",
+    "./src/layouts/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        montserrat: ["Montserrat", "sans-serif"],
+        funnel: ["Funnel Display", "sans-serif"],
+      },
+      colors: {
+        primary: "#043d86",
+        secondary: "#28A8E8",
+        accent: "#ff5722",
+      },
+    },
   },
   darkMode: "class",
   plugins: [heroui()],

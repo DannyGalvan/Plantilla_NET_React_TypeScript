@@ -12,10 +12,11 @@ import { Response } from "../../components/messages/Response";
 import { Images } from "../../assets/images/images";
 import { nameRoutes } from "../../configs/constants";
 import { useAuth } from "../../hooks/useAuth";
-import { useForm, type ErrorObject } from "../../hooks/useForm";
+import { useForm } from "../../hooks/useForm";
 import { useToggle } from "../../hooks/useToggle";
 import ProtectedLogin from "../../routes/middlewares/ProtectedLogin";
 import { authenticateUser } from "../../services/authService";
+import { validateLogin } from "../../validations/loginValidation";
 
 export interface LoginForm {
   userName: string;
@@ -25,22 +26,6 @@ export interface LoginForm {
 const initialForm = {
   userName: "",
   password: "",
-};
-
-const validateForm = (form: LoginForm) => {
-  const errors: ErrorObject = {};
-
-  if (!form.userName.trim()) {
-    errors.userName = "El campo email es requerido";
-  }
-
-  if (!form.password.trim()) {
-    errors.password = "El campo password es requerido";
-  } else if (form.password.length < 5) {
-    errors.password = "El password debe tener al menos 6 caracteres";
-  }
-
-  return errors;
 };
 
 export function Component() {
@@ -77,7 +62,7 @@ export function Component() {
     success,
     loading,
     message,
-  } = useForm<LoginForm, unknown>(initialForm, validateForm, petition);
+  } = useForm<LoginForm, unknown>(initialForm, validateLogin, petition);
 
   return (
     <ProtectedLogin>
@@ -138,7 +123,6 @@ export function Component() {
                   variant="bordered"
                   onChange={handleChange}
                 />
-                {/* <Checkbox>Soy estudiante en la plataforma</Checkbox> */}
                 <Button
                   fullWidth
                   className="py-4 mt-4 font-bold"

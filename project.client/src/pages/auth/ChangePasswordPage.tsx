@@ -4,10 +4,11 @@ import { Col } from "../../components/grid/Col";
 import { Icon } from "../../components/icons/Icon";
 import { Response } from "../../components/messages/Response";
 import { useAuth } from "../../hooks/useAuth";
-import { useForm, type ErrorObject } from "../../hooks/useForm";
+import { useForm } from "../../hooks/useForm";
 import { useToggle } from "../../hooks/useToggle";
 import ProtectedPublic from "../../routes/middlewares/ProtectedPublic";
 import { changePassword } from "../../services/authService";
+import { validateChangePassword } from "../../validations/changePasswordValidation";
 
 export interface ChangePasswordForm {
   idUser: number;
@@ -19,22 +20,6 @@ const initialForm: ChangePasswordForm = {
   idUser: 0,
   password: "",
   confirmPassword: "",
-};
-
-const validateForm = (form: ChangePasswordForm) => {
-  const errors: ErrorObject = {};
-
-  if (!form.password.trim()) {
-    errors.password = "La contraseña es requerida";
-  }
-  if (!form.confirmPassword.trim()) {
-    errors.confirmPassword = "La confirmación de contraseña es requerida";
-  }
-  if (form.password.trim() !== form.confirmPassword.trim()) {
-    errors.confirmPassword = "Las contraseñas no coinciden";
-  }
-
-  return errors;
 };
 
 export function Component() {
@@ -59,7 +44,7 @@ export function Component() {
     success,
     loading,
     message,
-  } = useForm(initialForm, validateForm, sendForm);
+  } = useForm(initialForm, validateChangePassword, sendForm);
 
   return (
     <ProtectedPublic>

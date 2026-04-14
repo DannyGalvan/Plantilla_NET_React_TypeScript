@@ -1,11 +1,14 @@
 import { env } from "node:process";
 import { fileURLToPath, URL } from "node:url";
 
+import tailwindcss from "@tailwindcss/vite";
 import viteReact from "@vitejs/plugin-react";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineConfig } from "vite";
+import compress from "vite-plugin-compression";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 const baseFolder =
   env.APPDATA !== undefined && env.APPDATA !== ""
@@ -41,15 +44,9 @@ if (!existsSync(certFilePath) || !existsSync(keyFilePath)) {
   }
 }
 
-const target = env.ASPNETCORE_HTTPS_PORT
-  ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}`
-  : env.ASPNETCORE_URLS
-    ? env.ASPNETCORE_URLS.split(";")[0]
-    : "https://localhost:7266";
-
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [viteReact()],
+  plugins: [viteReact(), compress(), tsconfigPaths(), tailwindcss()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -57,9 +54,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "^/weatherforecast": {
-        target,
+      "/api": {
+        target: "https://localhost:7266/api",
+        changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
     port: 60263,

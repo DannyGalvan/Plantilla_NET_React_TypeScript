@@ -1,18 +1,22 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800&family=Play:wght@700&display=swap");
 
-@import "tailwindcss/base";
-@import "tailwindcss/components";
+/* Tailwind Layers */
+@import "tailwindcss";
+@import "./components.css";
 @import "./flex.css";
 @import "./grid.css";
 @import "./spinners.css";
-@import "./components.css";
 
+@plugin 'tailwind-scrollbar';
+
+/* Font global */
 @layer base {
   body {
     font-family: "Montserrat", sans-serif;
   }
 }
 
+/* Custom Widths */
 .w-33 {
   @apply w-2/3;
 }
@@ -67,6 +71,7 @@
   @apply h-[92vh] w-[300px];
 }
 
+/* Custom variables (optional, not Tailwind-specific) */
 :root {
   --bs-container: #00488a;
   --solusersa: #a3d2e6;
@@ -74,4 +79,4 @@
   --bs-light: white;
 }
 
-@tailwind utilities;
+@config "../../tailwind.config.js";

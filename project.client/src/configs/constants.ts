@@ -29,3 +29,16 @@ export const authInitialState: InitialAuth = {
   userId: 0,
   operations: [],
 };
+
+export const PAGINATION_OPTIONS = {
+  rowsPerPageText: "Elementos Por página",
+  rangeSeparatorText: "de",
+  selectAllRowsItem: false,
+  selectAllRowsItemText: "Todos",
+};
+
+export const SELECTED_MESSAGE = {
+  singular: "Elemento",
+  plural: "Elementos",
+  message: "Seleccionado(s)",
+};
