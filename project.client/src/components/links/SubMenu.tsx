@@ -94,7 +94,7 @@ export function SubMenu({
       {isCollapsed && isHovered && btnRect && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed z-[9999] pl-3"
+              className="fixed z-9999 pl-3"
               style={{
                 top: btnRect.top - 8,
                 left: btnRect.left + btnRect.width,
