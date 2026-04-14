@@ -30,7 +30,7 @@ export function SubMenu({
   const handleMouseLeave = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 150);
+    }, 400);
   }, []);
 
   const handleOpenChange = useCallback((open: boolean) => {
@@ -47,48 +47,50 @@ export function SubMenu({
         isOpen={isCollapsed ? isHovered : undefined}
         onOpenChange={handleOpenChange}
       >
-        <button
-          className={`relative flex w-full items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all
-              ${
-                isActive || subMenuOpen
-                  ? "bg-blue-50/50 text-blue-700 dark:bg-zinc-800/80 dark:text-blue-400"
-                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
-              }
-              ${isCollapsed ? "justify-center px-0" : "justify-between px-3"}
-            `}
-          type="button"
-          onClick={toggleSubMenu}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          <div className="flex items-center justify-center">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0">
-              <i className={`${data.module.image} text-xl`} />
+        <Popover.Trigger>
+          <button
+            className={`relative flex w-full items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all
+                ${
+                  isActive || subMenuOpen
+                    ? "bg-blue-50/50 text-blue-700 dark:bg-zinc-800/80 dark:text-blue-400"
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
+                }
+                ${isCollapsed ? "justify-center px-0" : "justify-between px-3"}
+              `}
+            type="button"
+            onClick={toggleSubMenu}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center w-6 h-6 shrink-0">
+                <i className={`${data.module.image} text-xl`} />
+              </div>
+
+              <div
+                className={`flex items-center transition-all duration-300 overflow-hidden ${isCollapsed ? "opacity-0 w-0" : "w-auto opacity-100 ml-3"}`}
+              >
+                <span className="tracking-wide whitespace-nowrap">
+                  {data.module.name}
+                </span>
+              </div>
             </div>
 
-            <div
-              className={`flex items-center transition-all duration-300 overflow-hidden ${isCollapsed ? "opacity-0 w-0" : "w-auto opacity-100 ml-3"}`}
-            >
-              <span className="tracking-wide whitespace-nowrap">
-                {data.module.name}
-              </span>
-            </div>
-          </div>
-
-          {/* Chevron para versión expandida */}
-          {!isCollapsed && (
-            <div className="flex items-center transition-all opacity-100">
-              <i
-                className={`bi bi-chevron-down text-sm transition-transform duration-300 ${subMenuOpen ? "rotate-180" : ""}`}
-              />
-            </div>
-          )}
-        </button>
+            {/* Chevron para versión expandida */}
+            {!isCollapsed && (
+              <div className="flex items-center transition-all opacity-100">
+                <i
+                  className={`bi bi-chevron-down text-sm transition-transform duration-300 ${subMenuOpen ? "rotate-180" : ""}`}
+                />
+              </div>
+            )}
+          </button>
+        </Popover.Trigger>
 
         {/* --- MENÚ FLOTANTE VÍA POPOVER (PORTAL - NO SE CORTA) --- */}
         <Popover.Content
-          className="border border-gray-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 rounded-lg min-w-50"
-          offset={12}
+          className="relative border border-gray-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 rounded-lg min-w-50 before:absolute before:-left-3 before:-top-3 before:-bottom-3 before:w-6 before:bg-transparent"
+          offset={4}
           placement="right"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
