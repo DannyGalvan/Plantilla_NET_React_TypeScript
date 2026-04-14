@@ -75,8 +75,54 @@
 :root {
   --bs-container: #00488a;
   --solusersa: #a3d2e6;
+  --solusersa-hover: #bce1f1;
   --solusersa-head: #00578a;
   --bs-light: white;
+  --bs-dark: #212529;
+  --bs-secondary: #6c757d;
+}
+
+.dark {
+  --bs-container: #18181b;
+  --solusersa: #27272a;
+  --solusersa-hover: #3f3f46;
+  --solusersa-head: #09090b;
+  --bs-light: #e4e4e7;
+  --bs-dark: #f8f9fa;
+  --bs-secondary: #a1a1aa;
+}
+
+/* View Transitions */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-fill-mode: both;
+}
+
+::view-transition-old(root) {
+  animation-name: fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: fade-in;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @config "../../tailwind.config.js";

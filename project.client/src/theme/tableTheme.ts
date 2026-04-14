@@ -1,29 +1,30 @@
 import { createTheme, defaultThemes } from "react-data-table-component";
 
-export const individuality = {
+createTheme('solusersa-theme', {
   text: {
-    primary: "var(--bs-dark)",
-    secondary: "var(--bs-secondary)",
+    primary: 'var(--bs-dark)',       
+    secondary: 'var(--bs-dark)',     
+  },
+  background: {
+    default: 'var(--bs-white)',      
   },
   context: {
-    background: "#268bd2",
-    text: "var(--bs-light)",
+    background: 'var(--solusersa-head)', 
+    text: 'var(--bs-white)',
   },
   divider: {
-    default: defaultThemes.default.divider.default,
+    default: 'var(--bs-gray-300)',
   },
-  action: {
-    button: "var(--bs-light)",
-    hover: "rgba(0,0,0,.08)",
-    disabled: "rgba(0,0,0,.12)",
+  button: {
+    default: 'var(--bs-dark)',
+    hover: 'var(--bs-gray-300)',
+    focus: 'var(--bs-gray-300)',
+    disabled: 'var(--bs-gray-300)',
   },
-};
-
-export const themeIndividuality = createTheme(
-  "individuality",
-  individuality,
-  "dark",
-);
+  sortFocus: {
+    default: 'var(--bs-dark)',
+  },
+}, 'default');
 
 export const customStyles = {
   header: {
@@ -92,84 +93,6 @@ export const customStyles = {
       border: "none",
       background: "var(--bs-container)",
       color: "var(--bs-light)",
-    },
-  },
-  noData: {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "var(--solusersa)",
-    },
-  },
-  progress: {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "var(--solusersa)",
-    },
-  },
-};
-
-export const compactGrid = {
-  header: {
-    style: {
-      minHeight: "60px",
-      background: "var(--solusersa-head)",
-      color: "var(--bs-light)",
-      fontWeight: "bold",
-      fontSize: "30px",
-      textAlign: "center",
-    },
-  },
-  subHeader: {
-    style: {
-      background: "var(--solusersa-head)",
-      color: "var(--bs-light)",
-    },
-  },
-  headRow: {
-    style: {
-      borderTopStyle: "solid",
-      background: "var(--solusersa-head)",
-      color: "var(--bs-light)",
-      borderTopWidth: "1px",
-      borderTopColor: defaultThemes.default.divider.default,
-    },
-  },
-  headCells: {
-    style: {
-      "&:not(:last-of-type)": {
-        borderRightStyle: "solid",
-        borderRightWidth: "1px",
-        borderRightColor: defaultThemes.default.divider.default,
-      },
-    },
-  },
-  rows: {
-    stripedStyle: {
-      backgroundColor: "var(--solusersa)",
-      color: "black",
-    },
-    style: {
-      background: "white",
-    },
-  },
-  cells: {
-    style: {
-      "&:not(:last-of-type)": {
-        borderRightStyle: "solid",
-        borderRightWidth: "1px",
-        borderRightColor: defaultThemes.default.divider.default,
-      },
-    },
-  },
-  pagination: {
-    style: {
-      border: "none",
-      background: "var(--bs-container)",
-      color: "black",
     },
   },
   noData: {
