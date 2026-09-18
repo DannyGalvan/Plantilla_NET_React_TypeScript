@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+env:
+  DOTNET_VERSION: "8.0.x"
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore Project.sln
+
+      - name: Build (warnings as errors)
+        run: dotnet build Project.sln --no-restore --configuration Release -warnaserror
+
+      - name: Test
+        run: dotnet test Project.sln --no-build --configuration Release --logger "trx;LogFileName=backend.trx"
+
+      - name: Vulnerability scan
+        run: dotnet list Project.Server/Project.Server.csproj package --vulnerable --include-transitive
+
+  frontend:
+    name: Frontend (React + TS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: project.client/package-lock.json
+
+      - name: Install
+        working-directory: project.client
+        run: npm ci || npm install
+
+      - name: Typecheck
+        working-directory: project.client
+        run: npm run typecheck || npx tsc -b --noEmit
+
+      - name: Lint
+        working-directory: project.client
+        run: npm run lint
+
+      - name: Build
+        working-directory: project.client
+        run: npm run build
+
+      - name: Vulnerability scan
+        working-directory: project.client
+        run: npm audit --audit-level=high || true
