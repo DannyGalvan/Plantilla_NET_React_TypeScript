@@ -513,5 +513,18 @@ Si tienes seeds existentes en `DataContext.cs`:
 1. Clonar este repositorio como base.
 2. `git grep -nE 'Password|RecoveryToken|OwnerId' -- Project.Server/ Utils/ Migrations/` para verificar que ningún código de negocio expone columnas sensibles.
 3. `dotnet ef database update` (las migraciones crean `RefreshTokens` automáticamente).
-4. `npm install && npm run verify` antes del primer commit.
+4. `pnpm install && pnpm verify` antes del primer commit.
 5. Configurar `AppSettings:SeedAdminPassword` via user-secret en dev o env var en prod.
+
+### Regla obligatoria: verificar antes de pushear
+
+**No commit, no push, sin un `pnpm verify` y un `dotnet test Project.sln` verdes.**
+
+Esto NO es opcional. Cualquier agente (humano o IA) que abra un PR contra este repositorio debe ejecutar ambos comandos localmente y confirmar el resultado antes de crear el commit, y muy especialmente antes de hacer `git push`. La cadena de CI es la red de seguridad final, no el primer control.
+
+- **Backend**: `dotnet build Project.sln --configuration Release -warnaserror && dotnet test Project.sln --no-build --configuration Release` debe terminar con `0 Errores / 0 Advertencias` y todos los tests en verde.
+- **Frontend**: `pnpm verify` debe terminar con `exit 0`. Internamente ejecuta typecheck + lint (`--max-warnings=0`) + format + test (vitest).
+
+Si cualquiera falla, **NO** se sube el commit. Se arregla primero, se corre `pnpm verify` / `dotnet test` otra vez, y solo entonces se hace push. El husky pre-push hook ya ejecuta `pnpm verify` automáticamente — confiar en él es la primera línea de defensa, pero nunca la única.
+
+**Nota para el agente que ejecuta cambios en este repo**: si el propio proceso de cambios modifica la configuración (vitest, pnpm, husky, CI workflow), el agente debe correr la verificación completa antes de declarar el cambio completo. El ejemplo concreto: añadir `server.deps.inline` a `vitest.config.ts` para resolver la incompatibilidad jsdom+undici+webidl-conversions bajo pnpm — sin esa línea los tests fallan en CI aunque pasen localmente con npm.
