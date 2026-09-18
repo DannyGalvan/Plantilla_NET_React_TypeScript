@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+# pnpm is the canonical package manager for project.client. A stray
+# `npm install` regenerates package-lock.json - ignore it so it
+# cannot be accidentally reintroduced.
+package-lock.json
 # F11: never commit .env files. Only .env.example is allowed.
 .env
 .env.*
@@ -28,3 +32,5 @@ dist-ssr
 *.sw?
 # heroui-agents-md
 .heroui-docs/
+# Graphify cache (project-local, not versioned)
+graphify-out/
