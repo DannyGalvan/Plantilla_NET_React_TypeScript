@@ -47,6 +47,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          package_json_file: project.client/package.json
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -57,7 +59,7 @@ jobs:
 
       - name: Install
         working-directory: project.client
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --engine-strict
 
       - name: Typecheck
         working-directory: project.client
