@@ -12,10 +12,11 @@
     "format:check": "prettier --check src/",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test",
+    "verify": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "preview": "vite preview",
     "prepare": "husky"
   },
+  "packageManager": "pnpm@9.15.0",
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint . --fix --max-warnings=0",
@@ -33,7 +34,6 @@
     "bootstrap-icons": "^1.13.1",
     "framer-motion": "^12.38.0",
     "next-themes": "^0.4.6",
-    "project.client": "file:",
     "react": "^19.2.4",
     "react-data-table-component": "^7.7.0",
     "react-dom": "^19.2.4",
