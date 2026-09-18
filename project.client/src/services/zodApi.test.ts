@@ -28,9 +28,8 @@ const mockedApi = interceptors.api as unknown as {
   delete: ReturnType<typeof vi.fn>;
 };
 
-const { SchemaError, parseEnvelope, tryParseEnvelope, zodApi } = await import(
-  "./zodApi"
-);
+const { SchemaError, parseEnvelope, tryParseEnvelope, zodApi } =
+  await import("./zodApi");
 
 afterEach(() => {
   vi.clearAllMocks();

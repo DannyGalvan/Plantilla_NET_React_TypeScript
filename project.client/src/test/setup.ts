@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // Silence noisy React 19 act() warnings inside the test runner.
 if (

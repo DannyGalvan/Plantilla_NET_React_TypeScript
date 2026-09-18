@@ -5,8 +5,9 @@ import {
   readToken,
   setAuthorization,
 } from "../configs/axios/interceptors";
-import { tryParseEnvelope } from "../services/zodApi";
 import { authInitialState } from "../configs/constants";
+import { tryParseEnvelope } from "../services/zodApi";
+import type { Authorizations } from "../types/Authorizations";
 import type { InitialAuth } from "../types/InitialAuth";
 import { authWithRefreshResponseSchema } from "../types/schemas";
 import { retrase } from "../utils/viewTransition";
@@ -56,11 +57,11 @@ export const useAuthStore = create<AuthState>((set) => ({
             isLoggedIn: true,
             redirect: false,
             email: data.email ?? "",
-            token: data.token,
+            token: data.token ?? "",
             userName: data.userName ?? "",
             name: data.name ?? "",
             userId: data.userId ?? 0,
-            operations: data.operations ?? [],
+            operations: (data.operations ?? []) as unknown as Authorizations[],
           };
           setAuthorization(auth.token);
           set({ authState: auth });
