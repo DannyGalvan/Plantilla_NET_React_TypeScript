@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [master, main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DOTNET_VERSION: "8.0.x"
 
@@ -13,6 +17,7 @@ jobs:
   backend:
     name: Backend (.NET)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -36,24 +41,25 @@ jobs:
   frontend:
     name: Frontend (React + TS)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          package_json_file: project.client/package.json
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: project.client/.nvmrc
           cache: "pnpm"
           cache-dependency-path: project.client/pnpm-lock.yaml
 
       - name: Install
         working-directory: project.client
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --engine-strict
 
       - name: Typecheck
         working-directory: project.client
@@ -62,6 +68,10 @@ jobs:
       - name: Lint
         working-directory: project.client
         run: pnpm lint
+
+      - name: Format check
+        working-directory: project.client
+        run: pnpm format:check
 
       - name: Build
         working-directory: project.client
@@ -73,6 +83,8 @@ jobs:
 
       - name: Vulnerability scan
         working-directory: project.client
-        # Fails the job on high or critical advisories. Low/moderate still log
-        # but do not break the build.
+        # Bloquea en pull_request: los avisos high/critical se arreglan antes del merge.
+        # Informativo en master: un CVE publicado hoy no debe tumbar el push a producción
+        # sin que haya cambiado una línea de código.
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
         run: pnpm audit --audit-level=high

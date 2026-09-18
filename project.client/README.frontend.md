@@ -62,8 +62,8 @@ project.client/
 
 ### 🛠️ Requisitos
 
-- Node.js 18+
-- npm 9+
+- Node.js 24.15+ (ver `.nvmrc`)
+- pnpm 9.15+ (`corepack enable`)
 
 ### ⚙️ Pasos
 
@@ -71,21 +71,21 @@ project.client/
 
 
 ## Instala todas las dependencias necesarias
-### npm install
+### pnpm install
 ## Ejecuta la aplicación en desarrollo:
-### npm run dev
+### pnpm dev
 ## Construye la aplicación para producción:
-### npm run build
+### pnpm build
 
 ## 🔍 Scripts disponibles
 
 
-| Comando          | Descripción                                |
-| ---------------- | ------------------------------------------ |
-| `npm run dev`    | Levanta el servidor de desarrollo con Vite |
-| `npm run build`  | Compila la app para producción (`/dist`)   |
-| `npm run lint`   | Ejecuta ESLint sobre el código fuente      |
-| `npm run format` | Formatea el código con Prettier            |
+| Comando           | Descripción                                |
+| ----------------- | ------------------------------------------ |
+| `pnpm dev`        | Levanta el servidor de desarrollo con Vite |
+| `pnpm build`      | Compila la app para producción (`/dist`)   |
+| `pnpm lint`       | Ejecuta ESLint sobre el código fuente      |
+| `pnpm format`     | Formatea el código con Prettier            |
 
 ## 🧪 Buenas prácticas
 
