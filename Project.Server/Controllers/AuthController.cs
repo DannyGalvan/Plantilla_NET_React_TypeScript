@@ -1,22 +1,22 @@
-﻿using FluentValidation.Results;
-using Lombok.NET;
+using System.Security.Cryptography;
+using System.Text;
+using FluentValidation.Results;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Project.Server.Attributes;
 using Project.Server.Entities.Models;
 using Project.Server.Entities.Request;
 using Project.Server.Entities.Response;
+using Project.Server.Security.Authorization;
+using Project.Server.Services.Core;
 using Project.Server.Services.Interfaces;
 
 namespace Project.Server.Controllers
 {
-    /// <summary>
-    /// Defines the <see cref="AuthController" />
-    /// </summary> 
     [Route("api/v1/[controller]")]
     [ApiController]
-    [AllArgsConstructor]
     [ModuleInfo(
         DisplayName = "Auth",
         Description = "Gestión de autenticación en la aplicación",
@@ -25,227 +25,192 @@ namespace Project.Server.Controllers
         Order = 1,
         IsVisible = false
     )]
-    public partial class AuthController : CommonController
+    public class AuthController : CommonController
     {
-        /// <summary>
-        /// Defines the _authService
-        /// </summary>
         private readonly IAuthService _authService;
-
-        /// <summary>
-        /// Defines the _authService
-        /// </summary>
         private readonly IMapper _mapper;
 
+        public AuthController(IAuthService authService, IMapper mapper)
+        {
+            _authService = authService;
+            _mapper = mapper;
+        }
 
-        /// <summary>
-        /// The Login
-        /// </summary>
-        /// <param name="model">The model<see cref="LoginRequest"/></param>
-        /// <returns>The <see cref="ActionResult"/></returns>
+        // -- Anonymous endpoints ------------------------------------------------
+
         [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPost]
-        public ActionResult Login(LoginRequest model)
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest model, CancellationToken ct = default)
         {
-            var response = _authService.Auth(model);
-
-            if (response.Success)
-            {
-                Response<AuthResponse> authResponse = new()
+            var response = await _authService.AuthAsync(model, ct);
+            return response.Success
+                ? Ok(new Response<AuthWithRefreshResponse>
                 {
-                    Data = response.Data,
-                    Success = response.Success,
-                    Message = response.Message
-                };
-
-                return Ok(authResponse);
-            }
-
-            Response<List<ValidationFailure>> errorResponse = new()
-            {
-                Data = response.Errors,
-                Success = response.Success,
-                Message = response.Message
-            };
-
-            return BadRequest(errorResponse);
+                    Success = true,
+                    Message = response.Message,
+                    Data = response.Data
+                })
+                : StatusCode(StatusCodeFor(response.Status), new Response<List<ValidationFailure>>
+                {
+                    Success = false,
+                    Message = response.Message,
+                    Data = response.Errors
+                });
         }
 
-        /// <summary>
-        /// The Register Users
-        /// </summary>
-        /// <param name="model">The model<see cref="RegisterRequest"/></param>
-        /// <returns>The <see cref="ActionResult"/></returns>
+        [ExcludeFromSync]
+        [AllowAnonymous]
+        [HttpPost("Refresh")]
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> Refresh(CancellationToken ct = default)
+        {
+            // 3.9 — double-submit CSRF: the SPA echoes the XSRF-TOKEN cookie
+            // back as the X-XSRF-TOKEN header. We require both to be present
+            // and to match before the refresh endpoint proceeds.
+            var cookieToken = Request.Cookies["XSRF-TOKEN"];
+            var headerToken = Request.Headers["X-XSRF-TOKEN"].ToString();
+            if (string.IsNullOrEmpty(cookieToken) ||
+                string.IsNullOrEmpty(headerToken) ||
+                !CryptographicOperations.FixedTimeEquals(
+                    Encoding.UTF8.GetBytes(cookieToken),
+                    Encoding.UTF8.GetBytes(headerToken)))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new Response<List<ValidationFailure>>
+                {
+                    Success = false,
+                    Message = "CSRF token missing or mismatched.",
+                });
+            }
+
+            var cookie = Request.Cookies[AuthService.RefreshCookieName];
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var response = await _authService.RefreshAsync(cookie, ip, ct);
+            return response.Success
+                ? Ok(new Response<AuthWithRefreshResponse>
+                {
+                    Success = true,
+                    Message = response.Message,
+                    Data = response.Data
+                })
+                : StatusCode(StatusCodeFor(response.Status), new Response<List<ValidationFailure>>
+                {
+                    Success = false,
+                    Message = response.Message,
+                    Data = response.Errors
+                });
+        }
+
+        [ExcludeFromSync]
+        [AllowAnonymous]
+        [HttpPost("Logout")]
+        public async Task<IActionResult> Logout(CancellationToken ct = default)
+        {
+            var cookie = Request.Cookies[AuthService.RefreshCookieName];
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var response = await _authService.LogoutAsync(cookie, ip, ct);
+            return ProjectSingle(response);
+        }
+
         [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPost("Register")]
-        public ActionResult Register(RegisterRequest model)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest model, CancellationToken ct = default)
         {
             model.CreatedBy = 1;
-            var response = _authService.Register(model);
-
-            if (response.Success)
-            {
-                Response<UserResponse> authResponse = new()
+            var response = await _authService.RegisterAsync(model, ct);
+            return response.Success
+                ? Ok(new Response<UserResponse>
                 {
-                    Data = _mapper.Map<User,UserResponse>(response.Data!),
-                    Success = response.Success,
-                    Message = response.Message
-                };
-
-                return Ok(authResponse);
-            }
-
-            Response<List<ValidationFailure>> errorResponse = new()
-            {
-                Data = response.Errors,
-                Success = response.Success,
-                Message = response.Message
-            };
-
-            return BadRequest(errorResponse);
+                    Success = true,
+                    Message = response.Message,
+                    Data = _mapper.Map<User, UserResponse>(response.Data!)
+                })
+                : BadRequest(new Response<List<ValidationFailure>>
+                {
+                    Success = false,
+                    Message = response.Message,
+                    Data = response.Errors
+                });
         }
 
-        /// <summary>
-        /// The GetToken
-        /// </summary>
-        /// <param name="token">The token<see cref="string"/></param>
-        /// <returns>The <see cref="ActionResult"/></returns>
         [ExcludeFromSync]
         [AllowAnonymous]
         [HttpGet("{token}")]
-        public ActionResult GetToken(string token)
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> ValidateToken(string token, CancellationToken ct = default)
         {
-            Response<string, List<ValidationFailure>> response = _authService.ValidateToken(token);
-
-            if (response.Success)
-            {
-                Response<string> tokenResponse = new()
+            var response = await _authService.ValidateTokenAsync(token, ct);
+            return response.Success
+                ? Ok(new Response<string>
                 {
-                    Data = response.Data,
-                    Success = response.Success,
-                    Message = response.Message
-                };
-                return BadRequest(tokenResponse);
-            }
-
-            Response<List<ValidationFailure>> errorResponse = new()
-            {
-                Data = response.Errors,
-                Success = response.Success,
-                Message = response.Message
-            };
-
-            return Ok(errorResponse);
+                    Success = true,
+                    Message = response.Message,
+                    Data = response.Data
+                })
+                : BadRequest(new Response<List<ValidationFailure>>
+                {
+                    Success = false,
+                    Message = response.Message,
+                    Data = response.Errors
+                });
         }
 
-        /// <summary>
-        /// The ChangePassword
-        /// </summary>
-        /// <param name="model">The model<see cref="ChangePasswordRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>ActionResult{Response{string}}</cref>
-        ///     </see>
-        /// </returns>
         [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPut("ChangePassword")]
-        public ActionResult<Response<string>> ChangePassword(ChangePasswordRequest model)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest model, CancellationToken ct = default)
         {
-            Response<string, List<ValidationFailure>> response = _authService.ChangePassword(model);
-
-            if (response.Success)
-            {
-                Response<string> changePasswordResponse = new()
-                {
-                    Data = response.Data,
-                    Success = response.Success,
-                    Message = response.Message
-                };
-
-                return Ok(changePasswordResponse);
-
-            }
-
-            Response<List<ValidationFailure>> errorResponse = new()
-            {
-                Data = response.Errors,
-                Success = response.Success,
-                Message = response.Message
-            };
-
-            return BadRequest(errorResponse);
+            var response = await _authService.ChangePasswordAsync(model, ct);
+            return ProjectSingle(response);
         }
 
-        /// <summary>
-        /// The PostResetPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="ResetPasswordRequest"/></param>
-        /// <returns>The <see cref="ActionResult"/></returns>
-        [Authorize]
-        [HttpPost("ResetPassword")]
-        public ActionResult PostResetPassword([FromBody] ResetPasswordRequest model)
-        {
-            model.IdUser = GetUserId();
-            Response<string, List<ValidationFailure>> response = _authService.ResetPassword(model);
-
-            if (response.Success)
-            {
-                Response<string> resetPasswordResponse = new()
-                {
-                    Data = response.Data,
-                    Success = response.Success,
-                    Message = response.Message
-                };
-
-                return Ok(resetPasswordResponse);
-
-            }
-
-            Response<List<ValidationFailure>> errorResponse = new()
-            {
-                Data = response.Errors,
-                Success = response.Success,
-                Message = response.Message
-            };
-
-            return BadRequest(errorResponse);
-        }
-
-        /// <summary>
-        /// The PostRecoveryPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="RecoveryPasswordRequest"/></param>
-        /// <returns>The <see cref="ActionResult"/></returns>
         [ExcludeFromSync]
         [AllowAnonymous]
         [HttpPost("RecoveryPassword")]
-        public ActionResult PostRecoveryPassword([FromBody] RecoveryPasswordRequest model)
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> PostRecoveryPassword([FromBody] RecoveryPasswordRequest model, CancellationToken ct = default)
         {
-            Response<string, List<ValidationFailure>> response = _authService.RecoveryPassword(model);
+            var response = await _authService.RecoveryPasswordAsync(model, ct);
+            return ProjectSingle(response);
+        }
 
+        // -- Authenticated endpoints ---------------------------------------------
+
+        [Authorize]
+        [HttpPost("ResetPassword")]
+        public async Task<IActionResult> PostResetPassword([FromBody] ResetPasswordRequest model, CancellationToken ct = default)
+        {
+            model.IdUser = GetUserId();
+            var response = await _authService.ResetPasswordAsync(model, ct);
+            return ProjectSingle(response);
+        }
+
+        // ----------------------------------------------------------------
+
+        private IActionResult ProjectSingle(Response<string, List<ValidationFailure>> response)
+        {
+            return ProjectSingle<string>(response);
+        }
+
+        private IActionResult ProjectSingle<T>(Response<T, List<ValidationFailure>> response)
+        {
             if (response.Success)
             {
-                Response<string> recoveryPasswordResponse = new()
+                return Ok(new Response<T>
                 {
-                    Data = response.Data,
-                    Success = response.Success,
-                    Message = response.Message
-                };
-
-                return Ok(recoveryPasswordResponse);
-
+                    Success = true,
+                    Message = response.Message,
+                    Data = response.Data
+                });
             }
-
-            Response<List<ValidationFailure>> errorResponse = new()
+            return BadRequest(new Response<List<ValidationFailure>>
             {
-                Data = response.Errors,
-                Success = response.Success,
-                Message = response.Message
-            };
-
-            return BadRequest(errorResponse);
+                Success = false,
+                Message = response.Message,
+                Data = response.Errors
+            });
         }
     }
 }

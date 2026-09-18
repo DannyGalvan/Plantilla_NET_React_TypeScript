@@ -1,55 +1,30 @@
-﻿using FluentValidation.Results;
-using Project.Server.Entities.Request;
+using FluentValidation.Results;
 using Project.Server.Entities.Models;
+using Project.Server.Entities.Request;
 using Project.Server.Entities.Response;
 
 namespace Project.Server.Services.Interfaces
 {
     /// <summary>
-    /// Defines the <see cref="IAuthService" />
+    /// Phase 3.8: AuthAsync returns a richer envelope (access + refresh cookie).
     /// </summary>
     public interface IAuthService
     {
-        /// <summary>
-        /// The Auth
-        /// </summary>
-        /// <param name="model">The model<see cref="LoginRequest"/></param>
-        /// <returns>The <see cref="Response{AuthResponse, List{ValidationFailure}}"/></returns>
-        public Response<AuthResponse, List<ValidationFailure>> Auth(LoginRequest model);
+        Task<Response<AuthWithRefreshResponse, List<ValidationFailure>>> AuthAsync(LoginRequest model, CancellationToken ct = default);
+        Task<Response<User, List<ValidationFailure>>> RegisterAsync(RegisterRequest model, CancellationToken ct = default);
+        Task<Response<string, List<ValidationFailure>>> ChangePasswordAsync(ChangePasswordRequest model, CancellationToken ct = default);
+        Task<Response<string, List<ValidationFailure>>> ResetPasswordAsync(ResetPasswordRequest model, CancellationToken ct = default);
+        Task<Response<string, List<ValidationFailure>>> RecoveryPasswordAsync(RecoveryPasswordRequest model, CancellationToken ct = default);
+        Task<Response<string, List<ValidationFailure>>> ValidateTokenAsync(string token, CancellationToken ct = default);
 
         /// <summary>
-        /// The ValidateToken
+        /// Rotates the refresh-token cookie. Returns a fresh access token in the
+        /// body and a fresh refresh cookie on the response. Reuse of an
+        /// already-replaced token revokes the entire chain (B18).
         /// </summary>
-        /// <param name="token">The token<see cref="string"/></param>
-        /// <returns>The <see cref="Response{string, List{ValidationFailure}}"/></returns>
-        public Response<string, List<ValidationFailure>> ValidateToken(string token);
+        Task<Response<AuthWithRefreshResponse, List<ValidationFailure>>> RefreshAsync(string? refreshToken, string? ip, CancellationToken ct = default);
 
-        /// <summary>
-        /// The ChangePassword
-        /// </summary>
-        /// <param name="model">The model<see cref="ChangePasswordRequest"/></param>
-        /// <returns>The <see cref="Response{string, List{ValidationFailure}}"/></returns>
-        public Response<string, List<ValidationFailure>> ChangePassword(ChangePasswordRequest model);
-
-        /// <summary>
-        /// The ResetPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="ResetPasswordRequest"/></param>
-        /// <returns>The <see cref="Response{string, List{ValidationFailure}}"/></returns>
-        public Response<string, List<ValidationFailure>> ResetPassword(ResetPasswordRequest model);
-
-        /// <summary>
-        /// The RecoveryPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="RecoveryPasswordRequest"/></param>
-        /// <returns>The <see cref="Response{string, List{ValidationFailure}}"/></returns>
-        public Response<string, List<ValidationFailure>> RecoveryPassword(RecoveryPasswordRequest model);
-
-        /// <summary>
-        /// The RecoveryPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="RegisterRequest"/></param>
-        /// <returns>The <see cref="Response{User, List{ValidationFailure}}"/></returns>
-        public Response<User, List<ValidationFailure>> Register(RegisterRequest model);
+        /// <summary>Revokes the supplied refresh token. Idempotent.</summary>
+        Task<Response<string, List<ValidationFailure>>> LogoutAsync(string? refreshToken, string? ip, CancellationToken ct = default);
     }
 }

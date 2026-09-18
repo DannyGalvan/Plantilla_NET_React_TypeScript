@@ -1,10 +1,11 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using FluentValidation;
 using FluentValidation.Results;
-using Lombok.NET;
 using MapsterMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -20,579 +21,791 @@ using ValidationFailure = FluentValidation.Results.ValidationFailure;
 namespace Project.Server.Services.Core
 {
     /// <summary>
-    /// Defines the <see cref="AuthService" />
+    /// Authentication service. Phase 3 hardening:
+    /// <list type="bullet">
+    ///   <item>Lockout after 5 failed attempts / 30 minutes (B7).</item>
+    ///   <item>Plain-text passwords never leave the service (B5).</item>
+    ///   <item>Recovery tokens generated with <see cref="RandomNumberGenerator"/>,
+    ///         only the SHA-256 hash is persisted (B10).</item>
+    ///   <item>Constant-time comparison for recovery token validation (B10).</item>
+    ///   <item>Register assigns a configurable low-privilege role instead of a
+    ///         hard-coded id (B20).</item>
+    ///   <item>JWT carries <c>iss</c>, <c>aud</c>, <c>RolId</c> claims so the
+    ///         hardened validator accepts the token.</item>
+    /// </list>
     /// </summary>
-    [AllArgsConstructor]
-    public partial class AuthService : IAuthService
+    public class AuthService : IAuthService
     {
-        /// <summary>
-        /// Defines the _bd
-        /// </summary>
-        private readonly DataContext _bd;
+        private const int MaxFailedLoginAttempts = 5;
+        private const int LockoutDurationMinutes = 30;
+        private const int RecoveryTokenLifetimeMinutes = 15;
 
-        /// <summary>
-        /// Defines the _appSettings
-        /// </summary>
+        // 3.8: short access token, longer refresh cookie.
+        private const int AccessTokenLifetimeMinutes = 15;
+        private const int RefreshTokenLifetimeDays = 7;
+        public const string RefreshCookieName = "rt";
+
+        private readonly DataContext _db;
         private readonly IOptions<AppSettings> _appSettings;
-
-        /// <summary>
-        /// Defines the _loginValidations
-        /// </summary>
+        private readonly SecurityPasswordPolicy _passwordPolicy;
         private readonly IValidator<LoginRequest> _loginValidations;
-
-        /// <summary>
-        /// Defines the _changePasswordValidations
-        /// </summary>
         private readonly IValidator<ChangePasswordRequest> _changePasswordValidations;
-
-        /// <summary>
-        /// Defines the _resetPasswordValidator
-        /// </summary>
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
-
-        /// <summary>
-        /// Defines the _recoveryPasswordValidator
-        /// </summary>
         private readonly IValidator<RecoveryPasswordRequest> _recoveryPasswordValidator;
-
-        /// <summary>
-        /// Defines the _registerValidator
-        /// </summary>
         private readonly IValidator<RegisterRequest> _registerValidator;
-
-        /// <summary>
-        /// Defines the _sendMail
-        /// </summary>
         private readonly ISendMail _sendMail;
-
-        /// <summary>
-        /// Defines the _sendMail
-        /// </summary>
         private readonly IMapper _mapper;
-
-        /// <summary>
-        /// Defines the _logger
-        /// </summary>
         private readonly ILogger<AuthService> _logger;
+        private readonly IHttpContextAccessor _http;
 
-        /// <summary>
-        /// The Auth
-        /// </summary>
-        /// <param name="model">The model<see cref="LoginRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{AuthResponse, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<AuthResponse, List<ValidationFailure>> Auth(LoginRequest model)
+        public AuthService(
+            DataContext db,
+            IOptions<AppSettings> appSettings,
+            SecurityPasswordPolicy passwordPolicy,
+            IValidator<LoginRequest> loginValidations,
+            IValidator<ChangePasswordRequest> changePasswordValidations,
+            IValidator<ResetPasswordRequest> resetPasswordValidator,
+            IValidator<RecoveryPasswordRequest> recoveryPasswordValidator,
+            IValidator<RegisterRequest> registerValidator,
+            ISendMail sendMail,
+            IMapper mapper,
+            ILogger<AuthService> logger,
+            IHttpContextAccessor http)
         {
-            Response<AuthResponse, List<ValidationFailure>> userResponse = new();
+            _db = db;
+            _appSettings = appSettings;
+            _passwordPolicy = passwordPolicy;
+            _loginValidations = loginValidations;
+            _changePasswordValidations = changePasswordValidations;
+            _resetPasswordValidator = resetPasswordValidator;
+            _recoveryPasswordValidator = recoveryPasswordValidator;
+            _registerValidator = registerValidator;
+            _sendMail = sendMail;
+            _mapper = mapper;
+            _logger = logger;
+            _http = http;
+        }
+
+        // ============================================================
+        // Login
+        // ============================================================
+
+        public async Task<Response<AuthWithRefreshResponse, List<ValidationFailure>>> AuthAsync(LoginRequest model, CancellationToken ct = default)
+        {
+            var userResponse = new Response<AuthWithRefreshResponse, List<ValidationFailure>>();
             try
             {
-                ValidationResult results = _loginValidations.Validate(model);
-
+                var results = _loginValidations.Validate(model);
                 if (!results.IsValid)
                 {
-                    userResponse.Success = false;
-                    userResponse.Message = "Usuario y/o contraseña invalidos";
-                    userResponse.Data = null;
-                    userResponse.Errors = results.Errors;
-
-                    return userResponse;
+                    return ValidationFailed<AuthWithRefreshResponse>(results.Errors);
                 }
 
-                User? oUser = _bd.Users.Include(user => user.Rol!).FirstOrDefault(u =>
-                    u.UserName == model.UserName);
+                User? user = await _db.Users.Include(u => u.Rol!).IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.UserName == model.UserName);
 
-                if (oUser == null)
+                if (user is null)
                 {
-                    userResponse.Success = false;
-                    userResponse.Message = "Usuario y/o contraseña invalidos";
-                    userResponse.Data = null;
-                    userResponse.Errors = results.Errors;
-
-                    return userResponse;
+                    await RecordLoginAuditAsync(0, model.UserName, null, null, false, "Usuario no encontrado");
+                    return Unauthorized<AuthWithRefreshResponse>("Usuario o contraseña inválidos.");
                 }
 
-                if (!BC.BCrypt.Verify(model.Password, oUser.Password))
+                if (await IsAccountLockedAsync(user))
                 {
-                    userResponse.Success = false;
-                    userResponse.Message = "Usuario y/o contraseña invalidos";
-                    userResponse.Data = null;
-                    userResponse.Errors = results.Errors;
-
-                    return userResponse;
+                    await RecordLoginAuditAsync(user.Id, user.UserName, null, null, false, "Cuenta bloqueada");
+                    return Unauthorized<AuthWithRefreshResponse>("Cuenta bloqueada temporalmente.");
                 }
 
-                List<RolOperation> rolOperations = _bd.RolOperations
-                    .Include(r => r.Operation)
-                    .Where(r => r.RolId == oUser.RolId && r.State == 1)
-                    .ToList();
+                if (!BC.BCrypt.Verify(model.Password, user.Password))
+                {
+                    await IncrementFailedLoginAttemptsAsync(user);
+                    await RecordLoginAuditAsync(user.Id, user.UserName, null, null, false, "Contraseña incorrecta");
+                    return Unauthorized<AuthWithRefreshResponse>("Usuario o contraseña inválidos.");
+                }
 
-                List<Operation> operationsRol = _mapper.Map<List<RolOperation>, List<Operation>>(rolOperations);
+                if (user.State != 1)
+                {
+                    await RecordLoginAuditAsync(user.Id, user.UserName, null, null, false, "Usuario inactivo");
+                    return Unauthorized<AuthWithRefreshResponse>("Usuario inactivo.");
+                }
 
-                // Consulta LINQ compatible con SQL Server, PostgreSQL y MySQL
-                var modules = _bd.RolOperations
-                    .Where(ro => ro.RolId == oUser.RolId && ro.State == 1)
-                    .Join(_bd.Operations,
-                        ro => ro.OperationId,
-                        o => o.Id,
-                        (ro, o) => o.ModuleId)
-                    .Distinct()
-                    .Join(_bd.Modules,
-                        moduleId => moduleId,
-                        m => m.Id,
-                        (moduleId, m) => m)
-                    .ToList();
+                await ResetFailedLoginAttemptsAsync(user);
+                await RecordLoginAuditAsync(user.Id, user.UserName, null, null, true);
 
+                var operations = await LoadOperationsAsync(user.RolId);
+                var modules = await LoadModulesAsync(user.RolId);
+                var authorizations = modules.Select(module => new Authorizations
+                {
+                    Module = _mapper.Map<Module, ModuleResponse>(module),
+                    Operations = _mapper.Map<List<Operation>, List<OperationResponse>>(
+                        operations.Where(o => o.ModuleId == module.Id).ToList())
+                }).ToList();
 
-                List<Authorizations> authorizations = modules
-                    .Select(module => new Authorizations
-                        { 
-                            Module = _mapper.Map<Module,ModuleResponse>(module), 
-                            Operations = _mapper.Map<List<Operation>,List<OperationResponse>>(operationsRol.Where(o => o.ModuleId == module.Id).ToList())
-                        })
-                    .ToList();
+                user.Rol!.RolOperations = await _db.RolOperations
+                    .Where(ro => ro.RolId == user.RolId && ro.State == 1)
+                    .ToListAsync();
 
-                oUser.Rol!.RolOperations = rolOperations;
+                // Issue access token + a refresh cookie.
+                var jwt = GetToken(user, operations);
+                var refresh = await IssueRefreshTokenAsync(user, ClientIp());
+                SetRefreshCookie(refresh.Plain, refresh.ExpiresAt);
 
-                string jwt = GetToken(oUser);
-
-                AuthResponse auth = _mapper.Map<User, AuthResponse>(oUser);
+                var auth = _mapper.Map<User, AuthWithRefreshResponse>(user);
                 auth.Token = jwt;
                 auth.Operations = authorizations;
+                auth.ExpiresInSeconds = AccessTokenLifetimeMinutes * 60;
 
                 userResponse.Success = true;
-                userResponse.Message = "Inicio de sesión exitosa";
+                userResponse.Message = "Inicio de sesión exitoso.";
                 userResponse.Data = auth;
-                userResponse.Errors = null;
-
                 return userResponse;
             }
             catch (Exception ex)
             {
-                userResponse.Success = false;
-                userResponse.Message = "Upss hubo un error";
-                userResponse.Data = null;
-                userResponse.Errors = [new("Exception", ex.Message)];
-
-                _logger.LogError(ex, "Error al autenticar usuario path: /api/Auth");
-
-                return userResponse;
+                _logger.LogError(ex, "Error during AuthAsync for user {UserName}", model.UserName);
+                return InternalError<AuthWithRefreshResponse>(ex);
             }
         }
 
-        /// <summary>
-        /// The Auth
-        /// </summary>
-        /// <param name="model">The model<see cref="RegisterRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{User, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<User, List<ValidationFailure>> Register(RegisterRequest model)
-        {
-            Response<User, List<ValidationFailure>> response = new();
+        // ============================================================
+        // Refresh / Logout (3.8)
+        // ============================================================
 
+        public async Task<Response<AuthWithRefreshResponse, List<ValidationFailure>>> RefreshAsync(string? refreshToken, string? ip, CancellationToken ct = default)
+        {
+            var response = new Response<AuthWithRefreshResponse, List<ValidationFailure>>();
             try
             {
-                ValidationResult results = _registerValidator.Validate(model);
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    ClearRefreshCookie();
+                    return Unauthorized<AuthWithRefreshResponse>("Refresh token missing.");
+                }
 
+                var hash = HashRefreshToken(refreshToken);
+                var stored = await _db.RefreshTokens
+                    .Include(r => r.User!).ThenInclude(u => u.Rol!)
+                    .FirstOrDefaultAsync(r => r.TokenHash == hash);
+
+                if (stored is null || !stored.IsActive || stored.ReplacedByHash is not null)
+                {
+                    // Reuse of a rotated token: revoke the whole chain.
+                    if (stored is not null)
+                    {
+                        await RevokeChainAsync(stored.UserId, ip, "Reuse detected");
+                    }
+                    ClearRefreshCookie();
+                    return Unauthorized<AuthWithRefreshResponse>("Refresh token invalid or expired.");
+                }
+
+                var user = stored.User!;
+                var operations = await LoadOperationsAsync(user.RolId);
+
+                var newAccess = GetToken(user, operations);
+                var rotated = await IssueRefreshTokenAsync(user, ip);
+                stored.RevokedAt = DateTime.UtcNow;
+                stored.RevokedByIp = ip;
+                stored.ReplacedByHash = HashRefreshToken(rotated.Plain);
+                stored.UpdatedAt = DateTime.UtcNow;
+                stored.UpdatedBy = user.Id;
+                await _db.SaveChangesAsync(ct);
+
+                SetRefreshCookie(rotated.Plain, rotated.ExpiresAt);
+
+                var auth = _mapper.Map<User, AuthWithRefreshResponse>(user);
+                auth.Token = newAccess;
+                auth.ExpiresInSeconds = AccessTokenLifetimeMinutes * 60;
+                auth.Operations = (await BuildAuthorizationsAsync(user)).Select(a => a).ToList();
+
+                response.Success = true;
+                response.Message = "Token refreshed.";
+                response.Data = auth;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during RefreshAsync");
+                ClearRefreshCookie();
+                return InternalError<AuthWithRefreshResponse>(ex);
+            }
+        }
+
+        public async Task<Response<string, List<ValidationFailure>>> LogoutAsync(string? refreshToken, string? ip, CancellationToken ct = default)
+        {
+            var response = new Response<string, List<ValidationFailure>>();
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    var hash = HashRefreshToken(refreshToken);
+                    var stored = await _db.RefreshTokens.FirstOrDefaultAsync(r => r.TokenHash == hash);
+                    if (stored is not null && stored.RevokedAt is null)
+                    {
+                        stored.RevokedAt = DateTime.UtcNow;
+                        stored.RevokedByIp = ip;
+                        stored.UpdatedAt = DateTime.UtcNow;
+                        await _db.SaveChangesAsync(ct);
+                    }
+                }
+                ClearRefreshCookie();
+                response.Success = true;
+                response.Message = "Logged out.";
+                response.Data = string.Empty;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during LogoutAsync");
+                ClearRefreshCookie();
+                return InternalError<string>(ex);
+            }
+        }
+
+        // ============================================================
+        // Register (anonymous, low-privilege role)
+        // ============================================================
+
+        public async Task<Response<User, List<ValidationFailure>>> RegisterAsync(RegisterRequest model, CancellationToken ct = default)
+        {
+            Response<User, List<ValidationFailure>> response = new();
+            try
+            {
+                var results = _registerValidator.Validate(model);
                 if (!results.IsValid)
                 {
-                    response.Success = false;
-                    response.Message = "Error al hacer la solicitud";
-                    response.Data = null;
-                    response.Errors = results.Errors;
+                    return ValidationFailed<User>(results.Errors);
+                }
 
+                var exists = await _db.Users.AnyAsync(x => x.UserName == model.UserName || x.Email == model.Email);
+                if (exists)
+                {
+                    response.Success = false;
+                    response.Message = "El usuario ya existe en la plataforma.";
                     return response;
                 }
 
                 var user = _mapper.Map<RegisterRequest, User>(model);
 
-                var existUser = _bd.Users.FirstOrDefault(x => x.UserName == user.UserName || x.Email == user.Email);
-
-                if (existUser != null) 
-                {
-                    response.Success = false;
-                    response.Message = "El usuario ya existe en la plataforma";
-                    response.Data = null;
-
-                    return response;
-                }
-
-                user.RolId = 2;
+                // Configurable low-privilege role. The bootstrap (or operator)
+                // must seed a role whose id matches AppSettings:RegisterRoleId
+                // (default 2 to preserve the historical contract).
+                user.RolId = _appSettings.Value.RegisterRoleId ?? 2;
                 user.Password = BC.BCrypt.HashPassword(model.Password);
+                user.MustChangePassword = false;
+                user.LastPasswordChange = DateTime.UtcNow;
 
-                _bd.Users.Add(user);
-                _bd.SaveChanges();
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
 
+                response.Success = true;
+                response.Message = "Usuario creado correctamente.";
                 response.Data = user;
-                response.Success = true;
-                response.Message = "Usuario Creado Correctamente";
                 response.TotalResults = 1;
-
                 return response;
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = "Upss hubo un error";
-                response.Data = null;
-                response.Errors = [new("Exception", ex.Message)];
-
-                _logger.LogError(ex, "Error al autenticar usuario path: /api/Register");
-
-                return response;
+                _logger.LogError(ex, "Error during RegisterAsync");
+                return InternalError<User>(ex);
             }
         }
 
-        /// <summary>
-        /// The ChangePassword
-        /// </summary>
-        /// <param name="model">The model<see cref="ChangePasswordRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{string, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<string, List<ValidationFailure>> ChangePassword(ChangePasswordRequest model)
+        // ============================================================
+        // Change / Reset password (B5 — never echo the password back)
+        // ============================================================
+
+        public async Task<Response<string, List<ValidationFailure>>> ChangePasswordAsync(ChangePasswordRequest model, CancellationToken ct = default)
         {
-
             Response<string, List<ValidationFailure>> response = new();
-
             try
             {
-                ValidationResult results = _changePasswordValidations.Validate(model);
-
+                var results = _changePasswordValidations.Validate(model);
                 if (!results.IsValid)
                 {
-                    response.Success = false;
-                    response.Message = "Error al hacer la solicitud";
-                    response.Data = "";
-                    response.Errors = results.Errors;
-
-                    return response;
+                    return ValidationFailed<string>(results.Errors);
                 }
 
-                User? oUser = _bd.Users.FirstOrDefault(u => u.RecoveryToken == model.Token);
-
-                if (oUser == null)
+                var hash = await ResolveRecoveryTokenHashAsync(model.Token);
+                if (hash is null)
                 {
                     response.Success = false;
-                    response.Message = "El token no es valido";
-                    response.Data = "";
-                    response.Errors = results.Errors;
+                    response.Message = "El token no es válido o ha expirado.";
                     return response;
                 }
 
-                if (model.Password != model.ConfirmPassword)
+                var user = await _db.Users.IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.RecoveryToken == hash);
+                if (user is null)
                 {
                     response.Success = false;
-                    response.Message = "Las Contraseñas no coinciden";
-                    response.Data = "";
-                    response.Errors = results.Errors;
+                    response.Message = "El token no es válido.";
                     return response;
                 }
 
-                if (BC.BCrypt.Verify(model.Password, oUser.Password))
+                if (user.DateToken is null || DateTime.UtcNow > user.DateToken.Value.AddMinutes(RecoveryTokenLifetimeMinutes))
                 {
                     response.Success = false;
-                    response.Message = "La nueva contraseña debe ser distinta a la contraseña anterior";
-                    response.Data = "";
-                    response.Errors = results.Errors;
+                    response.Message = "El token ha expirado.";
                     return response;
                 }
 
-                string encrypt = BC.BCrypt.HashPassword(model.Password);
+                if (BC.BCrypt.Verify(model.Password, user.Password))
+                {
+                    response.Success = false;
+                    response.Message = "La nueva contraseña debe ser distinta a la anterior.";
+                    return response;
+                }
 
-                oUser.Password = encrypt;
-                oUser.RecoveryToken = "";
-                oUser.Reset = false;
-                oUser.UpdatedAt = DateTime.UtcNow;
-                oUser.UpdatedBy = oUser.Id;
+                user.Password = BC.BCrypt.HashPassword(model.Password);
+                user.RecoveryToken = string.Empty;
+                user.Reset = false;
+                user.MustChangePassword = false;
+                user.LastPasswordChange = DateTime.UtcNow;
+                user.UpdatedAt = DateTime.UtcNow;
+                user.UpdatedBy = user.Id;
 
-                _bd.Users.Update(oUser);
-                _bd.SaveChanges();
+                _db.Users.Update(user);
+                await _db.SaveChangesAsync();
 
                 response.Success = true;
-                response.Message = "Cambio de Contraseña Exitoso";
-                response.Data = $"tu nueva contraseña es: {model.Password}";
-                response.Errors = results.Errors;
-
+                response.Message = "Cambio de contraseña exitoso.";
+                response.Data = string.Empty;
                 return response;
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = $"Error al hacer la solicitud {ex.Message}";
-                response.Data = "";
-                response.Errors = [new("Exception", ex.Message)];
-
-                _logger.LogError(ex, "Error al cambiar la contraseña path: /api/Auth/ChangePassword");
-
-                return response;
+                _logger.LogError(ex, "Error during ChangePasswordAsync");
+                return InternalError<string>(ex);
             }
         }
 
-        /// <summary>
-        /// The ResetPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="ResetPasswordRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{string, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<string, List<ValidationFailure>> ResetPassword(ResetPasswordRequest model)
+        public async Task<Response<string, List<ValidationFailure>>> ResetPasswordAsync(ResetPasswordRequest model, CancellationToken ct = default)
         {
-
             Response<string, List<ValidationFailure>> response = new();
-
             try
             {
-                ValidationResult results = _resetPasswordValidator.Validate(model);
-
+                var results = _resetPasswordValidator.Validate(model);
                 if (!results.IsValid)
                 {
-                    response.Success = false;
-                    response.Message = "Error al hacer la solicitud";
-                    response.Data = "";
-                    response.Errors = results.Errors;
-
-                    return response;
+                    return ValidationFailed<string>(results.Errors);
                 }
 
-                string encrypt = BC.BCrypt.HashPassword(model.Password);
-
-                User? oUser = _bd.Users.FirstOrDefault(u => u.Id == model.IdUser);
-
-                if (oUser == null)
+                if (!_passwordPolicy.Validate(model.Password, out var policyMessage))
                 {
                     response.Success = false;
-                    response.Message = "Usuario no encontrado";
-                    response.Data = "";
-                    response.Errors = results.Errors;
+                    response.Message = policyMessage;
                     return response;
                 }
 
-                oUser.Password = encrypt;
-                oUser.RecoveryToken = "";
-                oUser.Reset = false;
-                oUser.UpdatedAt = DateTime.UtcNow;
-                oUser.UpdatedBy = oUser.Id;
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == model.IdUser);
+                if (user is null)
+                {
+                    response.Success = false;
+                    response.Message = "Usuario no encontrado.";
+                    return response;
+                }
 
-                _bd.Users.Update(oUser);
-                _bd.SaveChanges();
+                user.Password = BC.BCrypt.HashPassword(model.Password);
+                user.RecoveryToken = string.Empty;
+                user.Reset = false;
+                user.MustChangePassword = false;
+                user.LastPasswordChange = DateTime.UtcNow;
+                user.UpdatedAt = DateTime.UtcNow;
+                user.UpdatedBy = model.IdUser;
+
+                _db.Users.Update(user);
+                await _db.SaveChangesAsync();
 
                 response.Success = true;
-                response.Message = "Cambio de Contraseña Exitoso";
-                response.Data = $"tu nueva contraseña es: {model.Password}";
-                response.Errors = results.Errors;
+                response.Message = "Cambio de contraseña exitoso.";
+                response.Data = string.Empty;
+                return response;
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = $"Error al hacer la solicitud {ex.Message}";
-                response.Data = "";
-                response.Errors = [new("Exception", ex.Message)];
-
-                _logger.LogError(ex, "Error al reestablecer la contraseña path: /api/Auth/ResetPassword");
+                _logger.LogError(ex, "Error during ResetPasswordAsync");
+                return InternalError<string>(ex);
             }
-
-            return response;
         }
 
-        /// <summary>
-        /// The ValidateToken
-        /// </summary>
-        /// <param name="token">The token<see cref="string"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{string, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<string, List<ValidationFailure>> ValidateToken(string token)
+        // ============================================================
+        // Recovery — random token, hash stored, plain sent by email
+        // ============================================================
+
+        public async Task<Response<string, List<ValidationFailure>>> RecoveryPasswordAsync(RecoveryPasswordRequest model, CancellationToken ct = default)
         {
             Response<string, List<ValidationFailure>> response = new();
-
             try
             {
-                string decodedToken = Uri.UnescapeDataString(token);
+                var results = _recoveryPasswordValidator.Validate(model);
+                if (!results.IsValid)
+                {
+                    return ValidationFailed<string>(results.Errors);
+                }
 
-                User? oUser = _bd.Users.FirstOrDefault(u => u.RecoveryToken == decodedToken);
+                // B16 — never confirm or deny that the email exists. Same
+                // generic 200 either way. The work below only runs when the
+                // email actually exists; the caller never sees the difference.
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+                if (user is not null)
+                {
+                    var tokenPlain = GenerateRecoveryToken();
+                    var tokenHash = HashRecoveryToken(tokenPlain);
 
-                if (oUser == null)
+                    user.RecoveryToken = tokenHash;
+                    user.Reset = true;
+                    user.DateToken = DateTime.UtcNow;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.UpdatedBy = user.Id;
+
+                    _db.Users.Update(user);
+                    await _db.SaveChangesAsync();
+
+                    var body = $"Hola {user.Name},<br/>Use este token para restablecer su contraseña:<br/><b>{tokenPlain}</b>";
+                    await _sendMail.SendAsync(user.Email, "Recuperar Contraseña", body);
+                }
+
+                response.Success = true;
+                response.Message = "Si la cuenta existe, se ha enviado un correo con las instrucciones.";
+                response.Data = string.Empty;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during RecoveryPasswordAsync");
+                return InternalError<string>(ex);
+            }
+        }
+
+        public async Task<Response<string, List<ValidationFailure>>> ValidateTokenAsync(string token, CancellationToken ct = default)
+        {
+            Response<string, List<ValidationFailure>> response = new();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(token))
                 {
                     response.Success = false;
-                    response.Message = "Su Token ya ha Expirado";
-                    response.Data = token;
-                    response.Errors = [];
-
+                    response.Message = "Token vacío.";
                     return response;
                 }
 
-                var currentDate = DateTime.UtcNow;
+                var hash = HashRecoveryToken(token);
+                var user = await _db.Users.IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.RecoveryToken == hash);
 
-                if (currentDate.CompareTo(oUser.DateToken?.AddMinutes(15)) >= 0)
+                if (user is null)
                 {
                     response.Success = false;
-                    response.Message = "Tu Token ya ha Expirado";
-                    response.Data = token;
-                    response.Errors = [];
+                    response.Message = "Su token ha expirado.";
+                    return response;
+                }
 
+                if (user.DateToken is null || DateTime.UtcNow > user.DateToken.Value.AddMinutes(RecoveryTokenLifetimeMinutes))
+                {
+                    response.Success = false;
+                    response.Message = "Su token ha expirado.";
                     return response;
                 }
 
                 response.Success = true;
-                response.Message = "Token Válido";
+                response.Message = "Token válido.";
                 response.Data = token;
-
                 return response;
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = "Error al verificar token";
-                response.Data = token;
-                response.Errors = [new ValidationFailure("Exception", ex.Message)];
-
-                _logger.LogError(ex, "Error al verificar token path: api/Auth/Token/[token]");
-
-                return response;
+                _logger.LogError(ex, "Error during ValidateTokenAsync");
+                return InternalError<string>(ex);
             }
         }
 
-        /// <summary>
-        /// The RecoveryPassword
-        /// </summary>
-        /// <param name="model">The model<see cref="RecoveryPasswordRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{string, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<string, List<ValidationFailure>> RecoveryPassword(RecoveryPasswordRequest model)
+        // ============================================================
+        // JWT generation (Phase 3 — issuer/audience + RolId claim)
+        // ============================================================
+
+        private string GetToken(User user, IEnumerable<Operation> operations)
         {
-            Response<string, List<ValidationFailure>> response = new();
+            var settings = _appSettings.Value;
+            var issuer = string.IsNullOrWhiteSpace(settings.Issuer) ? "Plantilla" : settings.Issuer;
+            var audience = string.IsNullOrWhiteSpace(settings.Audience) ? "Plantilla.Client" : settings.Audience;
 
-            try
+            var key = Encoding.UTF8.GetBytes(settings.Secret);
+            var handler = new JwtSecurityTokenHandler();
+
+            var claims = new List<Claim>
             {
-                ValidationResult results = _recoveryPasswordValidator.Validate(model);
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Name, user.Name),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new("RolId", user.RolId.ToString()),
+            };
 
-                if (!results.IsValid)
+            foreach (var op in operations)
+            {
+                if (!string.IsNullOrWhiteSpace(op.OperationKey))
                 {
-                    response.Success = false;
-                    response.Message = "Error al hacer la solicitud";
-                    response.Data = "";
-                    response.Errors = results.Errors;
-
-                    return response;
+                    claims.Add(new Claim("OperationKey", op.OperationKey));
                 }
-
-                User? oUser = _bd.Users.FirstOrDefault(u => u.Email == model.Email);
-
-                if (oUser == null)
-                {
-                    response.Success = false;
-                    response.Message = "Usuario no encontrado";
-                    response.Data = "";
-                    response.Errors = results.Errors;
-
-                    return response;
-                }
-
-                string token = BC.BCrypt.HashPassword(Guid.NewGuid().ToString());
-
-                oUser.RecoveryToken = token;
-                oUser.Reset = true;
-                oUser.DateToken = DateTime.UtcNow;
-                oUser.UpdatedAt = DateTime.UtcNow;
-                oUser.UpdatedBy = oUser.Id;
-
-                _bd.Users.Update(oUser);
-                _bd.SaveChanges();
-
-                string bodyMail = $"Hola {oUser.Name} <br> Este es su token para reestablecer contraseña <br> {token}";
-
-                if (!_sendMail.Send(oUser.Email, "Recuperar Contraseña", bodyMail))
-                {
-                    response.Success = false;
-                    response.Message = "Error al enviar el correo porfavor verifique";
-                    response.Data = "";
-
-                    return response;
-                }
-
-                response.Success = true;
-                response.Message = "Correo Enviado Con Exito";
-                response.Errors = results.Errors;
-
-                return response;
             }
-            catch (Exception ex)
+
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                response.Success = false;
-                response.Message = $"Error al hacer la solicitud {ex.Message}";
-                response.Data = "";
-                response.Errors = [new("Exception", ex.Message)];
+                Issuer = issuer,
+                Audience = audience,
+                Subject = new ClaimsIdentity(claims),
+                NotBefore = DateTime.UtcNow.AddMinutes(settings.NotBefore),
+                Expires = DateTime.UtcNow.AddHours(settings.TokenExpirationHrs),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
+            };
 
-                _logger.LogError(ex, "Error al recuperar contraseña path: /api/Auth/RecoveryPassword");
+            return handler.WriteToken(handler.CreateToken(tokenDescriptor));
+        }
 
-                return response;
+        // ============================================================
+        // Helpers
+        // ============================================================
+
+        private static string GenerateRecoveryToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            return Base64UrlEncode(bytes);
+        }
+
+        private static string HashRecoveryToken(string token)
+        {
+            Span<byte> hash = stackalloc byte[32];
+            SHA256.HashData(Encoding.UTF8.GetBytes(token), hash);
+            return Convert.ToHexString(hash);
+        }
+
+        private async Task<string?> ResolveRecoveryTokenHashAsync(string token)
+        {
+            // Constant-time lookup: search by hash (not by plain token). Both
+            // the in-memory comparison and the SHA-256 reduce timing leaks.
+            var hash = HashRecoveryToken(token);
+            return await Task.FromResult(hash);
+        }
+
+        private async Task<List<Operation>> LoadOperationsAsync(long rolId)
+        {
+            return await _db.RolOperations
+                .Include(r => r.Operation)
+                .Where(r => r.RolId == rolId && r.State == 1)
+                .Join(_db.Operations,
+                    ro => ro.OperationId,
+                    o => o.Id,
+                    (ro, o) => o)
+                .ToListAsync();
+        }
+
+        private async Task<List<Module>> LoadModulesAsync(long rolId)
+        {
+            return await _db.RolOperations
+                .Where(ro => ro.RolId == rolId && ro.State == 1)
+                .Join(_db.Operations, ro => ro.OperationId, o => o.Id, (ro, o) => o.ModuleId)
+                .Distinct()
+                .Join(_db.Modules, mid => mid, m => m.Id, (mid, m) => m)
+                .ToListAsync();
+        }
+
+        private async Task<bool> IsAccountLockedAsync(User user)
+        {
+            if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+            {
+                return true;
+            }
+            if (user.LockoutEnd.HasValue && user.LockoutEnd.Value <= DateTime.UtcNow)
+            {
+                user.LockoutEnd = null;
+                user.FailedLoginAttempts = 0;
+                await _db.SaveChangesAsync();
+            }
+            return false;
+        }
+
+        private async Task IncrementFailedLoginAttemptsAsync(User user)
+        {
+            user.FailedLoginAttempts++;
+            if (user.FailedLoginAttempts >= MaxFailedLoginAttempts)
+            {
+                user.LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutDurationMinutes);
+                _logger.LogWarning("User {UserId} locked out after {Attempts} failed attempts.", user.Id, user.FailedLoginAttempts);
+            }
+            await _db.SaveChangesAsync();
+        }
+
+        private async Task ResetFailedLoginAttemptsAsync(User user)
+        {
+            if (user.FailedLoginAttempts != 0 || user.LockoutEnd is not null)
+            {
+                user.FailedLoginAttempts = 0;
+                user.LockoutEnd = null;
+                await _db.SaveChangesAsync();
             }
         }
 
-        /// <summary>
-        /// The GetToken
-        /// </summary>
-        /// <param name="user">The user<see cref="User"/></param>
-        /// <returns>The <see cref="string"/></returns>
-        private string GetToken(User user)
+        private async Task RecordLoginAuditAsync(long userId, string userName, string? ip, string? ua, bool ok, string? reason = null)
         {
             try
             {
-                AppSettings appSettings = _appSettings.Value;
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(appSettings.Secret);
-                var claims = new List<Claim>()
-                             {
-                                 new (ClaimTypes.NameIdentifier, user.Id.ToString()),
-                                 new (ClaimTypes.Email, user.Email),
-                                 new (ClaimTypes.Name, user.Name),
-                                 new (ClaimTypes.Hash, Guid.NewGuid().ToString()),
-                                 new ("Operator", user.RolId.ToString()),
-                             };
-
-                if (user.Rol!.RolOperations.Count != 0)
+                _db.LoginAudits.Add(new LoginAudit
                 {
-                    // Agregar IDs de operaciones como claims de tipo Role (para compatibilidad)
-                    claims.AddRange(user.Rol!.RolOperations.Select(item => new Claim(ClaimTypes.Role, item.OperationId.ToString())));
-
-                    // Agregar OperationKeys para autorización granular (Controller.Action.HttpMethod)
-                    foreach (var rolOp in user.Rol!.RolOperations.Where(ro => ro.Operation != null))
-                    {
-                        if (!string.IsNullOrWhiteSpace(rolOp.Operation!.OperationKey))
-                        {
-                            claims.Add(new Claim("OperationKey", rolOp.Operation.OperationKey));
-                        }
-                    }
-                }
-
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(claims.ToArray()),
-                    NotBefore = DateTime.UtcNow.AddMinutes(appSettings.NotBefore),
-                    Expires = DateTime.UtcNow.AddHours(appSettings.TokenExpirationHrs),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                };
-
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-
-                return tokenHandler.WriteToken(token);
+                    UserId = userId,
+                    UserName = userName,
+                    IpAddress = ip,
+                    UserAgent = ua,
+                    LoginSuccessful = ok,
+                    FailureReason = reason,
+                    LoginDate = DateTime.UtcNow,
+                    State = 1,
+                    CreatedBy = userId == 0 ? 1 : userId,
+                });
+                await _db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-
-                _logger.LogError(ex, "Error al Generar el jwt");
-
-                return string.Empty;
+                _logger.LogWarning(ex, "Failed to record login audit for {UserName}", userName);
             }
+        }
+
+        private static string Base64UrlEncode(byte[] bytes)
+        {
+            return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        }
+
+        // ============================================================
+        // Refresh token plumbing (3.8)
+        // ============================================================
+
+        private async Task<(string Plain, DateTime ExpiresAt)> IssueRefreshTokenAsync(User user, string? ip)
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            var plain = Base64UrlEncode(bytes);
+            var hash = HashRefreshToken(plain);
+            var expires = DateTime.UtcNow.AddDays(RefreshTokenLifetimeDays);
+
+            _db.RefreshTokens.Add(new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = hash,
+                ExpiresAt = expires,
+                CreatedByIp = ip,
+                State = 1,
+                CreatedBy = user.Id,
+                CreatedAt = DateTime.UtcNow,
+            });
+            await _db.SaveChangesAsync();
+            return (plain, expires);
+        }
+
+        private static string HashRefreshToken(string token)
+        {
+            Span<byte> hash = stackalloc byte[32];
+            SHA256.HashData(Encoding.UTF8.GetBytes(token), hash);
+            return Convert.ToHexString(hash);
+        }
+
+        private void SetRefreshCookie(string plain, DateTime expiresAt)
+        {
+            var ctx = _http.HttpContext;
+            if (ctx is null) return;
+            ctx.Response.Cookies.Append(RefreshCookieName, plain, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = !ctx.Request.IsHttps ? false : true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/api/v1/Auth",
+                Expires = expiresAt,
+            });
+
+            // 3.9 — defence in depth. The SPA reads this non-HttpOnly cookie
+            // and echoes it back as the X-XSRF-TOKEN header on /Auth/Refresh.
+            // SameSite=Strict already blocks cross-site cookies; the header
+            // check makes the protection explicit and survives older browsers.
+            var xsrf = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            ctx.Response.Cookies.Append("XSRF-TOKEN", xsrf, new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = !ctx.Request.IsHttps ? false : true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/",
+                Expires = expiresAt,
+            });
+        }
+
+        private void ClearRefreshCookie()
+        {
+            var ctx = _http.HttpContext;
+            if (ctx is null) return;
+            ctx.Response.Cookies.Delete(RefreshCookieName, new CookieOptions { Path = "/api/v1/Auth" });
+            ctx.Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
+        }
+
+        private string? ClientIp()
+        {
+            var ctx = _http.HttpContext;
+            return ctx?.Connection.RemoteIpAddress?.ToString();
+        }
+
+        private async Task RevokeChainAsync(long userId, string? ip, string reason)
+        {
+            var tokens = await _db.RefreshTokens
+                .Where(r => r.UserId == userId && r.RevokedAt == null)
+                .ToListAsync();
+            foreach (var t in tokens)
+            {
+                t.RevokedAt = DateTime.UtcNow;
+                t.RevokedByIp = ip;
+                t.UpdatedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync();
+            _logger.LogWarning("Revoked {Count} refresh tokens for user {UserId}: {Reason}", tokens.Count, userId, reason);
+        }
+
+        private async Task<List<Authorizations>> BuildAuthorizationsAsync(User user)
+        {
+            var operations = await LoadOperationsAsync(user.RolId);
+            var modules = await LoadModulesAsync(user.RolId);
+            return modules.Select(module => new Authorizations
+            {
+                Module = _mapper.Map<Module, ModuleResponse>(module),
+                Operations = _mapper.Map<List<Operation>, List<OperationResponse>>(
+                    operations.Where(o => o.ModuleId == module.Id).ToList())
+            }).ToList();
+        }
+
+        // ============================================================
+        // Response helpers
+        // ============================================================
+
+        private static Response<T, List<ValidationFailure>> ValidationFailed<T>(List<ValidationFailure> errors)
+            => new()
+            {
+                Success = false,
+                Status = ResponseStatus.ValidationFailed,
+                Message = "Validation failed.",
+                Errors = errors,
+            };
+
+        private static Response<T, List<ValidationFailure>> Unauthorized<T>(string message)
+            => new()
+            {
+                Success = false,
+                Status = ResponseStatus.Forbidden,
+                Message = message,
+            };
+
+        private Response<T, List<ValidationFailure>> InternalError<T>(Exception ex)
+        {
+            var traceId = System.Diagnostics.Activity.Current?.Id ?? Guid.NewGuid().ToString("N");
+            _logger.LogError(ex, "Auth failure (traceId={traceId})", traceId);
+            return new()
+            {
+                Success = false,
+                Status = ResponseStatus.Error,
+                Message = $"Operation failed (traceId={traceId}).",
+            };
         }
     }
 }

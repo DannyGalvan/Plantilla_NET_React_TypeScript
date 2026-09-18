@@ -54,10 +54,10 @@ namespace Project.Server.Security.Authorization
             }
 
             _logger.LogWarning(
-                "Access denied: User {UserId} attempted to access operation {OperationKey} but doesn't have permission. User has: [{Operations}]",
+                "Access denied: User {UserId} attempted to access operation {OperationKey} but doesn't have permission ({OperationCount} ops granted).",
                 context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Unknown",
                 requirement.OperationKey,
-                string.Join(", ", userOperationKeys));
+                userOperationKeys.Count);
 
             return Task.CompletedTask;
         }

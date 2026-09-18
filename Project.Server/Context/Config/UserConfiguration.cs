@@ -30,13 +30,17 @@ namespace Project.Server.Context.Config
                     .WithMany(e => e.Users)
                 .HasForeignKey(e => e.RolId);
 
-            //password: Guatemala1.
+            // Seed data: no usable password. The AdminSeedHostedService injects the
+// password at startup from AppSettings:SeedAdminPassword (user-secret in
+// development, env var in production). MustChangePassword forces a change
+// on first login (B6).
             entity.HasData(
                 new User
                 {
                     Id = 1,
                     RolId = 1,
-                    Password = "$2a$12$86Ty8oUVWKPbU8JqCII9VO.FgM1C10dweQ4xKhM4jj1LWL9jwNu7.",
+                    Password = "!UNUSABLE-SEED!",
+                    MustChangePassword = true,
                     Name = "Super Administrador",
                     UserName = "SADMIN",
                     Number = "51995142",

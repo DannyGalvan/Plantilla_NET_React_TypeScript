@@ -54,6 +54,9 @@ Project.Client/dev-dist
 Project.Client/dist
 **/appsettings.development.json
 **/appsettings.production.json
+**/appsettings.*.local.json
+**/appsettings.*.Development.json
+**/secrets.json
 Project.React.sln.DotSettings
 
 ## Ignore Visual Studio temporary files, build results, and
@@ -289,4 +292,13 @@ _Pvt_Extensions
 # FAKE - F# Make
 .fake/
 
+# Planes realizados para ejecucion de agentes
+/plans  
+
+# Graphify para indexar en grafos el proyecto
+/graphify-out
+
+# claude
+.claude
+CLAUDE.md
 

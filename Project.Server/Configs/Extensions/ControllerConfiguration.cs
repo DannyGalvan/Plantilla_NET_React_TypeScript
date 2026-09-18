@@ -1,51 +1,51 @@
-﻿using Project.Server.Entities.Response;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
+using Project.Server.Entities.Response;
 
 namespace Project.Server.Configs.Extensions
 {
-    using FluentValidation.Results;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.AspNetCore.Mvc.ModelBinding;
-
     /// <summary>
-    /// Defines the <see cref="ControllerConfiguration" />
+    /// Controller-level wiring. Closes OWASP A05 — model-validation responses no
+    /// longer echo the request value (which previously surfaced submitted
+    /// passwords back to the caller).
     /// </summary>
     public static class ControllerConfiguration
     {
-        /// <summary>
-        /// The AddControllersConfiguration
-        /// </summary>
-        /// <param name="services">The services<see cref="IServiceCollection"/></param>
-        public static void AddControllersConfiguration(this IServiceCollection services)
+        public static IServiceCollection AddControllersConfiguration(this IServiceCollection services)
         {
-            //Add FluentValidation to response errors of the controllers
             services.AddControllers()
                 .ConfigureApiBehaviorOptions(options =>
                 {
                     options.SuppressModelStateInvalidFilter = false;
                     options.InvalidModelStateResponseFactory = context =>
                     {
-                        List<ValidationFailure> failures = [];
+                        var failures = new List<ValidationFailure>();
 
-                        context.ModelState.ToList().ForEach(state =>
+                        foreach (var state in context.ModelState)
                         {
-                            ModelStateEntry? value = state.Value;
+                            if (state.Value is null) continue;
+                            foreach (var err in state.Value.Errors)
+                            {
+                                // Only the field name + error message go out.
+                                // AttemptedValue is intentionally dropped to
+                                // prevent echoing back sensitive fields such
+                                // as passwords.
+                                failures.Add(new ValidationFailure(state.Key, err.ErrorMessage));
+                            }
+                        }
 
-                            IEnumerable<ValidationFailure>? errors = value?.Errors.ToList().Select(e => new ValidationFailure(state.Key, e.ErrorMessage, value.AttemptedValue));
-
-                            if (errors != null)
-                                failures.AddRange(errors);
-                        });
-
-                        var result = new Response<List<ValidationFailure>>()
+                        var result = new Response<List<ValidationFailure>>
                         {
                             Success = false,
-                            Message = "La petición no es valida, contiene errores, porfavor revise",
+                            Message = "The request is invalid.",
                             Data = failures
                         };
 
                         return new BadRequestObjectResult(result);
                     };
                 });
+
+            return services;
         }
     }
 }

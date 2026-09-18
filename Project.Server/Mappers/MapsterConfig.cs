@@ -108,8 +108,8 @@ namespace Project.Server.Mappers
                 .Map(dest => dest.UpdatedBy, src => src.UpdatedBy)
                 .Map(dest => dest.CreatedAt, src => src.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss"))
                 .Map(dest => dest.UpdatedAt, src => src.UpdatedAt.HasValue ? src.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm:ss") : null)
-                .Ignore(dest => dest.Operation) // Ignorar navegación circular
-                .Ignore(dest => dest.Rol); // Ignorar navegación circular
+                .Ignore(dest => dest.Operation!) // Ignorar navegación circular
+                .Ignore(dest => dest.Rol!); // Ignorar navegación circular
 
             TypeAdapterConfig<RolOperation, Operation>.NewConfig()
                 .Map(dest => dest.Id, src => src.OperationId)

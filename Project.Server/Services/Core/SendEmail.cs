@@ -1,6 +1,5 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Mail;
-using Lombok.NET;
 using Microsoft.Extensions.Options;
 using Project.Server.Configs.Models;
 using Project.Server.Services.Interfaces;
@@ -8,61 +7,47 @@ using Project.Server.Services.Interfaces;
 namespace Project.Server.Services.Core
 {
     /// <summary>
-    /// Defines the <see cref="SendEmail" />
+    /// SMTP-backed email sender.
     /// </summary>
-    [AllArgsConstructor]
-    public partial class SendEmail : ISendMail
+    public class SendEmail : ISendMail
     {
-        /// <summary>
-        /// Defines the _appSettings
-        /// </summary>
         private readonly IOptions<AppSettings> _appSettings;
-
-        /// <summary>
-        /// Defines the _logger
-        /// </summary>
         private readonly ILogger<SendEmail> _logger;
 
-        /// <summary>
-        /// The Send
-        /// </summary>
-        /// <param name="correo">The correo<see cref="string"/></param>
-        /// <param name="asunto">The asunto<see cref="string"/></param>
-        /// <param name="mensaje">The mensaje<see cref="string"/></param>
-        /// <returns>The <see cref="bool"/></returns>
-        public bool Send(string correo, string asunto, string mensaje)
+        public SendEmail(IOptions<AppSettings> appSettings, ILogger<SendEmail> logger)
         {
-            bool resultado;
-            var appSettings = _appSettings.Value;
+            _appSettings = appSettings;
+            _logger = logger;
+        }
+
+        public async Task<bool> SendAsync(string to, string subject, string body, CancellationToken ct = default)
+        {
             try
             {
-                MailMessage mail = new();
-                mail.To.Add(correo);
-                mail.From = new MailAddress(appSettings.Email);
-                mail.Subject = asunto;
-                mail.Body = mensaje;
+                var settings = _appSettings.Value;
+                using var mail = new MailMessage();
+                mail.To.Add(to);
+                mail.From = new MailAddress(settings.Email);
+                mail.Subject = subject;
+                mail.Body = body;
                 mail.IsBodyHtml = true;
 
-                var smtp = new SmtpClient()
+                using var smtp = new SmtpClient
                 {
-                    Credentials = new NetworkCredential(appSettings.Email, appSettings.Password),
-                    Host = appSettings.Host,
-                    Port = appSettings.Port,
+                    Credentials = new NetworkCredential(settings.Email, settings.Password),
+                    Host = settings.Host,
+                    Port = settings.Port,
                     EnableSsl = true,
                 };
 
-                smtp.Send(mail);
-                resultado = true;
-
+                await smtp.SendMailAsync(mail, ct);
+                return true;
             }
             catch (Exception ex)
             {
-                resultado = false;
-
-                _logger.LogError(ex, "Error al enviar el correo");
+                _logger.LogError(ex, "SendAsync failed for {To}", to);
+                return false;
             }
-
-            return resultado;
         }
     }
 }

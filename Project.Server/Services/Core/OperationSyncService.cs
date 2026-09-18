@@ -136,7 +136,9 @@ namespace Project.Server.Services.Core
                     var icon = operationInfo?.Icon ?? "circle";
                     var path = operationInfo?.Path ?? $"{action.ControllerName}/{action.ActionName}";
                     var isVisible = operationInfo?.IsVisible ?? false;
-                    var policy = $"{action.ControllerName}.{action.ActionName}";
+                    // Policy mirrors the operation key (3-part Controller.Action.METHOD) so
+                    // it is consistent with how RequireOperationAttribute builds the check.
+                    var policy = $"{action.ControllerName}.{action.ActionName}.{action.HttpMethod}";
 
                     // Buscar operación existente
                     var existingOperation = operations.FirstOrDefault(o => o.OperationKey == key);
