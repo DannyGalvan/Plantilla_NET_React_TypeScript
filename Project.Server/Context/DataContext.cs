@@ -1,71 +1,44 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Project.Server.Entities.Interfaces;
 using Project.Server.Entities.Models;
 
 namespace Project.Server.Context
 {
     public class DataContext : DbContext
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DataContext"/> class.
-        /// </summary>
         public DataContext()
         {
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DataContext"/> class.
-        /// </summary>
-        /// <param name="options">The options<see cref="DbContextOptions{DataContext}"/></param>
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
         }
 
         /// <summary>
-        /// Configura las advertencias del contexto
+        /// EF Core warned-on-silently defaults hide real client-evaluation bugs
+        /// (B22). We keep the relational warning surface visible and only escalate
+        /// the <c>MultipleCollectionIncludeWarning</c> — that one is a Cartesian
+        /// product and must fail loud.
         /// </summary>
-        /// <param name="optionsBuilder">El constructor de opciones</param>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.ConfigureWarnings(warn => { warn.Default(WarningBehavior.Ignore); });
+            optionsBuilder.ConfigureWarnings(warn =>
+            {
+                warn.Default(WarningBehavior.Log);
+                warn.Throw(RelationalEventId.MultipleCollectionIncludeWarning);
+            });
         }
 
-        // Add DbSet for each entity
-
-        /// <summary>
-        /// Gets or sets the Users
-        /// </summary>
         public DbSet<User> Users { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Modules
-        /// </summary>
         public DbSet<Module> Modules { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Operations
-        /// </summary>
         public DbSet<Operation> Operations { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Roles
-        /// </summary>
         public DbSet<Rol> Roles { get; set; }
-
-        /// <summary>
-        /// Gets or sets the RolOperations
-        /// </summary>
         public DbSet<RolOperation> RolOperations { get; set; }
-
-        /// <summary>
-        /// Gets or sets the LoginAudits
-        /// </summary>
         public DbSet<LoginAudit> LoginAudits { get; set; }
-
-        /// <summary>
-        /// Gets or sets the PasswordHistories
-        /// </summary>
         public DbSet<PasswordHistory> PasswordHistories { get; set; }
-
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -73,7 +46,32 @@ namespace Project.Server.Context
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);
 
-            // Configurar conversión automática de DateTime a UTC para PostgreSQL
+            // Apply global query filter for soft-delete (B14):
+            // every entity implementing IEntity<TId> gets `WHERE State != 0`
+            // applied to every read unless the caller invokes IgnoreQueryFilters().
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                var clr = entityType.ClrType;
+                bool implements = false;
+                foreach (var i in clr.GetInterfaces())
+                {
+                    if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>))
+                    {
+                        implements = true;
+                        break;
+                    }
+                }
+                if (!implements) continue;
+
+                var parameter = Expression.Parameter(clr, "e");
+                var stateProp = Expression.PropertyOrField(parameter, "State");
+                var condition = Expression.NotEqual(stateProp, Expression.Constant(0));
+                var lambda = Expression.Lambda(condition, parameter);
+
+                modelBuilder.Entity(clr).HasQueryFilter(lambda);
+            }
+
+            // DateTime UTC conversion preserved for PostgreSQL compatibility.
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 foreach (var property in entityType.GetProperties())
@@ -89,6 +87,22 @@ namespace Project.Server.Context
                     }
                 }
             }
+        }
+    }
+
+    internal static class TypeExtensions
+    {
+        /// <summary>
+        /// True when the type implements any closed <c>IEntity&lt;T&gt;</c> interface.
+        /// </summary>
+        public static bool ImplementsIEntityOpen(this Type t)
+        {
+            foreach (var i in t.GetInterfaces())
+            {
+                if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>))
+                    return true;
+            }
+            return false;
         }
     }
 }

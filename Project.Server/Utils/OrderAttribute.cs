@@ -1,14 +1,23 @@
-﻿namespace Project.Server.Utils
+namespace Project.Server.Utils
 {
     /// <summary>
-    /// Defines the <see cref="OrderAttribute" />
+    /// Marks an interceptor with a numeric priority so the entity service can
+    /// execute registered interceptors in a deterministic order. Lower values
+    /// run first.
     /// </summary>
+    /// <remarks>
+    /// Sealed by design: the original <c>abstract</c> declaration could never
+    /// be applied, so priority was effectively ignored.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class)]
-    public abstract class OrderAttribute(int priority) : Attribute
+    public sealed class OrderAttribute : Attribute
     {
-        /// <summary>
-        /// Gets the Priority
-        /// </summary>
-        public int Priority { get; } = priority;
+        public int Priority { get; }
+
+        public OrderAttribute(int priority)
+        {
+            if (priority < 0) throw new ArgumentOutOfRangeException(nameof(priority));
+            Priority = priority;
+        }
     }
 }

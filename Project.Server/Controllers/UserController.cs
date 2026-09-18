@@ -49,9 +49,9 @@ namespace Project.Server.Controllers
             Path = "user",
             IsVisible = true
         )]
-        public override IActionResult GetAll([FromQuery] QueryParamsRequest query)
+        public override async Task<IActionResult> GetAll([FromQuery] QueryParamsRequest query, CancellationToken ct = default)
         {
-            return base.GetAll(query);
+            return await base.GetAll(query, ct);
         }
 
         /// <summary>
@@ -67,9 +67,9 @@ namespace Project.Server.Controllers
             Path = "user/view",
             IsVisible = false
         )]
-        public override IActionResult Get(long id, string? include = null)
+        public override async Task<IActionResult> Get(long id, string? include = null, CancellationToken ct = default)
         {
-            return base.Get(id, include);
+            return await base.Get(id, include, ct);
         }
 
         /// <summary>
@@ -85,9 +85,9 @@ namespace Project.Server.Controllers
             Path = "user/create",
             IsVisible = true
         )]
-        public override IActionResult Create([FromBody] UserRequest request)
+        public override async Task<IActionResult> Create([FromBody] UserRequest request, CancellationToken ct = default)
         {
-            return base.Create(request);
+            return await base.Create(request, ct);
         }
 
         /// <summary>
@@ -103,9 +103,9 @@ namespace Project.Server.Controllers
             Path = "user/update",
             IsVisible = false
         )]
-        public override IActionResult Update([FromBody] UserRequest request)
+        public override async Task<IActionResult> Update([FromBody] UserRequest request, CancellationToken ct = default)
         {
-            return base.Update(request);
+            return await base.Update(request, ct);
         }
 
         /// <summary>
@@ -121,9 +121,9 @@ namespace Project.Server.Controllers
             Path = "user/partial-update",
             IsVisible = false
         )]
-        public override IActionResult PartialUpdate([FromBody] UserRequest request)
+        public override async Task<IActionResult> PartialUpdate([FromBody] UserRequest request, CancellationToken ct = default)
         {
-            return base.PartialUpdate(request);
+            return await base.PartialUpdate(request, ct);
         }
 
         /// <summary>
@@ -139,9 +139,9 @@ namespace Project.Server.Controllers
             Path = "user/delete",
             IsVisible = false
         )]
-        public override IActionResult Delete(long id)
+        public override async Task<IActionResult> Delete(long id, CancellationToken ct = default)
         {
-            return base.Delete(id);
+            return await base.Delete(id, ct);
         }
     }
 }

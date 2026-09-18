@@ -10,6 +10,10 @@ namespace Project.Server.Services.Interfaces
         IEnumerable<IEntityAfterCreateInterceptor<TEntity, TRequest>> GetAfterCreateInterceptors<TEntity, TRequest>();
         IEnumerable<IEntityBeforeUpdateInterceptor<TEntity, TRequest>> GetBeforeUpdateInterceptors<TEntity, TRequest>();
         IEnumerable<IEntityAfterUpdateInterceptor<TEntity, TRequest>> GetAfterUpdateInterceptors<TEntity, TRequest>();
+        IEnumerable<IEntityBeforePartialUpdateInterceptor<TEntity, TRequest>> GetBeforePartialUpdateInterceptors<TEntity, TRequest>();
         IEnumerable<IEntityAfterPartialUpdateInterceptor<TEntity, TRequest>> GetAfterPartialUpdateInterceptors<TEntity, TRequest>();
+        IEnumerable<IEntityBeforeDeleteInterceptor<TEntity, TRequest>> GetBeforeDeleteInterceptors<TEntity, TRequest>();
+        IEnumerable<IEntityAfterDeleteInterceptor<TEntity, TRequest>> GetAfterDeleteInterceptors<TEntity, TRequest>();
+        IEnumerable<IEntityQueryFilter<TEntity>> GetQueryFilters<TEntity>() where TEntity : class;
     }
 }

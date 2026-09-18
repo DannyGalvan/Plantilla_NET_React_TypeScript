@@ -1,60 +1,80 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Project.Server.Utils
 {
-    /// <summary>
-    /// Defines the <see cref="Util" />
-    /// </summary>
     public static class Util
     {
         /// <summary>
-        /// The UpdateProperties
+        /// Properties that <see cref="UpdateProperties{TDestination,TSource}"/> must never copy
+        /// from the request DTO onto the tracked entity. Closes the mass-assignment
+        /// privilege escalation (B2): a client sending <c>RolId</c>, <c>State</c>,
+        /// <c>Password</c> or <c>OwnerId</c> in the body must not have those fields
+        /// applied to the entity.
         /// </summary>
-        /// <typeparam name="TDestination"></typeparam>
-        /// <typeparam name="TSource"></typeparam>
-        /// <param name="existingEntity">The existingEntity<see cref="TDestination"/></param>
-        /// <param name="updatedEntity">The updatedEntity<see cref="TSource"/></param>
+        public static readonly IReadOnlySet<string> MassAssignmentDenylist = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Id",
+            "CreatedBy",
+            "CreatedAt",
+            "UpdatedAt",
+            "UpdatedBy",
+            "State",
+            "Password",
+            "PasswordHash",
+            "RecoveryToken",
+            "DateToken",
+            "FailedLoginAttempts",
+            "LockoutEnd",
+            "MustChangePassword",
+            "OwnerId",
+            "RolId",
+            "UserId",
+        };
+
+        /// <summary>
+        /// Copies scalar, non-deny-listed, non-default-zero properties from
+        /// <paramref name="updatedEntity"/> onto <paramref name="existingEntity"/>.
+        /// Replaces the original mass-assignment helper that copied
+        /// <c>RolId</c>/<c>State</c>/<c>UpdatedBy</c> from the request body.
+        /// </summary>
         public static void UpdateProperties<TDestination, TSource>(TDestination existingEntity, TSource updatedEntity)
         {
+            if (existingEntity is null) throw new ArgumentNullException(nameof(existingEntity));
+            if (updatedEntity is null) throw new ArgumentNullException(nameof(updatedEntity));
+
             foreach (PropertyInfo property in typeof(TDestination).GetProperties())
             {
-                //object? existingValue = property.GetValue(existingEntity);
-                object? updatedValue = property.GetValue(updatedEntity);
+                if (MassAssignmentDenylist.Contains(property.Name)) continue;
+                if (!property.CanWrite) continue;
 
-                switch (property.Name)
-                {
-                    case "CreatedAt" or "OrderDate" or "DeliveryDate":
-                        continue;
-                    case "Id":
-                        continue;
-                    case "CreatedBy":
-                        continue;
-                    case "Password":
-                        continue;
-                }
+                object? updatedValue;
+                try { updatedValue = property.GetValue(updatedEntity); }
+                catch { continue; }
 
-                if (updatedValue == null || !property.CanWrite) continue;
+                if (updatedValue is null) continue;
+
+                // Skip default-zero scalars so an absent field in a PATCH/PUT
+                // body does not overwrite the existing value.
                 switch (updatedValue)
                 {
-                    case long when long.Parse(updatedValue.ToString()!) == 0L:
-                    case decimal when decimal.Parse(updatedValue.ToString()!) == 0M:
-                    case Dictionary<string, decimal> { Count: 0 }:
-                    case int when int.Parse(updatedValue.ToString()!) == 0 && property.Name == "OrdersQuantity":
-                        continue;
-                    default:
-                        property.SetValue(existingEntity, updatedValue);
-                        break;
+                    case long l when l == 0L: continue;
+                    case int i when i == 0: continue;
+                    case decimal m when m == 0M: continue;
+                    case short s when s == 0: continue;
+                    case byte b when b == 0: continue;
+                    case Guid g when g == Guid.Empty: continue;
+                    case DateTime dt when dt == default: continue;
                 }
+
+                property.SetValue(existingEntity, updatedValue);
             }
         }
 
         /// <summary>
         /// The HasValidId
         /// </summary>
-        /// <typeparam name="TId"></typeparam>
-        /// <param name="id">The id<see cref="TId?"/></param>
-        /// <returns>The <see cref="bool"/></returns>
         public static bool HasValidId<TId>(TId? id)
         {
             if (id == null) return false;
@@ -71,13 +91,6 @@ namespace Project.Server.Utils
         /// <summary>
         /// The SetPropertyValue
         /// </summary>
-        /// <param name="objType">The objType<see cref="Type"/></param>
-        /// <param name="propertyPath">The propertyName<see cref="string"/></param>
-        /// <param name="valueToConvert">The valueToConvert<see cref="string"/></param>
-        /// <returns>The <see>
-        ///         <cref>dynamic?</cref>
-        ///     </see>
-        /// </returns>
         public static dynamic? SetPropertyValue(Type objType, string propertyPath, string valueToConvert)
         {
             // Navegar por la ruta anidada (ej: "Empleado.Nombre")
@@ -98,10 +111,7 @@ namespace Project.Server.Utils
 
             if (property == null) return null;
 
-            // Obtener el tipo final
             Type targetType = property.PropertyType;
-
-            // Convertir el valor
             object? parsedValue = ConvertToType(valueToConvert, targetType);
             return parsedValue;
         }
@@ -109,36 +119,29 @@ namespace Project.Server.Utils
         /// <summary>
         /// The ConvertToType
         /// </summary>
-        /// <param name="value">The value<see cref="string"/></param>
-        /// <param name="targetType">The targetType<see cref="Type"/></param>
-        /// <returns>The <see cref="dynamic?"/></returns>
         public static dynamic? ConvertToType(string value, Type targetType)
         {
             try
             {
-                // Si el tipo es Nullable, obtener el tipo subyacente
                 Type? underlyingType = Nullable.GetUnderlyingType(targetType);
 
-                // Si es Nullable y el valor es nulo o vacío, devolver null
                 if (underlyingType != null)
                 {
                     if (string.IsNullOrEmpty(value))
                     {
-                        return null; // Para tipos nullable, devolver null si el valor es vacío o nulo
+                        return null;
                     }
                 }
                 else
                 {
-                    underlyingType = targetType; // Si no es nullable, usar el tipo original
+                    underlyingType = targetType;
                 }
 
-                // Para tipos Enum
                 if (underlyingType.IsEnum)
                 {
                     return Enum.Parse(underlyingType, value);
                 }
 
-                // Para DateTime con un formato específico
                 if (underlyingType == typeof(DateTime))
                 {
                     string[] formatos = { "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss", "yyyy-MM-ddTHH:mm:ss.fff", "yyyy-MM-dd" };
@@ -153,7 +156,6 @@ namespace Project.Server.Utils
                     }
                 }
 
-                // Convertir el valor utilizando Convert.ChangeType
                 return Convert.ChangeType(value, underlyingType);
             }
             catch (Exception ex)
@@ -168,14 +170,11 @@ namespace Project.Server.Utils
             if (string.IsNullOrWhiteSpace(cui))
                 return false;
 
-            // Remover espacios
             cui = cui.Replace(" ", "");
 
-            // Validar formato general
             if (!Regex.IsMatch(cui, @"^\d{13}$"))
                 return false;
 
-            // Extraer partes
             var numero = cui.Substring(0, 8);
             if (!int.TryParse(cui.Substring(8, 1), out int verificador))
                 return false;
@@ -184,7 +183,6 @@ namespace Project.Server.Utils
                 !int.TryParse(cui.Substring(11, 2), out int muni))
                 return false;
 
-            // Validar código de municipio y departamento
             int[] munisPorDepto = {
                 17,  8, 16, 16, 13, 14, 19,  8, 24, 21,  9,
                 30, 32, 21,  8, 17, 14,  5, 11, 11,  7, 17
@@ -199,7 +197,6 @@ namespace Project.Server.Utils
             if (muni > munisPorDepto[depto - 1])
                 return false;
 
-            // Validar dígito verificador (módulo 11)
             int total = 0;
             for (int i = 0; i < numero.Length; i++)
             {

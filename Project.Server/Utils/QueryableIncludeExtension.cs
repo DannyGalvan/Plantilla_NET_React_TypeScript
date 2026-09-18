@@ -5,8 +5,22 @@ namespace Project.Server.Utils
 {
     public static class QueryableIncludeExtension
     {
-        public static IQueryable<TEntity> ApplyIncludes<TEntity>(this IQueryable<TEntity> query, string[] includes) where TEntity : class
+        /// <summary>Hard cap on include-path depth (1 segment = direct navigation, 2 = one hop).</summary>
+        public const int MaxIncludeDepth = 2;
+
+        /// <summary>Maximum number of includes accepted per request (closes the B13 DoS).</summary>
+        public const int MaxIncludesPerRequest = 3;
+
+        public static IQueryable<TEntity> ApplyIncludes<TEntity>(this IQueryable<TEntity> query, string[] includes)
+            where TEntity : class
         {
+            if (includes is null || includes.Length == 0) return query;
+            if (includes.Length > MaxIncludesPerRequest)
+            {
+                throw new InvalidOperationException(
+                    $"Too many includes ({includes.Length}); max is {MaxIncludesPerRequest}.");
+            }
+
             foreach (var include in includes)
             {
                 query = query.IncludeNested(include);
@@ -18,7 +32,14 @@ namespace Project.Server.Utils
         private static IQueryable<TEntity> IncludeNested<TEntity>(this IQueryable<TEntity> query, string includePath)
             where TEntity : class
         {
-            var parts = includePath.Split('.');
+            var parts = includePath.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) return query;
+            if (parts.Length > MaxIncludeDepth)
+            {
+                throw new InvalidOperationException(
+                    $"Include path '{includePath}' exceeds max depth {MaxIncludeDepth}.");
+            }
+
             Type currentType = typeof(TEntity);
             List<string> validatedParts = new();
 

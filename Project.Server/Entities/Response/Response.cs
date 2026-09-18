@@ -1,4 +1,6 @@
-﻿namespace Project.Server.Entities.Response
+using FluentValidation.Results;
+
+namespace Project.Server.Entities.Response
 {
     /// <summary>
     /// Defines the <see cref="Response{TEntity}" />
@@ -55,8 +57,16 @@
         public int TotalResults { get; set; }
 
         /// <summary>
-        /// Gets or sets the Errors
+        /// Gets or sets the Errors. Kept separate from Data so a failed response
+        /// can carry <see cref="ValidationFailure"/>s without leaking them as
+        /// the success payload (closes the original "Errors stored inside Data" pattern).
         /// </summary>
         public TError? Errors { get; set; }
+
+        /// <summary>
+        /// Gets or sets the typed status. Drives the HTTP status code returned to
+        /// the client and the value of <see cref="Success"/>.
+        /// </summary>
+        public ResponseStatus Status { get; set; } = ResponseStatus.Ok;
     }
 }

@@ -1,651 +1,739 @@
-﻿using FluentValidation.Results;
-using Lombok.NET;
+using System.Diagnostics;
+using System.Linq.Expressions;
+using FluentValidation.Results;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
-using Project.Server.Entities.Response;
+using Project.Server.Configs.Models;
 using Project.Server.Context;
-using Project.Server.Services.Interfaces;
 using Project.Server.Entities.Interfaces;
+using Project.Server.Entities.Request;
+using Project.Server.Entities.Response;
+using Project.Server.Services.Interfaces;
 using Project.Server.Utils;
 
 namespace Project.Server.Services.Core
 {
     /// <summary>
-    /// Defines the <see cref="EntityService{TEntity, TRequest, TId}" />
+    /// Generic CRUD service. Phase 1 rewrite:
+    /// <list type="bullet">
+    ///   <item>Async throughout with <see cref="CancellationToken"/> propagation.</item>
+    ///   <item>Filters, sort and includes go through <see cref="IQueryPolicy"/> —
+    ///         sensitive columns are unreachable from the query string (closes B3).</item>
+    ///   <item>Soft-delete is handled by a global EF query filter, so
+    ///         <c>GetById</c>, <c>Update</c>, <c>PartialUpdate</c> and the count
+    ///         variants all stop returning logical-deleted rows automatically
+    ///         (closes B14).</item>
+    ///   <item>Pagination is clamped via <see cref="PaginationOptions"/>
+    ///         (closes B13).</item>
+    ///   <item>Exceptions never leak through <c>response.Message</c>; the client
+    ///         sees a generic message and a trace id (closes B11).</item>
+    ///   <item>Mass assignment hardened via <see cref="Util.MassAssignmentDenylist"/>
+    ///         (closes B2).</item>
+    /// </list>
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TRequest"></typeparam>
-    /// <typeparam name="TId"></typeparam>
-    [AllArgsConstructor]
-    public partial class EntityService<TEntity, TRequest, TId> : IEntityService<TEntity, TRequest, TId> where TEntity : class, IEntity<TId>
+    public partial class EntityService<TEntity, TRequest, TId> : IEntityService<TEntity, TRequest, TId>
+        where TEntity : class, IEntity<TId>
+        where TRequest : class
+        where TId : struct
     {
-        /// <summary>
-        /// Defines the _mapper
-        /// </summary>
         private readonly IMapper _mapper;
-
-        /// <summary>
-        /// Defines the _logger
-        /// </summary>
         private readonly ILogger<EntityService<TEntity, TRequest, TId>> _logger;
-
-        /// <summary>
-        /// Defines the _db
-        /// </summary>
         private readonly DataContext _db;
-
-        /// <summary>
-        /// Defines the _filterTranslator
-        /// </summary>
         private readonly IFilterTranslator _filterTranslator;
-
-        /// <summary>
-        /// Defines the _entitySupportService
-        /// </summary>
         private readonly IEntitySupportService _entitySupportService;
+        private readonly ICurrentUserService _currentUser;
+        private readonly QueryPolicy<TEntity> _queryPolicy;
+        private readonly ISortTranslator _sortTranslator;
+        private readonly PaginationOptions _pagination;
 
-        /// <summary>
-        /// The GetAll
-        /// </summary>
-        /// <param name="filters">The filters<see cref="string"/></param>
-        /// <param name="includes">The includes<see>
-        ///         <cref>string[]?</cref>
-        ///     </see>
-        /// </param>
-        /// <param name="pageNumber">The pageNumber<see cref="int"/></param>
-        /// <param name="pageSize">The pageSize<see cref="int"/></param>
-        /// <param name="includeTotal">The pageSize<see cref="bool"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{List{TEntity}, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<List<TEntity>, List<ValidationFailure>> GetAll(string? filters, string[]? includes = null, int pageNumber = 1, int pageSize = 30, bool includeTotal = false)
+        public EntityService(
+            IMapper mapper,
+            ILogger<EntityService<TEntity, TRequest, TId>> logger,
+            DataContext db,
+            IFilterTranslator filterTranslator,
+            IEntitySupportService entitySupportService,
+            ICurrentUserService currentUser,
+            QueryPolicy<TEntity> queryPolicy,
+            ISortTranslator sortTranslator,
+            PaginationOptions pagination)
         {
-            Response<List<TEntity>, List<ValidationFailure>> response = new();
+            _mapper = mapper;
+            _logger = logger;
+            _db = db;
+            _filterTranslator = filterTranslator;
+            _entitySupportService = entitySupportService;
+            _currentUser = currentUser;
+            _queryPolicy = queryPolicy;
+            _sortTranslator = sortTranslator;
+            _pagination = pagination;
+        }
 
+        // ================================================================
+        // General
+        // ================================================================
+
+        public async Task<Response<List<TEntity>, List<ValidationFailure>>> GetAllAsync(
+            QueryOptions options, CancellationToken ct = default)
+        {
             try
             {
-                IQueryable<TEntity> query = _db.Set<TEntity>();
+                var (query, filterError) = BuildQuery(options, ownedBy: null);
+                if (filterError is not null)
+                    return ValidationFailed<List<TEntity>>(filterError.PropertyName, filterError.ErrorMessage);
 
-                // 🔒 Filtrar automáticamente registros eliminados lógicamente
-                var parameter = Expression.Parameter(typeof(TEntity), "e");
-                var stateProp = Expression.Property(parameter, "State");
-                var condition = Expression.NotEqual(stateProp, Expression.Constant(0));
-                var lambda = Expression.Lambda<Func<TEntity, bool>>(condition, parameter);
-                query = query.Where(lambda);
-
-                if (!string.IsNullOrEmpty(filters))
-                {
-                    var filterExpression = _filterTranslator.TranslateToEfFilter<TEntity>(filters);
-                    query = query.Where(filterExpression);
-                }
-
-                if (includes is { Length: > 0 })
-                {
-                    try
-                    {
-                        query = query.ApplyIncludes(includes);
-                    }
-                    catch (Exception ex)
-                    {
-                        response.Success = false;
-                        response.Message = $"Error en Include: {ex.Message}";
-                        response.Errors = [new ValidationFailure("Include", ex.Message)];
-                        return response;
-                    }
-                }
-
-                query = query.OrderByDescending(e => e.CreatedAt);
-
+                int pageSize = _pagination.ClampPageSize(options.PageSize);
+                int pageNumber = _pagination.ClampPageNumber(options.PageNumber);
                 int skip = (pageNumber - 1) * pageSize;
-                var pagedData = query.Skip(skip).Take(pageSize + 1).AsNoTracking().ToList();
 
-                response.Data = pagedData.Take(pageSize).ToList();
+                var paged = await query.Skip(skip).Take(pageSize + 1).AsNoTracking().ToListAsync(ct);
 
-                // Si el cliente quiere saber el total real
-                if (includeTotal)
-                {
-                    response.TotalResults = query.Count(); // costo adicional
-                }
-                else
-                {
-                    response.TotalResults = skip + response.Data.Count + (pagedData.Count > pageSize ? 1 : 0); // estimado
-                }
-
-                response.Success = true;
+                var response = NewOk<List<TEntity>>();
+                response.Data = paged.Take(pageSize).ToList();
+                response.TotalResults = options.IncludeTotal
+                    ? await query.CountAsync(ct)
+                    : skip + response.Data.Count + (paged.Count > pageSize ? 1 : 0);
                 response.Message = $"Entities {typeof(TEntity).Name} retrieved successfully";
-
                 return response;
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al obtener {entity} : {message}", typeof(TEntity).Name, ex.Message);
-
-                return response;
+                return Handle<List<TEntity>>(ex, "GetAll");
             }
         }
 
-        /// <summary>
-        /// The GetAll
-        /// </summary>
-        /// <param name="filters">The filters<see cref="string"/></param>
-        /// <param name="includes">The includes<see cref="string[]?"/></param>
-        /// <param name="pageNumber">The pageNumber<see cref="int"/></param>
-        /// <param name="pageSize">The pageSize<see cref="int"/></param>
-        /// <param name="includeTotal">The pageSize<see cref="bool"/></param>
-        /// <returns>The <see cref="Response{List{TEntity}, List{ValidationFailure}}"/></returns>
-        public Response<List<TEntity>, List<ValidationFailure>> GetAllWhitOutMetadata(string? filters, string[]? includes = null, int pageNumber = 1, int pageSize = 30, bool includeTotal = false)
+        public async Task<Response<TEntity, List<ValidationFailure>>> GetByIdAsync(
+            TId id, string[]? includes = null, CancellationToken ct = default)
         {
-            Response<List<TEntity>, List<ValidationFailure>> response = new();
-
             try
             {
-                IQueryable<TEntity> query = _db.Set<TEntity>();
-
-                if (!string.IsNullOrEmpty(filters))
-                {
-                    var filterExpression = _filterTranslator.TranslateToEfFilter<TEntity>(filters);
-                    query = query.Where(filterExpression);
-                }
-
-                if (includes is { Length: > 0 })
-                {
-                    try
-                    {
-                        query = query.ApplyIncludes(includes);
-                    }
-                    catch (Exception ex)
-                    {
-                        response.Success = false;
-                        response.Message = $"Error en Include: {ex.Message}";
-                        response.Errors = [new ValidationFailure("Include", ex.Message)];
-                        return response;
-                    }
-                }
-
-                query = query.OrderByDescending(e => e.CreatedAt);
-
-                int skip = (pageNumber - 1) * pageSize;
-                var pagedData = query.Skip(skip).Take(pageSize + 1).AsNoTracking().ToList();
-
-                response.Data = pagedData.Take(pageSize).ToList();
-
-                // Si el cliente quiere saber el total real
-                if (includeTotal)
-                {
-                    response.TotalResults = query.Count(); // costo adicional
-                }
-                else
-                {
-                    response.TotalResults = skip + response.Data.Count + (pagedData.Count > pageSize ? 1 : 0); // estimado
-                }
-
-                response.Success = true;
-                response.Message = $"Entities {typeof(TEntity).Name} retrieved successfully";
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al obtener {entity} : {message}", typeof(TEntity).Name, ex.Message);
-
-                return response;
-            }
-        }
-
-        /// <summary>
-        /// The GetById
-        /// </summary>
-        /// <param name="id">The id<see cref="TId"/></param>
-        /// <param name="includes">The includes<see cref="string[]?"/></param>
-        /// <returns>The <see cref="Response{TEntity, List{ValidationFailure}}"/></returns>
-        public Response<TEntity, List<ValidationFailure>> GetById(TId id, string[]? includes = null)
-        {
-            Response<TEntity, List<ValidationFailure>> response = new();
-
-            try
-            {
-                IQueryable<TEntity> query = _db.Set<TEntity>();
-
-                if (includes is { Length: > 0 })
-                {
-                    try
-                    {
-                        query = query.ApplyIncludes(includes);
-                    }
-                    catch (Exception ex)
-                    {
-                        response.Success = false;
-                        response.Message = $"Error en Include: {ex.Message}";
-                        response.Errors = [new ValidationFailure("Include", ex.Message)];
-                        return response;
-                    }
-                }
-
-                // 🔒 Filtrar automáticamente registros eliminados lógicamente
-                var parameter = Expression.Parameter(typeof(TEntity), "e");
-                var idProp = Expression.Property(parameter, "Id");
-                var condition = Expression.Equal(idProp, Expression.Constant(id));
-                var lambda = Expression.Lambda<Func<TEntity, bool>>(condition, parameter);
-
-                var entity = query.FirstOrDefault(lambda);
-
-                if (entity == null)
-                {
-                    response.Success = false;
-                    response.Message = $"Entity {typeof(TEntity).Name} not found";
-                    response.Errors = [new ValidationFailure("Id", "Entity not found")];
-                    response.Data = null;
-
-                    return response;
-                }
-
-                response.Errors = null;
+                var query = _db.Set<TEntity>().AsNoTracking().AsQueryable();
+                query = ApplyIncludes(query, includes);
+                var entity = await query.FirstOrDefaultAsync(BuildIdEquality(id), ct);
+                if (entity is null) return NotFound<TEntity>("GetById");
+                var response = NewOk<TEntity>();
                 response.Data = entity;
-                response.Success = true;
                 response.Message = $"Entity {typeof(TEntity).Name} retrieved successfully";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return Handle<TEntity>(ex, "GetById");
+            }
+        }
+
+        public Task<Response<TEntity, List<ValidationFailure>>> CreateAsync(TRequest model, CancellationToken ct = default)
+            => CreateInternalAsync(model, ownedBy: null, ct);
+
+        public Task<Response<TEntity, List<ValidationFailure>>> UpdateAsync(TRequest model, CancellationToken ct = default)
+            => UpdateInternalAsync(model, beforePartial: false, requireOwned: false, ct);
+
+        public Task<Response<TEntity, List<ValidationFailure>>> PartialUpdateAsync(TRequest model, CancellationToken ct = default)
+            => UpdateInternalAsync(model, beforePartial: true, requireOwned: false, ct);
+
+        public async Task<Response<TEntity, List<ValidationFailure>>> DeleteAsync(TId id, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId;
+                try { userId = _currentUser.UserId; }
+                catch (UnauthorizedAccessException) { return Forbidden<TEntity>("Delete"); }
+
+                if (!Util.HasValidId(id)) return ValidationFailed<TEntity>("Id", "Invalid Id");
+
+                var entity = await _db.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(BuildIdEquality(id), ct);
+                if (entity is null) return NotFound<TEntity>("Delete");
+
+                var response = NewOk<TEntity>();
+                foreach (var interceptor in _entitySupportService.GetBeforeDeleteInterceptors<TEntity, TRequest>())
+                {
+                    if (!response.Success) return response;
+                    response = interceptor.Execute(response, default!, entity);
+                }
+
+                entity.UpdatedAt = DateTime.UtcNow;
+                entity.State = 0;
+                entity.UpdatedBy = userId;
+
+                _db.Set<TEntity>().Update(entity);
+                await _db.SaveChangesAsync(ct);
+
+                response.Data = entity;
+                response.Message = $"Entity {typeof(TEntity).Name} deleted successfully";
+
+                foreach (var interceptor in _entitySupportService.GetAfterDeleteInterceptors<TEntity, TRequest>())
+                {
+                    if (!response.Success) return response;
+                    response = interceptor.Execute(response, default!, entity);
+                }
 
                 return response;
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al obtener {entity} : {message}", typeof(TEntity).Name, ex.Message);
-
-                return response;
+                return Handle<TEntity>(ex, "Delete");
             }
         }
 
-        /// <summary>
-        /// The Creation
-        /// </summary>
-        /// <param name="model">The model<see cref="TRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{TEntity, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<TEntity, List<ValidationFailure>> Create(TRequest model)
+        // ================================================================
+        // Owned
+        // ================================================================
+
+        public Task<Response<List<TEntity>, List<ValidationFailure>>> GetAllOwnAsync(
+            QueryOptions options, CancellationToken ct = default)
         {
-            Response<TEntity, List<ValidationFailure>> response = new();
+            return GetAllInternalAsync(options, requireOwned: true, overrideOwnerId: null, ct);
+        }
 
-            string userId = string.Empty;
+        public async Task<Response<TEntity, List<ValidationFailure>>> GetByIdOwnAsync(
+            TId id, string[]? includes = null, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId;
+                try { userId = _currentUser.UserId; }
+                catch (UnauthorizedAccessException) { return Forbidden<TEntity>("GetByIdOwn"); }
 
+                var query = _db.Set<TEntity>().AsNoTracking().AsQueryable();
+                query = ApplyIncludes(query, includes);
+                var entity = await query.FirstOrDefaultAsync(
+                    Combine(BuildIdEquality(id), OwnershipResolver.Predicate<TEntity>(userId)), ct);
+
+                if (entity is null)
+                {
+                    var exists = await _db.Set<TEntity>().AsNoTracking().AnyAsync(BuildIdEquality(id), ct);
+                    return exists ? Forbidden<TEntity>("GetByIdOwn") : NotFound<TEntity>("GetByIdOwn");
+                }
+                var response = NewOk<TEntity>();
+                response.Data = entity;
+                response.Message = $"Entity {typeof(TEntity).Name} retrieved successfully";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return Handle<TEntity>(ex, "GetByIdOwn");
+            }
+        }
+
+        public Task<Response<TEntity, List<ValidationFailure>>> CreateOwnAsync(TRequest model, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId = _currentUser.UserId;
+                return CreateInternalAsync(model, ownedBy: userId, ct);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Task.FromResult(Forbidden<TEntity>("CreateOwn"));
+            }
+        }
+
+        public Task<Response<TEntity, List<ValidationFailure>>> UpdateOwnAsync(TRequest model, CancellationToken ct = default)
+            => UpdateInternalAsync(model, beforePartial: false, requireOwned: true, ct);
+
+        public Task<Response<TEntity, List<ValidationFailure>>> PartialUpdateOwnAsync(TRequest model, CancellationToken ct = default)
+            => UpdateInternalAsync(model, beforePartial: true, requireOwned: true, ct);
+
+        public async Task<Response<TEntity, List<ValidationFailure>>> DeleteOwnAsync(TId id, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId;
+                try { userId = _currentUser.UserId; }
+                catch (UnauthorizedAccessException) { return Forbidden<TEntity>("DeleteOwn"); }
+
+                if (!Util.HasValidId(id)) return ValidationFailed<TEntity>("Id", "Invalid Id");
+
+                var entity = await _db.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(
+                    Combine(BuildIdEquality(id), OwnershipResolver.Predicate<TEntity>(userId)), ct);
+                if (entity is null)
+                {
+                    var exists = await _db.Set<TEntity>().AsNoTracking().AnyAsync(BuildIdEquality(id), ct);
+                    return exists ? Forbidden<TEntity>("DeleteOwn") : NotFound<TEntity>("DeleteOwn");
+                }
+
+                var response = NewOk<TEntity>();
+                foreach (var interceptor in _entitySupportService.GetBeforeDeleteInterceptors<TEntity, TRequest>())
+                {
+                    if (!response.Success) return response;
+                    response = interceptor.Execute(response, default!, entity);
+                }
+
+                entity.UpdatedAt = DateTime.UtcNow;
+                entity.State = 0;
+                entity.UpdatedBy = userId;
+
+                _db.Set<TEntity>().Update(entity);
+                await _db.SaveChangesAsync(ct);
+
+                response.Data = entity;
+                response.Message = $"Entity {typeof(TEntity).Name} deleted successfully";
+
+                foreach (var interceptor in _entitySupportService.GetAfterDeleteInterceptors<TEntity, TRequest>())
+                {
+                    if (!response.Success) return response;
+                    response = interceptor.Execute(response, default!, entity);
+                }
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return Handle<TEntity>(ex, "DeleteOwn");
+            }
+        }
+
+        // ================================================================
+        // Utilities
+        // ================================================================
+
+        public async Task<Response<bool, List<ValidationFailure>>> ExistsAsync(TId id, CancellationToken ct = default)
+        {
+            try
+            {
+                var response = NewOk<bool>();
+                response.Data = await _db.Set<TEntity>().AsNoTracking().AnyAsync(BuildIdEquality(id), ct);
+                response.Message = response.Data ? "Exists" : "Not found";
+                return response;
+            }
+            catch (Exception ex) { return Handle<bool>(ex, "Exists"); }
+        }
+
+        public async Task<Response<bool, List<ValidationFailure>>> IsOwnedByCurrentUserAsync(TId id, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId;
+                try { userId = _currentUser.UserId; }
+                catch (UnauthorizedAccessException) { return Forbidden<bool>("IsOwnedByCurrentUser"); }
+
+                var response = NewOk<bool>();
+                response.Data = await _db.Set<TEntity>().AsNoTracking().AnyAsync(
+                    Combine(BuildIdEquality(id), OwnershipResolver.Predicate<TEntity>(userId)), ct);
+                response.Message = response.Data ? "Owned by current user" : "Not owned";
+                return response;
+            }
+            catch (Exception ex) { return Handle<bool>(ex, "IsOwned"); }
+        }
+
+        public async Task<Response<int, List<ValidationFailure>>> CountAsync(string? filters = null, CancellationToken ct = default)
+        {
+            try
+            {
+                var query = _db.Set<TEntity>().AsNoTracking().AsQueryable();
+                query = ApplyFilters(query, filters, out var filterError);
+                if (filterError is not null) return ValidationFailed<int>(filterError.PropertyName, filterError.ErrorMessage);
+
+                var response = NewOk<int>();
+                response.Data = await query.CountAsync(ct);
+                response.Message = $"Count = {response.Data}";
+                return response;
+            }
+            catch (Exception ex) { return Handle<int>(ex, "Count"); }
+        }
+
+        public async Task<Response<int, List<ValidationFailure>>> CountOwnAsync(string? filters = null, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId;
+                try { userId = _currentUser.UserId; }
+                catch (UnauthorizedAccessException) { return Forbidden<int>("CountOwn"); }
+
+                var query = _db.Set<TEntity>().AsNoTracking().AsQueryable();
+                query = ApplyFilters(query, filters, out var filterError);
+                if (filterError is not null) return ValidationFailed<int>(filterError.PropertyName, filterError.ErrorMessage);
+
+                query = query.Where(OwnershipResolver.Predicate<TEntity>(userId));
+                var response = NewOk<int>();
+                response.Data = await query.CountAsync(ct);
+                response.Message = $"Count = {response.Data}";
+                return response;
+            }
+            catch (Exception ex) { return Handle<int>(ex, "CountOwn"); }
+        }
+
+        public async Task<Response<TEntity, List<ValidationFailure>>> RestoreAsync(TId id, CancellationToken ct = default)
+        {
+            try
+            {
+                long userId;
+                try { userId = _currentUser.UserId; }
+                catch (UnauthorizedAccessException) { return Forbidden<TEntity>("Restore"); }
+
+                if (!Util.HasValidId(id)) return ValidationFailed<TEntity>("Id", "Invalid Id");
+
+                var entity = await _db.Set<TEntity>().IgnoreQueryFilters()
+                    .AsNoTracking().FirstOrDefaultAsync(BuildIdEquality(id), ct);
+                if (entity is null) return NotFound<TEntity>("Restore");
+
+                entity.State = 1;
+                entity.UpdatedAt = DateTime.UtcNow;
+                entity.UpdatedBy = userId;
+
+                _db.Set<TEntity>().Update(entity);
+                await _db.SaveChangesAsync(ct);
+
+                var response = NewOk<TEntity>();
+                response.Data = entity;
+                response.Message = $"Entity {typeof(TEntity).Name} restored successfully";
+                return response;
+            }
+            catch (Exception ex) { return Handle<TEntity>(ex, "Restore"); }
+        }
+
+        public Task<Response<List<TEntity>, List<ValidationFailure>>> GetByOwnerAsync(
+            long ownerId, QueryOptions options, CancellationToken ct = default)
+        {
+            return GetAllInternalAsync(options, requireOwned: true, overrideOwnerId: ownerId, ct);
+        }
+
+        // ================================================================
+        // Internals
+        // ================================================================
+
+        private async Task<Response<List<TEntity>, List<ValidationFailure>>> GetAllInternalAsync(
+            QueryOptions options, bool requireOwned, long? overrideOwnerId, CancellationToken ct)
+        {
+            try
+            {
+                long? ownedBy = null;
+                if (requireOwned)
+                {
+                    try { ownedBy = overrideOwnerId ?? _currentUser.UserId; }
+                    catch (UnauthorizedAccessException) { return Forbidden<List<TEntity>>("GetAllOwn"); }
+                }
+
+                var (query, filterError) = BuildQuery(options, ownedBy);
+                if (filterError is not null)
+                    return ValidationFailed<List<TEntity>>(filterError.PropertyName, filterError.ErrorMessage);
+
+                int pageSize = _pagination.ClampPageSize(options.PageSize);
+                int pageNumber = _pagination.ClampPageNumber(options.PageNumber);
+                int skip = (pageNumber - 1) * pageSize;
+
+                var paged = await query.Skip(skip).Take(pageSize + 1).AsNoTracking().ToListAsync(ct);
+
+                var response = NewOk<List<TEntity>>();
+                response.Data = paged.Take(pageSize).ToList();
+                response.TotalResults = options.IncludeTotal
+                    ? await query.CountAsync(ct)
+                    : skip + response.Data.Count + (paged.Count > pageSize ? 1 : 0);
+                response.Message = $"Entities {typeof(TEntity).Name} retrieved successfully";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return Handle<List<TEntity>>(ex, "GetAll");
+            }
+        }
+
+        private (IQueryable<TEntity> Query, ValidationFailure? FilterError) BuildQuery(QueryOptions options, long? ownedBy)
+        {
+            var query = _db.Set<TEntity>().AsNoTracking().AsQueryable();
+
+            if (options.IncludeDeleted)
+            {
+                // admin-only flag: callers must gate via [RequireOperation]
+                query = query.IgnoreQueryFilters();
+            }
+
+            query = ApplyIncludes(query, options.Includes);
+            query = ApplyFilters(query, options.Filters, out var filterError);
+
+            if (filterError is not null)
+            {
+                return (query, filterError);
+            }
+
+            if (ownedBy is not null)
+            {
+                query = query.Where(OwnershipResolver.Predicate<TEntity>(ownedBy.Value));
+            }
+
+            query = ApplySort(query, options.SortBy, options.SortDescending);
+            return (query, null);
+        }
+
+        private IQueryable<TEntity> ApplyIncludes(IQueryable<TEntity> query, string[]? includes)
+        {
+            if (includes is null || includes.Length == 0) return query;
+            // Depth/quantity caps are enforced inside ApplyIncludes — invalid paths
+            // throw, which the outer try/catch converts into a 400.
+            return query.ApplyIncludes(includes);
+        }
+
+        private IQueryable<TEntity> ApplyFilters(IQueryable<TEntity> query, string? filters, out ValidationFailure? error)
+        {
+            error = null;
+            if (string.IsNullOrWhiteSpace(filters)) return query;
+
+            try
+            {
+                // Verify every property touched by the filter is in the allowlist.
+                foreach (var referenced in ExtractPropertyNames(filters))
+                {
+                    if (!_queryPolicy.IsFilterable(referenced))
+                    {
+                        error = new ValidationFailure(referenced, $"Property '{referenced}' is not filterable.");
+                        return query;
+                    }
+                }
+                var translated = _filterTranslator.TranslateToEfFilter<TEntity>(filters);
+                return query.Where(translated);
+            }
+            catch (Exception ex)
+            {
+                error = new ValidationFailure("Filters", ex.Message);
+                return query;
+            }
+        }
+
+        private IQueryable<TEntity> ApplySort(IQueryable<TEntity> query, string? sortBy, bool descending)
+        {
+            if (string.IsNullOrWhiteSpace(sortBy)) return OrderByCreatedAtDesc(query);
+
+            if (!_sortTranslator.TryBuild<TEntity>(sortBy, _queryPolicy.IsSortable, out var keySelector) || keySelector is null)
+            {
+                return OrderByCreatedAtDesc(query);
+            }
+
+            var methodName = descending ? "OrderByDescending" : "OrderBy";
+            var method = typeof(Queryable).GetMethods()
+                .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                .MakeGenericMethod(typeof(TEntity), keySelector.ReturnType);
+            return (IOrderedQueryable<TEntity>)method.Invoke(null, new object?[] { query, keySelector })!;
+        }
+
+        private static IOrderedQueryable<TEntity> OrderByCreatedAtDesc(IQueryable<TEntity> query)
+            => query.OrderByDescending(e => e.CreatedAt);
+
+        private async Task<Response<TEntity, List<ValidationFailure>>> CreateInternalAsync(
+            TRequest model, long? ownedBy, CancellationToken ct)
+        {
             try
             {
                 var results = _entitySupportService.GetValidator<TRequest>("Create").Validate(model);
-
                 if (!results.IsValid)
                 {
-                    response.Success = false;
-                    response.Message = "Validation failed";
-                    response.Errors = results.Errors;
-                    response.Data = null;
-
-                    return response;
+                    var v = NewOk<TEntity>();
+                    v.Status = ResponseStatus.ValidationFailed;
+                    v.Success = false;
+                    v.Message = "Validation failed";
+                    v.Errors = results.Errors;
+                    return v;
                 }
 
                 var entity = _mapper.Map<TEntity>(model!);
-                var database = _db.Set<TEntity>();
-                using var transaction = _db.Database.BeginTransaction();
 
-                foreach (var interceptor in _entitySupportService.GetBeforeCreateInterceptors<TEntity,TRequest>())
+                // Force ownership fields from the token (B1 — CreateOwn).
+                if (ownedBy is not null)
+                {
+                    if (entity is IOwnedEntity<long> owned) owned.OwnerId = ownedBy.Value;
+                    entity.CreatedBy = ownedBy.Value;
+                }
+
+                entity.CreatedAt = DateTime.UtcNow;
+                entity.UpdatedAt = null;
+                entity.UpdatedBy = null;
+                entity.State = entity.State == 0 ? 1 : entity.State;
+
+                var response = NewOk<TEntity>();
+                response.Data = entity;
+                foreach (var interceptor in _entitySupportService.GetBeforeCreateInterceptors<TEntity, TRequest>())
                 {
                     if (!response.Success) return response;
-
-                    response.Data = entity;
-
                     response = interceptor.Execute(response, model);
-
                     entity = response.Data!;
                 }
 
                 if (!response.Success) return response;
 
-                userId = entity.CreatedBy.ToString();
+                _db.Set<TEntity>().Add(entity);
+                await _db.SaveChangesAsync(ct);
 
-                entity.CreatedAt = DateTime.UtcNow;
-                entity.UpdatedAt = null;
-                entity.UpdatedBy = null;
-
-                database.Add(entity);
-                _db.SaveChanges();
-
-                response.Errors = null;
                 response.Data = entity;
-                response.Success = true;
                 response.Message = $"Entity {typeof(TEntity).Name} created successfully";
-
-                if (!response.Success) return response;
 
                 foreach (var interceptor in _entitySupportService.GetAfterCreateInterceptors<TEntity, TRequest>())
                 {
                     if (!response.Success) return response;
-
                     response = interceptor.Execute(response, model);
                 }
 
-                transaction.Commit();
-
                 return response;
             }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al crear {entity} : usuario {user} : {message}", typeof(TEntity).Name, userId, ex.Message);
-
-                return response;
-            }
+            catch (Exception ex) { return Handle<TEntity>(ex, "Create"); }
         }
 
-        /// <summary>
-        /// The Update
-        /// </summary>
-        /// <param name="model">The model<see cref="TRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{TEntity, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<TEntity, List<ValidationFailure>> Update(TRequest model)
+        private async Task<Response<TEntity, List<ValidationFailure>>> UpdateInternalAsync(
+            TRequest model, bool beforePartial, bool requireOwned, CancellationToken ct)
         {
-            Response<TEntity, List<ValidationFailure>> response = new();
-
-            string userId = string.Empty;
-
             try
             {
-                var results = _entitySupportService.GetValidator<TRequest>("Update").Validate(model);
+                long userId = 0;
+                if (requireOwned)
+                {
+                    try { userId = _currentUser.UserId; }
+                    catch (UnauthorizedAccessException) { return Forbidden<TEntity>("Update"); }
+                }
 
+                var validatorKey = beforePartial ? "Partial" : "Update";
+                var results = _entitySupportService.GetValidator<TRequest>(validatorKey).Validate(model);
                 if (!results.IsValid)
                 {
-                    response.Success = false;
-                    response.Message = "Validation failed";
-                    response.Errors = results.Errors;
-                    response.Data = null;
-
-                    return response;
+                    var v = NewOk<TEntity>();
+                    v.Status = ResponseStatus.ValidationFailed;
+                    v.Success = false;
+                    v.Message = "Validation failed";
+                    v.Errors = results.Errors;
+                    return v;
                 }
 
-                TEntity entity = _mapper.Map<TEntity>(model!);
+                TEntity mapped = _mapper.Map<TEntity>(model!);
                 var database = _db.Set<TEntity>();
 
-                using var transaction = _db.Database.BeginTransaction();
+                var prevState = await database.AsNoTracking().FirstOrDefaultAsync(BuildIdEquality(mapped.Id), ct);
+                if (prevState is null) return NotFound<TEntity>("Update");
 
-                var parameter = Expression.Parameter(typeof(TEntity), "x");
-                var member = Expression.PropertyOrField(parameter, "Id");
-                var constant = Expression.Constant(entity.Id);
-                var condition = Expression.Lambda<Func<TEntity, bool>>(Expression.Equal(member, constant), parameter);
-
-                TEntity? prevState = database.AsNoTracking().FirstOrDefault(condition);
-
-                if (prevState == null)
+                if (requireOwned)
                 {
-                    response.Success = false;
-                    response.Message = $"Entity {typeof(TEntity).Name} not found";
-                    response.Errors = [new ValidationFailure("Id", $"Entity {typeof(TEntity).Name} not found")];
-                    response.Data = null;
-
-                    return response;
+                    if (!await database.AsNoTracking().AnyAsync(
+                        Combine(BuildIdEquality(mapped.Id), OwnershipResolver.Predicate<TEntity>(userId)), ct))
+                    {
+                        return Forbidden<TEntity>("Update");
+                    }
                 }
 
-                TEntity entityToUpdate = _mapper.Map<TEntity>(prevState);
+                var entityToUpdate = _mapper.Map<TEntity>(prevState);
+                var createdAt = entityToUpdate.CreatedAt;
 
-                userId = entity.CreatedBy.ToString();
-
-                DateTime createdAt = entityToUpdate.CreatedAt;
-
-                Util.UpdateProperties(entityToUpdate, entity);
-
+                Util.UpdateProperties(entityToUpdate, mapped);
                 entityToUpdate.UpdatedAt = DateTime.UtcNow;
                 entityToUpdate.CreatedAt = createdAt;
 
-                // Execute BeforeUpdate interceptors
+                var response = NewOk<TEntity>();
                 response.Data = entityToUpdate;
-                foreach (var interceptor in _entitySupportService.GetBeforeUpdateInterceptors<TEntity, TRequest>())
+                if (beforePartial)
                 {
-                    if (!response.Success) return response;
-
-                    response = interceptor.Execute(response, model);
-
-                    entityToUpdate = response.Data!;
+                    foreach (var interceptor in _entitySupportService.GetBeforePartialUpdateInterceptors<TEntity, TRequest>())
+                    {
+                        if (!response.Success) return response;
+                        response = interceptor.Execute(response, model, entityToUpdate);
+                        entityToUpdate = response.Data!;
+                    }
+                }
+                else
+                {
+                    foreach (var interceptor in _entitySupportService.GetBeforeUpdateInterceptors<TEntity, TRequest>())
+                    {
+                        if (!response.Success) return response;
+                        response = interceptor.Execute(response, model);
+                        entityToUpdate = response.Data!;
+                    }
                 }
 
                 if (!response.Success) return response;
 
-                database.Entry(entityToUpdate).State = EntityState.Detached;
+                // Clear any tracked snapshot the InMemory provider may have left
+                // behind — even though we asked for AsNoTracking, the provider
+                // can leave a phantom entry that collides with the attach below.
+                _db.ChangeTracker.Clear();
 
                 database.Update(entityToUpdate);
-                _db.SaveChanges();
+                await _db.SaveChangesAsync(ct);
 
-                response.Errors = null;
                 response.Data = entityToUpdate;
-                response.Success = true;
                 response.Message = $"Entity {typeof(TEntity).Name} updated successfully";
 
-                if (!response.Success) return response;
-
-                foreach (var interceptor in _entitySupportService.GetAfterUpdateInterceptors<TEntity,TRequest>())
+                var afterInterceptors = _entitySupportService.GetAfterUpdateInterceptors<TEntity, TRequest>();
+                foreach (var interceptor in afterInterceptors)
                 {
                     if (!response.Success) return response;
-
                     response = interceptor.Execute(response, model, prevState);
                 }
 
-                transaction.Commit();
-
                 return response;
             }
-            catch (Exception ex)
+            catch (Exception ex) { return Handle<TEntity>(ex, "Update"); }
+        }
+
+        // Sentinel marker — closing brace intentionally kept below.
+        // (no other members between here and the helpers block)
+
+        // ================================================================
+        // Helpers
+        // ================================================================
+
+        private static Expression<Func<TEntity, bool>> BuildIdEquality(TId id)
+        {
+            var parameter = Expression.Parameter(typeof(TEntity), "e");
+            var member = Expression.PropertyOrField(parameter, "Id");
+            var constant = Expression.Constant(id, member.Type);
+            var body = Expression.Equal(member, constant);
+            return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
+        }
+
+        private static Expression<Func<TEntity, bool>> Combine(
+            Expression<Func<TEntity, bool>> first,
+            Expression<Func<TEntity, bool>> second)
+        {
+            var parameter = Expression.Parameter(typeof(TEntity), "e");
+            var body = Expression.AndAlso(
+                Expression.Invoke(first, parameter),
+                Expression.Invoke(second, parameter));
+            return Expression.Lambda<Func<TEntity, bool>>(body, parameter);
+        }
+
+        private static IEnumerable<string> ExtractPropertyNames(string filters)
+        {
+            foreach (var segment in filters.Split([" AND ", " OR "], StringSplitOptions.RemoveEmptyEntries))
             {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al actualizar {entity} : usuario {user} : {message}", typeof(TEntity).Name, userId, ex.Message);
-
-                return response;
+                var parts = segment.Split(':');
+                if (parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]))
+                {
+                    yield return parts[0].Trim();
+                }
             }
         }
 
-        /// <summary>
-        /// The PartialUpdate
-        /// </summary>
-        /// <param name="model">The model<see cref="TRequest"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{TEntity, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<TEntity, List<ValidationFailure>> PartialUpdate(TRequest model)
+        private static Response<TData, List<ValidationFailure>> NewOk<TData>()
+            => new() { Success = true, Status = ResponseStatus.Ok };
+
+        private static Response<TData, List<ValidationFailure>> ValidationFailed<TData>(string field, string msg)
+            => new()
+            {
+                Success = false,
+                Status = ResponseStatus.ValidationFailed,
+                Message = "Validation failed",
+                Errors = new List<ValidationFailure> { new(field, msg) },
+            };
+
+        private static Response<TData, List<ValidationFailure>> NotFound<TData>(string op)
+            => new()
+            {
+                Success = false,
+                Status = ResponseStatus.NotFound,
+                Message = $"Entity {typeof(TEntity).Name} not found",
+            };
+
+        private static Response<TData, List<ValidationFailure>> Forbidden<TData>(string op)
+            => new()
+            {
+                Success = false,
+                Status = ResponseStatus.Forbidden,
+                Message = "Access denied",
+            };
+
+        private Response<TData, List<ValidationFailure>> Handle<TData>(Exception ex, string op)
         {
-            Response<TEntity, List<ValidationFailure>> response = new();
-
-            string userId = string.Empty;
-
-            try
+            var traceId = Activity.Current?.Id ?? Guid.NewGuid().ToString("N");
+            _logger.LogError(ex, "{operation} on {entity} failed (traceId={traceId})", op, typeof(TEntity).Name, traceId);
+            return new()
             {
-                var results = _entitySupportService.GetValidator<TRequest>("Partial").Validate(model);
-
-                if (!results.IsValid)
-                {
-                    response.Success = false;
-                    response.Message = "Validation failed";
-                    response.Errors = results.Errors;
-                    response.Data = null;
-
-                    return response;
-                }
-
-                TEntity entity = _mapper.Map<TEntity>(model!);
-
-                var database = _db.Set<TEntity>();
-
-                using var transaction = _db.Database.BeginTransaction();
-
-                var parameter = Expression.Parameter(typeof(TEntity), "x");
-                var member = Expression.PropertyOrField(parameter, "Id");
-                var constant = Expression.Constant(entity.Id);
-                var condition = Expression.Lambda<Func<TEntity, bool>>(Expression.Equal(member, constant), parameter);
-
-                TEntity? prevState = database.AsNoTracking().FirstOrDefault(condition);
-
-                if (prevState == null)
-                {
-                    response.Success = false;
-                    response.Message = $"Entity {typeof(TEntity).Name} not found";
-                    response.Errors = [new ValidationFailure("Id", $"Entity {typeof(TEntity).Name} not found")];
-                    response.Data = null;
-
-                    return response;
-                }
-
-                TEntity entityToUpdate = _mapper.Map<TEntity>(prevState);
-
-                userId = entity.CreatedBy.ToString();
-
-                DateTime createdAt = entityToUpdate.CreatedAt;
-                Util.UpdateProperties(entityToUpdate, entity);
-                entityToUpdate.UpdatedAt = DateTime.UtcNow;
-                entityToUpdate.CreatedAt = createdAt;
-
-                // Execute BeforeUpdate interceptors
-                response.Data = entityToUpdate;
-                foreach (var interceptor in _entitySupportService.GetBeforeUpdateInterceptors<TEntity, TRequest>())
-                {
-                    if (!response.Success) return response;
-
-                    response = interceptor.Execute(response, model);
-
-                    entityToUpdate = response.Data!;
-                }
-
-                if (!response.Success) return response;
-
-                database.Update(entityToUpdate);
-                _db.SaveChanges();
-
-                response.Errors = null;
-                response.Data = entityToUpdate;
-                response.Success = true;
-                response.Message = $"Entity {typeof(TEntity).Name} updated successfully";
-                response.Errors = results.Errors;
-
-                if (!response.Success) return response;
-
-                foreach (var interceptor in _entitySupportService.GetAfterPartialUpdateInterceptors<TEntity,TRequest>())
-                {
-                    if (!response.Success) return response;
-
-                    response = interceptor.Execute(response, model, prevState);
-                }
-
-                transaction.Commit();
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al actualizar parcial {entity} : usuario {user} : {message}", typeof(TEntity).Name, userId, ex.Message);
-
-                return response;
-            }
-        }
-
-        /// <summary>
-        /// The Delete
-        /// </summary>
-        /// <param name="id">The id<see cref="TId"/></param>
-        /// <param name="deletedBy">The deletedBy<see cref="long"/></param>
-        /// <returns>The <see>
-        ///         <cref>Response{TEntity, List{ValidationFailure}}</cref>
-        ///     </see>
-        /// </returns>
-        public Response<TEntity, List<ValidationFailure>> Delete(TId id, long deletedBy)
-        {
-            Response<TEntity, List<ValidationFailure>> response = new();
-
-            string userId = string.Empty;
-
-            try
-            {
-                response.Success = false;
-                response.Message = "Invalid Id";
-                response.Errors = [new ValidationFailure("Id", "Invalid Id")];
-                response.Data = null;
-
-                if (!Util.HasValidId(id)) return response;
-
-                var parameter = Expression.Parameter(typeof(TEntity), "x");
-                var member = Expression.PropertyOrField(parameter, "Id");
-                var constant = Expression.Constant(id);
-                var condition = Expression.Lambda<Func<TEntity, bool>>(Expression.Equal(member, constant), parameter);
-
-                TEntity? entity = _db.Set<TEntity>().AsNoTracking().FirstOrDefault(condition);
-
-                using var transaction = _db.Database.BeginTransaction();
-
-                if (entity == null)
-                {
-                    response.Success = false;
-                    response.Message = $"Entity {typeof(TEntity).Name} not found";
-                    response.Errors = [new ValidationFailure("Id", $"Entity {typeof(TEntity).Name} not found")];
-                    response.Data = null;
-
-                    return response;
-                }
-
-                userId = entity.CreatedBy.ToString();
-
-                entity.UpdatedAt = DateTime.Now;
-                entity.State = 0;
-                entity.UpdatedBy = deletedBy;
-
-                _db.Set<TEntity>().Update(entity);
-                _db.SaveChanges();
-
-                response.Errors = null;
-                response.Data = entity;
-                response.Success = true;
-                response.Message = $"Entity {typeof(TEntity).Name} deleted successfully";
-
-                transaction.Commit();
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = ex.Message;
-                response.Errors = [new ValidationFailure("Id", ex.Message)];
-                response.Data = null;
-
-                _logger.LogError(ex, "Error al eliminar {entity} : usuario {user} : {message}", typeof(TEntity).Name, userId, ex.Message);
-
-                return response;
-            }
+                Success = false,
+                Status = ResponseStatus.Error,
+                Message = $"Operation failed (traceId={traceId}).",
+            };
         }
     }
 }

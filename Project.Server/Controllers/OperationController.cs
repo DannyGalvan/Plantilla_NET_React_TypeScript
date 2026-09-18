@@ -50,9 +50,9 @@ namespace Project.Server.Controllers
             Path = "operation",
             IsVisible = false
         )]
-        public override IActionResult GetAll([FromQuery] QueryParamsRequest query)
+        public override async Task<IActionResult> GetAll([FromQuery] QueryParamsRequest query, CancellationToken ct = default)
         {
-            return base.GetAll(query);
+            return await base.GetAll(query, ct);
         }
 
         /// <summary>
@@ -68,9 +68,9 @@ namespace Project.Server.Controllers
             Path = "operation/view",
             IsVisible = false
         )]
-        public override IActionResult Get(long id, string? include = null)
+        public override async Task<IActionResult> Get(long id, string? include = null, CancellationToken ct = default)
         {
-            return base.Get(id, include);
+            return await base.Get(id, include, ct);
         }
 
         /// <summary>
@@ -86,9 +86,9 @@ namespace Project.Server.Controllers
             Path = "operation/create",
             IsVisible = false
         )]
-        public override IActionResult Create([FromBody] OperationRequest request)
+        public override async Task<IActionResult> Create([FromBody] OperationRequest request, CancellationToken ct = default)
         {
-            return base.Create(request);
+            return await base.Create(request, ct);
         }
 
         /// <summary>
@@ -104,9 +104,9 @@ namespace Project.Server.Controllers
             Path = "operation/edit",
             IsVisible = false
         )]
-        public override IActionResult Update([FromBody] OperationRequest request)
+        public override async Task<IActionResult> Update([FromBody] OperationRequest request, CancellationToken ct = default)
         {
-            return base.Update(request);
+            return await base.Update(request, ct);
         }
 
         /// <summary>
@@ -122,9 +122,9 @@ namespace Project.Server.Controllers
             Path = "operation/partial-edit",
             IsVisible = false
         )]
-        public override IActionResult PartialUpdate([FromBody] OperationRequest request)
+        public override async Task<IActionResult> PartialUpdate([FromBody] OperationRequest request, CancellationToken ct = default)
         {
-            return base.PartialUpdate(request);
+            return await base.PartialUpdate(request, ct);
         }
 
         /// <summary>
@@ -140,9 +140,9 @@ namespace Project.Server.Controllers
             Path = "operation/delete",
             IsVisible = false
         )]
-        public override IActionResult Delete(long id)
+        public override async Task<IActionResult> Delete(long id, CancellationToken ct = default)
         {
-            return base.Delete(id);
+            return await base.Delete(id, ct);
         }
     }
 }
