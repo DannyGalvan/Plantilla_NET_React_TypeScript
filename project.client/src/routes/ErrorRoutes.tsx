@@ -1,9 +1,9 @@
 import type { RouteObject } from "react-router";
 
-import { NotFound } from "../pages/error/NotFound";
-
 import { nameRoutes } from "../configs/constants";
+import { NotFound } from "../pages/error/NotFound";
 import LoadingPage from "../pages/public/LoadingPage";
+
 import Protected from "./middlewares/Protected";
 
 export const ErrorRoutes: RouteObject[] = [

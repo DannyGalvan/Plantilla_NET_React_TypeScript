@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { lazy, useEffect } from "react";
+
 import { useAuth } from "../hooks/useAuth";
 import ErrorBoundary from "../pages/error/ErrorBoundary";
 import LoadingPage from "../pages/public/LoadingPage";

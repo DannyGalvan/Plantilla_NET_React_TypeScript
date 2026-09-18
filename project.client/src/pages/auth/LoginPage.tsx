@@ -1,9 +1,8 @@
 import { Card } from "@heroui/react";
-
-import { LoginForm, type LoginFormData } from "../../components/form/LoginForm";
-
 import { useCallback } from "react";
+
 import { Images } from "../../assets/images/images";
+import { LoginForm, type LoginFormData } from "../../components/form/LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 import ProtectedLogin from "../../routes/middlewares/ProtectedLogin";
 import { authenticateUser } from "../../services/authService";

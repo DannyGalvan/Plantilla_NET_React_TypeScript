@@ -44,11 +44,11 @@ export function Layout({ children }: LayoutProps) {
           <AnimatePresence mode="wait">
             <motion.main
               key={location.pathname}
-              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
               className="h-full w-full"
+              exit={{ opacity: 0, y: -15 }}
+              initial={{ opacity: 0, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
               {children}
             </motion.main>

@@ -53,3 +53,12 @@ export class InternalServerError extends ApiError {
     this.statusCode = "500";
   }
 }
+
+export class NetworkError extends ApiError {
+  statusCode: HttpStatusCode = "0";
+  constructor(message: string) {
+    super(message);
+    this.name = "NetworkError";
+    this.statusCode = "0";
+  }
+}

@@ -1,23 +1,31 @@
-import { api } from "../configs/axios/interceptors";
+import { z } from "zod";
+
 import type { ChangePasswordForm } from "../pages/auth/ChangePasswordPage";
 import type { ApiResponse } from "../types/ApiResponse";
 import type { LoginRequest, LoginResponse } from "../types/LoginRequest";
-import type { ValidationFailure } from "../types/ValidationFailure";
+import { authWithRefreshResponseSchema } from "../types/schemas";
 
-export const authenticateUser = async (login: LoginRequest) => {
-  const response = await api.post<
-    unknown,
-    ApiResponse<LoginResponse>,
-    LoginRequest
-  >("/auth", login);
+import { zodApi } from "./zodApi";
 
-  return response;
-};
+const authResponseSchema = authWithRefreshResponseSchema;
+const changePasswordResponseSchema = z.string();
 
-export const changePassword = async (credentials: ChangePasswordForm) => {
-  return await api.post<
-    unknown,
-    ApiResponse<string | ValidationFailure[]>,
-    ChangePasswordForm
-  >("/Auth/ResetPassword", credentials);
-};
+type AuthResponse = z.infer<typeof authResponseSchema>;
+
+export const authenticateUser = async (
+  login: LoginRequest,
+): Promise<ApiResponse<LoginResponse>> =>
+  zodApi.post<AuthResponse, LoginRequest>(
+    "/auth",
+    authResponseSchema,
+    login,
+  ) as Promise<ApiResponse<LoginResponse>>;
+
+export const changePassword = async (
+  credentials: ChangePasswordForm,
+): Promise<ApiResponse<string>> =>
+  zodApi.post<string, ChangePasswordForm>(
+    "/Auth/ResetPassword",
+    changePasswordResponseSchema,
+    credentials,
+  );

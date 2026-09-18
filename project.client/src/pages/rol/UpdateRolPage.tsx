@@ -2,6 +2,7 @@ import { toast } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { useParams } from "react-router";
+
 import { OperationResponseColumns } from "../../components/column/OperationResponseColumns";
 import { RolForm } from "../../components/form/RolForm";
 import { LoadingComponent } from "../../components/spinner/LoadingComponent";

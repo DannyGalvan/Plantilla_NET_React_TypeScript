@@ -1,8 +1,8 @@
 import type { InitialAuth } from "../types/InitialAuth";
 import type { UserRequest } from "../types/UserRequest";
 
-export const URL_BASE = "";
-export const API_URL = `${URL_BASE}/api/v1/`;
+// F11: API base URL comes from `import.meta.env.VITE_API_URL` (see
+// `configs/axios/interceptors.ts`). Never hard-code it here.
 
 export const invalid_type_error = "El tipo provisto es invalido";
 export const required_error = "El campo es requerido";

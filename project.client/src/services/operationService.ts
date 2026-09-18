@@ -1,7 +1,15 @@
-import { api } from "../configs/axios/interceptors";
+import { z } from "zod";
+
 import type { ApiResponse } from "../types/ApiResponse";
 import type { filterOptions } from "../types/FilterTypes";
 import type { OperationResponse } from "../types/OperationResponse";
+import { operationResponseSchema } from "../types/schemas";
+
+import { zodApi } from "./zodApi";
+
+const operationListSchema = z.array(operationResponseSchema);
+
+type OperationList = z.infer<typeof operationListSchema>;
 
 export const getOperations = async ({
   pageNumber = 1,
@@ -22,5 +30,7 @@ export const getOperations = async ({
     baseQuery += `&includeTotal=${includeTotal}`;
   }
 
-  return api.get<unknown, ApiResponse<OperationResponse[]>>(baseQuery);
+  return zodApi.get<OperationList>(baseQuery, operationListSchema) as Promise<
+    ApiResponse<OperationResponse[]>
+  >;
 };

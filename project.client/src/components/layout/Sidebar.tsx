@@ -2,6 +2,7 @@
 import { Button, Tooltip } from "@heroui/react";
 import { useCallback, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
+
 import { Images } from "../../assets/images/images";
 import { nameRoutes } from "../../configs/constants";
 import { useAuth } from "../../hooks/useAuth";
@@ -31,11 +32,22 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
   return (
     <>
       {/* Overlay para móviles */}
-      <div
-        className={`fixed inset-0 z-47 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+      <button
+        aria-label="Cerrar menú"
+        className={`fixed inset-0 z-47 cursor-pointer bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
+        type="button"
         onClick={closeSidebar}
+        onKeyDown={(event) => {
+          if (
+            event.key === "Escape" ||
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
+            closeSidebar();
+          }
+        }}
       />
 
       <aside

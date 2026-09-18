@@ -2,16 +2,16 @@ import type { RouteObject } from "react-router";
 
 import { nameRoutes } from "../configs/constants";
 import LoadingPage from "../pages/public/LoadingPage";
-import { TestPage } from "../pages/public/TestPage";
-import ProtectedPublic from "./middlewares/ProtectedPublic";
-
 // Import pages
+import { TestPage } from "../pages/public/TestPage";
 import { CreateRolPage } from "../pages/rol/CreateRolPage";
 import { RolPage } from "../pages/rol/RolPage";
 import { UpdateRolPage } from "../pages/rol/UpdateRolPage";
 import { CreateUserPage } from "../pages/user/CreateUserPage";
 import { UpdateUserPage } from "../pages/user/UpdateUserPage";
 import { UserPage } from "../pages/user/UserPage";
+
+import ProtectedPublic from "./middlewares/ProtectedPublic";
 
 export const PublicRoutes: RouteObject[] = [
   {

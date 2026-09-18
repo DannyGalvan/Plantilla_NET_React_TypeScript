@@ -46,7 +46,15 @@ export function NotFound({ Message, Number }: NotFoundProps) {
           <div className="mb-4 text-3xl italic">{Message}</div>
           <span
             className="cursor-pointer font-bold text-sky-700 hover:text-sky-500"
+            role="button"
+            tabIndex={0}
             onClick={handleClick}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleClick();
+              }
+            }}
           >
             {text}
           </span>

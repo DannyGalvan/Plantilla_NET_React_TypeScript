@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Phase 5.2 — pre-push hook: full verify (typecheck + lint + format:check + test).
+# Runs only inside the project.client subtree of the repo.
+. "$(dirname -- "$0")/_/husky.sh"
+
+cd "$(git rev-parse --show-toplevel)/project.client" 2>/dev/null || cd .
+
+npm run verify

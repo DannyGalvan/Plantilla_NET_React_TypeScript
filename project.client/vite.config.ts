@@ -1,11 +1,11 @@
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { env } from "node:process";
 import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import viteReact from "@vitejs/plugin-react";
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { defineConfig } from "vite";
 import compress from "vite-plugin-compression";
 import tsconfigPaths from "vite-tsconfig-paths";

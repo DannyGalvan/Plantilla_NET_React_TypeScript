@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { MultiValue, SelectInstance, SingleValue } from "react-select";
 import AsyncSelect from "react-select/async";
+
 import { getCatalogue } from "../../services/catalogueService";
 import type { ApiResponse } from "../../types/ApiResponse";
 import type { filterOptions } from "../../types/FilterTypes";
@@ -154,7 +155,9 @@ export function CatalogueSelect<T extends object>({
           htmlFor={label}
         >
           {label}{" "}
-          {isRequired && <span className="text-danger font-bold ml-1">*</span>}
+          {isRequired ? (
+            <span className="text-danger font-bold ml-1">*</span>
+          ) : null}
         </label>
         <AsyncSelect
           key={deps}

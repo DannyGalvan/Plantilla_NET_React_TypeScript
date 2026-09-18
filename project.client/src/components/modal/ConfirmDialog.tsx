@@ -1,4 +1,5 @@
 import { Button, Modal } from "@heroui/react";
+
 import { Icon } from "../icons/Icon";
 
 interface ConfirmDialogProps {
@@ -32,40 +33,66 @@ export function ConfirmDialog({
               <Modal.Heading>{title}</Modal.Heading>
             </Modal.Header>
             <Modal.Body>
-              <div className="flex items-start gap-4 p-4">
-                <div className="flex-shrink-0">
-                  <Icon
-                    color="rgb(239, 68, 68)"
-                    name="bi bi-exclamation-triangle"
-                    size={30}
-                  />
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {message}
-                </p>
-              </div>
+              <DialogBody
+                iconName="bi bi-exclamation-triangle"
+                message={message}
+              />
             </Modal.Body>
             <Modal.Footer>
-              <div className="flex gap-2 justify-end w-full">
-                <Button
-                  isDisabled={isLoading}
-                  variant="secondary"
-                  onPress={onClose}
-                >
-                  {cancelText}
-                </Button>
-                <Button
-                  isPending={isLoading}
-                  variant="danger"
-                  onPress={onConfirm}
-                >
-                  {confirmText}
-                </Button>
-              </div>
+              <DialogFooter
+                cancelText={cancelText}
+                confirmText={confirmText}
+                isLoading={isLoading}
+                onClose={onClose}
+                onConfirm={onConfirm}
+              />
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
     </Modal>
+  );
+}
+
+interface DialogBodyProps {
+  readonly iconName: string;
+  readonly message: string;
+}
+
+function DialogBody({ iconName, message }: DialogBodyProps) {
+  return (
+    <div className="flex items-start gap-4 p-4">
+      <div className="flex-shrink-0">
+        <Icon color="rgb(239, 68, 68)" name={iconName} size={30} />
+      </div>
+      <p className="text-sm text-gray-700 dark:text-gray-300">{message}</p>
+    </div>
+  );
+}
+
+interface DialogFooterProps {
+  readonly cancelText: string;
+  readonly confirmText: string;
+  readonly isLoading: boolean;
+  readonly onClose: () => void;
+  readonly onConfirm: () => void;
+}
+
+function DialogFooter({
+  cancelText,
+  confirmText,
+  isLoading,
+  onClose,
+  onConfirm,
+}: DialogFooterProps) {
+  return (
+    <div className="flex gap-2 justify-end w-full">
+      <Button isDisabled={isLoading} variant="secondary" onPress={onClose}>
+        {cancelText}
+      </Button>
+      <Button isPending={isLoading} variant="danger" onPress={onConfirm}>
+        {confirmText}
+      </Button>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+
 import { nameRoutes } from "../../configs/constants";
 
 export function Footer() {

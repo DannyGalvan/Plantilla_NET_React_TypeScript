@@ -1,3 +1,4 @@
+import eslintPluginJsxA11y from "eslint-plugin-jsx-a11y";
 import eslintPluginReactQuery from "@tanstack/eslint-plugin-query";
 import eslintPluginImport from "eslint-plugin-import";
 import pkg from "eslint-plugin-perfectionist";
@@ -10,8 +11,22 @@ import eslintUnusedImports from "eslint-plugin-unused-imports";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+/**
+ * Phase 5.1 — curated ESLint config.
+ *
+ * Goals (from agents.md §6.1):
+ *   1. Replace the broad `*.all` spreads with targeted rule sets so the
+ *      Prettier / format / a11y / security rules actually apply.
+ *   2. De-duplicate keys (the old config redefined `react/jsx-indent` twice,
+ *      `react/jsx-one-expression-per-line` twice, `react/jsx-tag-spacing`
+ *      twice).
+ *   3. Activate the previously registered-but-unused plugins:
+ *      `unused-imports`, `perfectionist`, `@tanstack/eslint-plugin-query`,
+ *      and the never-referenced `jsx-a11y`.
+ *   4. Promote the security-sensitive rules to `error` (closes F7).
+ */
 export default tseslint.config(
-  { ignores: ["dist"] },
+  { ignores: ["dist", "coverage", "node_modules"] },
   ...tseslint.configs.recommended,
   {
     files: ["**/*.{ts,tsx}"],
@@ -29,53 +44,25 @@ export default tseslint.config(
       tailwindcss: eslintPluginTailwindCSS,
       "react-query": eslintPluginReactQuery,
       perfectionist: pkg,
+      "jsx-a11y": eslintPluginJsxA11y,
+      "@tanstack/query": eslintPluginReactQuery,
     },
     settings: {
-      react: {
-        version: "detect",
-      },
+      react: { version: "detect" },
     },
     rules: {
+      // ---- React -----------------------------------------------------------
       ...(reactHooks.configs?.recommended?.rules ?? {}),
-      ...(eslintPluginReact.configs?.all?.rules ?? {}),
-      ...(eslintPluginTailwindCSS.configs?.all?.rules ?? {}),
-      ...(eslintPluginImport.configs?.all?.rules ?? {}),
-      ...(eslintPluginPrettier.configs?.recommended?.rules ?? {}),
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
-      "react/jsx-indent": ["error", 2],
+      ...(eslintPluginReact.configs?.recommended?.rules ?? {}),
       "react/react-in-jsx-scope": "off",
       "react/jsx-filename-extension": [
         "error",
         { extensions: [".jsx", ".tsx"] },
       ],
       "react/jsx-no-literals": "off",
-      "arrow-body-style": "off",
-      "prefer-arrow-callback": "off",
-      "max-len": "off",
-      "react/jsx-indent": "off",
-      "react/jsx-indent-props": "off",
-      "react/jsx-one-expression-per-line": "off",
-      "react/jsx-wrap-multilines": "off",
-      "react/jsx-one-expression-per-line": "off",
-      "react/jsx-tag-spacing": "off",
-      "react/jsx-child-element-spacing": "off",
-      "react/jsx-closing-bracket-location": "off",
-      "react/jsx-closing-tag-location": "off",
-      "react/jsx-curly-newline": "off",
-      "react/jsx-curly-spacing": "off",
-      "react/jsx-equals-spacing": "off",
-      "react/jsx-first-prop-new-line": "off",
-      "react/jsx-max-props-per-line": "off",
-      "react/jsx-props-no-multi-spaces": "off",
-      "react/jsx-space-before-closing": "off",
-      "react/jsx-tag-spacing": "off",
-      "react/jsx-newline": "off",
       "react/require-default-props": "off",
-      "react/jsx-max-depth": ["warn", { max: 6 }],
       "react/forbid-component-props": "off",
+      "react/jsx-max-depth": ["warn", { max: 6 }],
       "react/jsx-sort-props": [
         "warn",
         {
@@ -85,6 +72,61 @@ export default tseslint.config(
           reservedFirst: true,
         },
       ],
+
+      // ---- Tailwind --------------------------------------------------------
+      ...(eslintPluginTailwindCSS.configs?.recommended?.rules ?? {}),
+
+      // ---- Import ----------------------------------------------------------
+      // `import/no-unresolved` requires the TS path resolver (the project
+      // uses vite-tsconfig-paths at runtime, not ESLint). Disable to avoid
+      // false positives on TS aliases like `@/...` or relative `../`.
+      "import/no-unresolved": "off",
+      "import/order": [
+        "warn",
+        { "newlines-between": "always", alphabetize: { order: "asc" } },
+      ],
+
+      // ---- TanStack Query --------------------------------------------------
+      ...(eslintPluginReactQuery.configs?.recommended?.rules ?? {}),
+
+      // ---- Perfectionist (sorting) ----------------------------------------
+      ...(pkg.configs?.recommended?.rules ?? {}),
+
+      // ---- a11y (activated now) -------------------------------------------
+      ...(eslintPluginJsxA11y.configs?.recommended?.rules ?? {}),
+
+      // ---- Unused imports --------------------------------------------------
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": [
+        "warn",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "none",
+        },
+      ],
+
+      // ---- Prettier --------------------------------------------------------
+      ...(eslintPluginPrettier.configs?.recommended?.rules ?? {}),
+
+      // ---- React Refresh ---------------------------------------------------
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
+
+      // ---- Security-sensitive (F7) ----------------------------------------
+      "react/no-danger": "error",
+      "react/jsx-no-script-url": "error",
+      "react/jsx-no-target-blank": "error",
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-script-url": "error",
+
+      // ---- Disabled noisy rules ------------------------------------------
+      "arrow-body-style": "off",
+      "prefer-arrow-callback": "off",
+      "max-len": "off",
     },
   },
 );

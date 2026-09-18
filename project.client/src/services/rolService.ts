@@ -1,8 +1,18 @@
-import { api } from "../configs/axios/interceptors";
+import { z } from "zod";
+
 import type { ApiResponse } from "../types/ApiResponse";
 import type { filterOptions } from "../types/FilterTypes";
 import type { RolRequest } from "../types/RolRequest";
 import type { RolResponse } from "../types/RolResponse";
+import { rolResponseSchema } from "../types/schemas";
+
+import { zodApi } from "./zodApi";
+
+const rolListSchema = z.array(rolResponseSchema);
+const rolSchema = rolResponseSchema;
+
+type RolList = z.infer<typeof rolListSchema>;
+type Rol = z.infer<typeof rolSchema>;
 
 export const getRoles = async ({
   pageNumber = 1,
@@ -23,40 +33,33 @@ export const getRoles = async ({
     baseQuery += `&includeTotal=${includeTotal}`;
   }
 
-  return api.get<unknown, ApiResponse<RolResponse[]>>(baseQuery);
+  return zodApi.get<RolList>(baseQuery, rolListSchema) as Promise<
+    ApiResponse<RolResponse[]>
+  >;
 };
 
 export const getRolById = async (
   id: number,
-): Promise<ApiResponse<RolResponse>> => {
-  const response = await api.get<unknown, ApiResponse<RolResponse>>(
-    `Rol/${id}`,
-  );
-  return response;
-};
+): Promise<ApiResponse<RolResponse>> =>
+  zodApi.get<Rol>(`Rol/${id}`, rolSchema) as Promise<ApiResponse<RolResponse>>;
 
 export const createRol = async (
   rol: RolRequest,
-): Promise<ApiResponse<RolResponse>> => {
-  const response = await api.post<unknown, ApiResponse<RolResponse>>(
-    "Rol",
-    rol,
-  );
-  return response;
-};
+): Promise<ApiResponse<RolResponse>> =>
+  zodApi.post<Rol, RolRequest>("Rol", rolSchema, rol) as Promise<
+    ApiResponse<RolResponse>
+  >;
 
 export const updateRol = async (
   rol: RolRequest,
-): Promise<ApiResponse<RolResponse>> => {
-  const response = await api.put<unknown, ApiResponse<RolResponse>>("Rol", rol);
-  return response;
-};
+): Promise<ApiResponse<RolResponse>> =>
+  zodApi.put<Rol, RolRequest>("Rol", rolSchema, rol) as Promise<
+    ApiResponse<RolResponse>
+  >;
 
 export const deleteRol = async (
   id: number,
-): Promise<ApiResponse<RolResponse>> => {
-  const response = await api.delete<unknown, ApiResponse<RolResponse>>(
-    `Rol/${id}`,
-  );
-  return response;
-};
+): Promise<ApiResponse<RolResponse>> =>
+  zodApi.delete<Rol>(`Rol/${id}`, rolSchema) as Promise<
+    ApiResponse<RolResponse>
+  >;

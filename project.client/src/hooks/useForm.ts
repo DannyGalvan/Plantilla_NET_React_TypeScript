@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 
 import { useErrorsStore } from "../stores/useErrorsStore";
 import type { ApiResponse } from "../types/ApiResponse";
-import { ApiError } from "../types/errors";
 import type { ValidationFailure } from "../types/ValidationFailure";
+import { ApiError } from "../types/errors";
+
 import { useResponse } from "./useResponse";
 
 export interface ErrorObject {
@@ -110,11 +111,14 @@ export const useForm = <T, U>(
             name: error.name,
           });
         } else {
-          const errObj = error as ApiError;
+          // F5: never surface `stack` (or any internal exception detail) to
+          // the end user. The interceptor surfaces a generic message via
+          // ApiError already; any non-API error reaching here is treated as
+          // an opaque failure.
           handleApiResponse({
             success: false,
             data: null,
-            message: `${errObj.name ?? "Unknown error"} ${errObj.stack ?? ""}`,
+            message: "Unexpected error. Please retry.",
             totalResults: 0,
           });
         }

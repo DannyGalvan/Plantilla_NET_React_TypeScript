@@ -1,8 +1,18 @@
-import { api } from "../configs/axios/interceptors";
+import { z } from "zod";
+
 import type { ApiResponse } from "../types/ApiResponse";
 import type { filterOptions } from "../types/FilterTypes";
 import type { RolOperationRequest } from "../types/RolOperationRequest";
 import type { RolOperationResponse } from "../types/RolOperationResponse";
+import { rolOperationResponseSchema } from "../types/schemas";
+
+import { zodApi } from "./zodApi";
+
+const rolOperationListSchema = z.array(rolOperationResponseSchema);
+const rolOperationSchema = rolOperationResponseSchema;
+
+type RolOperationList = z.infer<typeof rolOperationListSchema>;
+type RolOperation = z.infer<typeof rolOperationSchema>;
 
 export const getRolOperations = async ({
   pageNumber = 1,
@@ -23,27 +33,33 @@ export const getRolOperations = async ({
     baseQuery += `&includeTotal=${includeTotal}`;
   }
 
-  return api.get<unknown, ApiResponse<RolOperationResponse[]>>(baseQuery);
+  return zodApi.get<RolOperationList>(
+    baseQuery,
+    rolOperationListSchema,
+  ) as Promise<ApiResponse<RolOperationResponse[]>>;
 };
 
-export const getRolOperationById = async (id: number) => {
-  return api.get<unknown, ApiResponse<RolOperationResponse>>(
-    `RolOperation/${id}`,
-  );
-};
+export const getRolOperationById = async (
+  id: number,
+): Promise<ApiResponse<RolOperationResponse>> =>
+  zodApi.get<RolOperation>(`RolOperation/${id}`, rolOperationSchema) as Promise<
+    ApiResponse<RolOperationResponse>
+  >;
 
-export const createRolOperation = async (rolOperation: RolOperationRequest) => {
-  return api.post<
-    unknown,
-    ApiResponse<RolOperationResponse>,
-    RolOperationRequest
-  >("RolOperation", rolOperation);
-};
+export const createRolOperation = async (
+  rolOperation: RolOperationRequest,
+): Promise<ApiResponse<RolOperationResponse>> =>
+  zodApi.post<RolOperation, RolOperationRequest>(
+    "RolOperation",
+    rolOperationSchema,
+    rolOperation,
+  ) as Promise<ApiResponse<RolOperationResponse>>;
 
-export const updateRolOperation = async (rolOperation: RolOperationRequest) => {
-  return api.put<
-    unknown,
-    ApiResponse<RolOperationResponse>,
-    RolOperationRequest
-  >(`RolOperation`, rolOperation);
-};
+export const updateRolOperation = async (
+  rolOperation: RolOperationRequest,
+): Promise<ApiResponse<RolOperationResponse>> =>
+  zodApi.put<RolOperation, RolOperationRequest>(
+    "RolOperation",
+    rolOperationSchema,
+    rolOperation,
+  ) as Promise<ApiResponse<RolOperationResponse>>;

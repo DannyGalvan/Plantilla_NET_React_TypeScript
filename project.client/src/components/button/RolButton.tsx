@@ -2,6 +2,7 @@ import { Button, Dropdown, toast } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
+
 import { deleteRol } from "../../services/rolService";
 import type { RolResponse } from "../../types/RolResponse";
 import { validationFailureToString } from "../../utils/converted";

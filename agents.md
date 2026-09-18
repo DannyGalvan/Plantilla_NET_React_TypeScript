@@ -451,3 +451,67 @@ Si tienes seeds existentes en `DataContext.cs`:
 - Hosted service: `Project.Server/Services/Background/OperationSyncHostedService.cs`
 - Configuración DI: `Project.Server/Configs/Extensions/ServicesGroup.cs`
 - Plan detallado: `PLAN_MEJORA_PERMISOS_Y_REFLEXION.md`
+
+---
+
+## Endurecimiento OWASP — Aplicado 2026-09-17
+
+> Apéndice vivo del plan `plans/2026-09-16_endurecimiento-owasp-y-servicios-genericos.md`. Resume las reglas que el repositorio ya aplica y que cualquier proyecto derivado hereda.
+
+### Reglas obligatorias del Frontend (estrictas, sin excepciones)
+
+1. **Cero warnings y cero errores.** Antes de cerrar cualquier cambio en `project.client/` se debe ejecutar `npm run verify` y obtener salida limpia. `npm run lint` corre con `--max-warnings=0`.
+2. **ESLint sin excepciones.** Prohibido `eslint-disable`, `eslint-disable-next-line` o `@ts-ignore` para silenciar un hallazgo. Se arregla el código; si una regla es incorrecta, se cambia la config (con justificación).
+3. **Prettier sin excepciones.** `npm run format:check` debe pasar. Prohibido `prettier-ignore`.
+4. **TypeScript estricto.** `npm run typecheck` debe pasar. Prohibido `any` explícito y aserciones de tipo sobre respuestas del API — se validan con zod (pendiente F9).
+5. **Seguridad en el cliente (OWASP Top 10).** En cada cambio se verifica que:
+   - no se introduce `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `new Function` ni `javascript:`;
+   - ningún token, credencial ni dato sensible se guarda en `localStorage` o `sessionStorage` (el access token vive en memoria; el refresh va en cookie `HttpOnly`);
+   - todo `target="_blank"` lleva `rel="noopener noreferrer"`;
+   - no se muestran stacks, mensajes de excepción ni detalles internos al usuario final;
+   - toda ruta autenticada está envuelta en su guard (`ProtectedRoute`) y toda acción sensible comprobada con `useCan(operationKey)`;
+   - toda respuesta del API se valida antes de usarse;
+   - ningún valor de `import.meta.env.VITE_*` contiene secretos.
+6. **Sin `.env` en el repo.** Solo `.env.example` con valores de ejemplo.
+7. **Comandos de cierre:** `npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build`.
+
+### Mejores Prácticas actualizadas (backend)
+
+- `dotnet build Project.sln -warnaserror` sin warnings antes de cerrar cualquier cambio de backend.
+- `npm run verify` limpio antes de cerrar cualquier cambio de frontend.
+- Ningún secreto en el repo: *user-secrets* o variables de entorno.
+- Toda acción de controlador nueva lleva `[RequireOperation]` o `[AllowAnonymous]` explícito. El arranque falla si falta (fail-closed via `RequireOperationConventionProvider`).
+- Toda entidad con datos de usuario implementa `IOwnedEntity<long>` y se expone por los endpoints `me/...` (`GetAllOwnAsync`, `GetByIdOwnAsync`, `CreateOwnAsync`, `Update/PartialUpdate/DeleteOwnAsync`).
+- Toda query pasa por `IQueryPolicy<TEntity>` — propiedades sensibles (`Password`, `RecoveryToken`, `DateToken`, `FailedLoginAttempts`, `LockoutEnd`, `OwnerId`) no son filtrables ni ordenables.
+
+### Contratos añadidos (Especificaciones)
+
+- **`IOwnedEntity<TOwnerId>`**: marca de propiedad. `OwnershipResolver.Predicate<TEntity>(userId)` produce el predicado cacheado; si la entidad no implementa este contrato ni `IEntity<TId>`, `OwnershipValidationHostedService` aborta el arranque.
+- **Endpoints `me/...`** del stack genérico:
+  - **404** si no existe (o si está borrada lógicamente — `HasQueryFilter`).
+  - **403** si existe pero pertenece a otro usuario. Conmutable a 404 mediante `AppSettings:Security:OwnershipDenialMode = NotFound`.
+  - **401** sin claim válido.
+- **`IQueryPolicy<TEntity>`** centraliza la allowlist de `Filters`/`SortBy`/`Includes`. Cualquier propiedad no incluida devuelve 400 (no excepción).
+- **Interceptores**: `IEntityBeforeDeleteInterceptor`, `IEntityAfterDeleteInterceptor`, `IEntityBeforePartialUpdateInterceptor`, `IEntityQueryFilter<T>` se ejecutan en orden según `OrderAttribute` (ahora `sealed`).
+- **Firma del stack genérico**: **async con `CancellationToken`**.
+
+### Checklist OWASP Top 10 — controles heredados
+
+| OWASP | Control backend | Control frontend |
+|---|---|---|
+| A01 Broken Access Control | `IOwnedEntity` + endpoints `me/...` + RBAC fail-closed (`RequireOperationConventionProvider`) + `MassAssignmentDenylist` (Id, CreatedBy, State, Password, RolId, OwnerId) | `ProtectedRoute` + `useCan(operationKey)` + axios 401 → logout |
+| A02 Cryptographic Failures | JWT ≥32 bytes (UTF-8), `ValidateIssuer`/`ValidateAudience`/`ValidAlgorithms=[HS256]`, `ClockSkew=30s`. Recovery token: `RandomNumberGenerator.GetBytes(32)` + SHA-256 hash + `FixedTimeEquals` | `import.meta.env.VITE_API_URL` (no secretos en bundle) |
+| A03 Injection (incluye XSS) | Allowlist de propiedades filtrables / ordenables / incluibles (cierra B3 — `?filters=Password:like:$2a$`) | `catalogueService` codifica segmento de path + query params |
+| A04 Insecure Design | Endpoint `/me` con **403** explícito, no 404 por defecto (oráculo de enumeración conmutable) | — |
+| A05 Security Misconfiguration | `SecurityHeadersConfiguration` (CSP, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP). CORS con allowlist explícita. `UseExceptionHandler` + ProblemDetails + `traceId` (sin `ex.Message` al cliente). Swagger solo en Dev. | CSP `<meta>` de respaldo en `index.html` |
+| A07 Auth Failures | Lockout 5/30min, rate-limit `auth` 5/15min/IP en login / recovery / validate-token. Hash-only recovery tokens. Refresh tokens rotativos + reuse detection. CSRF double-submit (3.9). | JWT en memoria + refresh cookie `HttpOnly`. Sin secretos en `localStorage` |
+| A08 Data Integrity | Validación FluentValidation en TODA request. `SecurityPasswordPolicy` compartida (8+ chars, upper/lower/digit/special). `ModelState` errors no incluyen `AttemptedValue` (no echo de contraseña) | Zod en formularios (F9 pendiente) |
+| A09 Logging Failures | Serilog reactivado (B17 — era código muerto). `OperationAuthorizationHandler` ya no loguea la lista completa de permisos del usuario | — |
+
+### Cómo aplicar este endurecimiento a un proyecto derivado
+
+1. Clonar este repositorio como base.
+2. `git grep -nE 'Password|RecoveryToken|OwnerId' -- Project.Server/ Utils/ Migrations/` para verificar que ningún código de negocio expone columnas sensibles.
+3. `dotnet ef database update` (las migraciones crean `RefreshTokens` automáticamente).
+4. `npm install && npm run verify` antes del primer commit.
+5. Configurar `AppSettings:SeedAdminPassword` via user-secret en dev o env var en prod.

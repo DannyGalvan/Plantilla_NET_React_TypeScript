@@ -7,7 +7,5 @@
   "tailwindConfig": "./tailwind.config.js",
   "tailwindAttributes": ["tw"],
   "tailwindFunctions": ["tw"],
-  "tailwindDirective": "tw",
-  "tailwindClassNames": ["tw"],
   "endOfLine": "auto"
 }

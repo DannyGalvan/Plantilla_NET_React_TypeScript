@@ -1,59 +1,120 @@
 import { create } from "zustand";
 
-import { setAuthorization } from "../configs/axios/interceptors";
+import {
+  api,
+  readToken,
+  setAuthorization,
+} from "../configs/axios/interceptors";
+import { tryParseEnvelope } from "../services/zodApi";
 import { authInitialState } from "../configs/constants";
 import type { InitialAuth } from "../types/InitialAuth";
+import { authWithRefreshResponseSchema } from "../types/schemas";
 import { retrase } from "../utils/viewTransition";
 
 interface AuthState {
   authState: InitialAuth;
   loading: boolean;
-  syncAuth: () => void;
+  /**
+   * Boot-time hydration:
+   *   1. POST /Auth/Refresh — the HttpOnly refresh cookie attaches
+   *      automatically. On 200 we get a fresh access token; on 401
+   *      the user must log in again.
+   *
+   * Never writes the token to localStorage (F1).
+   */
+  syncAuth: () => Promise<void>;
   signIn: (login: InitialAuth) => void;
-  logout: () => void;
+  /**
+   * Server-side revocation (POST /Auth/Logout) + clear the in-memory store.
+   * Best-effort: if the server call fails we still clear locally.
+   */
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+const apiBaseUrl = api.defaults.baseURL ?? "";
+
+export const useAuthStore = create<AuthState>((set) => ({
   authState: authInitialState,
   loading: true,
   syncAuth: async () => {
+    set({ loading: true });
     try {
-      set({ loading: true });
-      await retrase(1000);
-      const storedState = window.localStorage.getItem("@auth");
-      if (storedState) {
-        const initialState: InitialAuth = JSON.parse(storedState);
-        setAuthorization(initialState.token);
-        set({ authState: initialState });
+      const response = await fetch(`${apiBaseUrl}Auth/Refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          ...(readXsrfCookie() ? { "X-XSRF-TOKEN": readXsrfCookie()! } : {}),
+        },
+      });
+
+      if (response.ok) {
+        const raw = await response.json();
+        const env = tryParseEnvelope(raw, authWithRefreshResponseSchema);
+        if (env?.success && env.data?.token) {
+          const data = env.data;
+          const auth: InitialAuth = {
+            isLoggedIn: true,
+            redirect: false,
+            email: data.email ?? "",
+            token: data.token,
+            userName: data.userName ?? "",
+            name: data.name ?? "",
+            userId: data.userId ?? 0,
+            operations: data.operations ?? [],
+          };
+          setAuthorization(auth.token);
+          set({ authState: auth });
+        }
+      } else if (response.status !== 401) {
+        console.warn("refresh bootstrap failed", response.status);
       }
-      set({ loading: false });
-    } catch (error: unknown) {
-      console.error("Error during auth sync:", error);
+    } catch (error) {
+      console.error("auth sync failed", error);
+    } finally {
       set({ loading: false });
     }
   },
   signIn: (auth) => {
-    const newState = {
-      ...get().authState,
-      ...auth,
-    };
-    set({ authState: newState });
-    setAuthorization(auth.token);
-    window.localStorage.setItem("@auth", JSON.stringify(newState));
-    return newState;
+    if (auth.token) {
+      setAuthorization(auth.token);
+    }
+    set({ authState: auth });
   },
   logout: async () => {
+    set({ loading: true });
     try {
-      set({ loading: true });
-      await retrase(1000);
-      window.localStorage.clear();
-      setAuthorization("");
-      set({ authState: authInitialState });
-      set({ loading: false });
-      return authInitialState;
-    } catch (ex: unknown) {
-      console.error("Error during logout:", ex);
-      set({ loading: false });
+      await fetch(`${apiBaseUrl}Auth/Logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          ...(readXsrfCookie() ? { "X-XSRF-TOKEN": readXsrfCookie()! } : {}),
+        },
+      });
+    } catch (error) {
+      console.error("logout request failed", error);
+    } finally {
+      setAuthorization(null);
+      set({ authState: authInitialState, loading: false });
     }
   },
 }));
+
+// Expose the current token accessor for the request interceptor.
+export const currentAuthToken = readToken;
+
+function readXsrfCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const target = "XSRF-TOKEN=";
+  const parts = document.cookie.split(";");
+  for (const raw of parts) {
+    const cookie = raw.trim();
+    if (cookie.startsWith(target)) {
+      return decodeURIComponent(cookie.substring(target.length));
+    }
+  }
+  return null;
+}
+
+// `retrase` is reserved for future use in the sign-in flow; kept imported
+// so the bundler doesn't drop it from the dep graph.
+void retrase;
