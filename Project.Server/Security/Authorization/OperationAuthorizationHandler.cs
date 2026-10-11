@@ -33,7 +33,7 @@ namespace Project.Server.Security.Authorization
             // Get user's OperationKey claims from JWT
             var operationKeyClaims = context.User.FindAll("OperationKey").ToList();
 
-            if (!operationKeyClaims.Any())
+            if (operationKeyClaims.Count == 0)
             {
                 _logger.LogWarning("User {UserId} has no OperationKey claims in JWT", 
                     context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Unknown");

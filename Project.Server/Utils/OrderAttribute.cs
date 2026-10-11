@@ -16,7 +16,7 @@ namespace Project.Server.Utils
 
         public OrderAttribute(int priority)
         {
-            if (priority < 0) throw new ArgumentOutOfRangeException(nameof(priority));
+            ArgumentOutOfRangeException.ThrowIfNegative(priority);
             Priority = priority;
         }
     }

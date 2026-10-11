@@ -579,12 +579,12 @@ namespace Project.Server.Services.Core
             return Convert.ToHexString(hash);
         }
 
-        private async Task<string?> ResolveRecoveryTokenHashAsync(string token)
+        private static Task<string?> ResolveRecoveryTokenHashAsync(string token)
         {
             // Constant-time lookup: search by hash (not by plain token). Both
             // the in-memory comparison and the SHA-256 reduce timing leaks.
             var hash = HashRecoveryToken(token);
-            return await Task.FromResult(hash);
+            return Task.FromResult<string?>(hash);
         }
 
         private async Task<List<Operation>> LoadOperationsAsync(long rolId)

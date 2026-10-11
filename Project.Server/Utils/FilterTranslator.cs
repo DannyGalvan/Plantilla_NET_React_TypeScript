@@ -54,7 +54,7 @@ namespace Project.Server.Utils
             return combinedAndFilter;
         }
 
-        private MemberExpression GetNestedMemberExpression(Expression parameter, string propertyPath)
+        private static MemberExpression GetNestedMemberExpression(Expression parameter, string propertyPath)
         {
             Expression current = parameter;
 
@@ -75,7 +75,7 @@ namespace Project.Server.Utils
         ///         <cref>Expression{Func{TEntity, bool}}</cref>
         ///     </see>
         /// </returns>
-        private Expression<Func<TEntity, bool>> TranslateConditionToEfFilter<TEntity>(string condition)
+        private static Expression<Func<TEntity, bool>> TranslateConditionToEfFilter<TEntity>(string condition)
         {
             // Ejemplo: Name:like:free
             var parts = condition.Split(':');
@@ -232,7 +232,7 @@ namespace Project.Server.Utils
         ///         <cref>Expression{Func{TEntity, bool}}</cref>
         ///     </see>
         /// </returns>
-        private Expression<Func<TEntity, bool>> CombineExpressions<TEntity>(Expression<Func<TEntity, bool>> expr1, Expression<Func<TEntity, bool>> expr2, Func<Expression, Expression, BinaryExpression> combiner)
+        private static Expression<Func<TEntity, bool>> CombineExpressions<TEntity>(Expression<Func<TEntity, bool>> expr1, Expression<Func<TEntity, bool>> expr2, Func<Expression, Expression, BinaryExpression> combiner)
         {
             var parameter = Expression.Parameter(typeof(TEntity));
             var body = combiner(

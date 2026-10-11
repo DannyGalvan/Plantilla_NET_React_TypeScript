@@ -244,7 +244,7 @@ namespace Project.Server.Services.Core
                     })
                     .ToList();
 
-                if (newAssignments.Any())
+                if (newAssignments.Count > 0)
                 {
                     _db.RolOperations.AddRange(newAssignments);
                     await _db.SaveChangesAsync();
@@ -265,22 +265,28 @@ namespace Project.Server.Services.Core
         /// <summary>
         /// Verifica si el controlador está excluido de la sincronización
         /// </summary>
-        private bool IsExcludedController(ControllerActionDescriptor descriptor)
+        private static bool IsExcludedController(ControllerActionDescriptor descriptor)
         {
             return descriptor.ControllerTypeInfo
                 .GetCustomAttributes(typeof(ExcludeFromSyncAttribute), false)
-                .Any();
+                .Length != 0;
         }
 
         /// <summary>
         /// Verifica si la acción está excluida de la sincronización
         /// </summary>
-        private bool IsExcludedAction(ControllerActionDescriptor descriptor)
+        private static bool IsExcludedAction(ControllerActionDescriptor descriptor)
         {
-            return descriptor.MethodInfo
+            var hasExcludeFromSync = descriptor.MethodInfo
                 .GetCustomAttributes(typeof(ExcludeFromSyncAttribute), false)
-                .Any() ||
-                descriptor.MethodInfo
+                .Length != 0;
+
+            if (hasExcludeFromSync)
+            {
+                return true;
+            }
+
+            return descriptor.MethodInfo
                 .GetCustomAttributes(typeof(OperationInfoAttribute), false)
                 .OfType<OperationInfoAttribute>()
                 .Any(attr => attr.ExcludeFromSync);

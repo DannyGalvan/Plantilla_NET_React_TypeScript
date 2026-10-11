@@ -454,7 +454,7 @@ namespace Project.Server.Services.Core
             return (query, null);
         }
 
-        private IQueryable<TEntity> ApplyIncludes(IQueryable<TEntity> query, string[]? includes)
+        private static IQueryable<TEntity> ApplyIncludes(IQueryable<TEntity> query, string[]? includes)
         {
             if (includes is null || includes.Length == 0) return query;
             // Depth/quantity caps are enforced inside ApplyIncludes — invalid paths

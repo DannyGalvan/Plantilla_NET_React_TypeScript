@@ -175,12 +175,12 @@ namespace Project.Server.Utils
             if (!Regex.IsMatch(cui, @"^\d{13}$"))
                 return false;
 
-            var numero = cui.Substring(0, 8);
-            if (!int.TryParse(cui.Substring(8, 1), out int verificador))
+            var numero = cui.AsSpan(0, 8);
+            if (!int.TryParse(cui.AsSpan(8, 1), out int verificador))
                 return false;
 
-            if (!int.TryParse(cui.Substring(9, 2), out int depto) ||
-                !int.TryParse(cui.Substring(11, 2), out int muni))
+            if (!int.TryParse(cui.AsSpan(9, 2), out int depto) ||
+                !int.TryParse(cui.AsSpan(11, 2), out int muni))
                 return false;
 
             int[] munisPorDepto = {

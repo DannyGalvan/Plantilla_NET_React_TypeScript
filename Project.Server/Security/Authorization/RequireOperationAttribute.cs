@@ -34,6 +34,7 @@ namespace Project.Server.Security.Authorization
         /// </summary>
         private class RequireOperationFilter : IAsyncAuthorizationFilter
         {
+            private static readonly string[] UnauthorizedErrors = ["Acceso no autorizado"];
             private readonly IAuthorizationService _authorizationService;
             private readonly ILogger<RequireOperationFilter> _logger;
             private readonly string? _explicitOperationKey;
@@ -90,7 +91,7 @@ namespace Project.Server.Security.Authorization
                     {
                         success = false,
                         message = "No tiene permisos para realizar esta operación",
-                        errors = new[] { "Acceso no autorizado" }
+                        errors = UnauthorizedErrors
                     })
                     {
                         StatusCode = 403

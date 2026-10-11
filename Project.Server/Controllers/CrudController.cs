@@ -185,7 +185,7 @@ namespace Project.Server.Controllers
 
         // ----------------------------------------------------------------
 
-        private IActionResult ProjectSingleResponse(Response<TEntity, List<ValidationFailure>> response)
+        private ObjectResult ProjectSingleResponse(Response<TEntity, List<ValidationFailure>> response)
         {
             if (response.Status == ResponseStatus.Ok && response.Data is not null)
             {
@@ -206,7 +206,7 @@ namespace Project.Server.Controllers
             });
         }
 
-        private IActionResult ProjectListResponse(Response<List<TEntity>, List<ValidationFailure>> response)
+        private ObjectResult ProjectListResponse(Response<List<TEntity>, List<ValidationFailure>> response)
         {
             if (response.Status == ResponseStatus.Ok && response.Data is not null)
             {
