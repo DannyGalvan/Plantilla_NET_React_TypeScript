@@ -1,530 +1,114 @@
-# Agentes - Plantilla NET 8 + React + TypeScript
+# Agentes - Plantilla NET 10 + React 19 + TypeScript
 
 ## Descripción General
 
-Este documento describe los agentes de desarrollo y herramientas disponibles para trabajar con esta plantilla de solución que combina un backend en .NET 8 con un frontend en React y TypeScript.
+Esta plantilla sirve como marco de trabajo empresarial con monolito modular
+en .NET 10 y frontend modular en React 19 + TypeScript. Cubre desde una
+app de inventario de una sola empresa hasta un SaaS multi-tenant con
+bases dedicadas, todo por configuración.
 
 ## Estructura del Proyecto
 
 ```
 Plantilla_NET_React_TypeScript/
-├── Project.Server/              # Backend en .NET 8
-│   ├── Project.Server.csproj
-│   ├── Controllers/
-│   ├── Services/
-│   └── Models/
-├── project.client/              # Frontend en React + TypeScript
-│   ├── src/
-│   ├── tsconfig.json
-│   ├── package.json
-│   └── vite.config.ts
-└── agents.md                     # Este archivo
+├── Project.Server/              # Legacy single-project (a eliminar en Fase 4)
+├── Project.Server.Tests/        # Tests del legacy
+├── project.client/              # Frontend legacy + shared/theme, shared/ui, shared/auth…
+├── src/
+│   ├── BuildingBlocks/          # Project.SharedKernel, Project.Application,
+│   │                            # Project.Infrastructure, Project.Web
+│   ├── Host/                    # Project.Api (host delgado),
+│   │                            # Project.ServiceDefaults, Project.MigrationService
+│   ├── Modules/                 # Identity, Tenancy, Organization, Catalog,
+│   │                            # más los que agregues con new-module
+├── tests/                       # Project.ArchitectureTests + FunctionalTests (Fase 5)
+├── scripts/                     # new-module.mjs, add-migration.sh
+├── docs/                        # architecture, security, adding-a-module…
+│   └── adr/                     # ADRs numeradas
+├── plans/                       # Plan maestro + sub-planes
+└── graphify-out/                # Knowledge graph (AST + del código)
 ```
 
-## Agentes y Herramientas Disponibles
+## Convenciones del Backend (plan §3.3)
 
-### 1. **Agente de Modernización .NET**
-- **Descripción**: Asiste en la actualización y modernización del proyecto .NET 8
-- **Casos de uso**:
-  - Upgrade de versiones de .NET
-  - Migración de componentes obsoletos a características modernas
-  - Actualización de paquetes NuGet
-  - Migración a Azure
+- **Permisos**: `{module}.{resource}.{action}` en minúsculas (p. ej.
+  `inventory.products.read`). Se declaran como constantes en el
+  `Contracts/Permissions.cs` del módulo. Nunca derivados del nombre del
+  controller.
+- **Async**: todo método async recibe y propaga `CancellationToken ct`.
+  Prohibido `.Result` / `.Wait()`.
+- **Sin estáticos con estado**. Sin service locator.
+- **Logging**: structured logging con `LoggerMessage` source-generated en
+  hot paths.
+- **Filtros de query**: combinar `IMultiTenant`, `IOrganizationScoped`,
+  `ISoftDeletable` en un único `HasQueryFilter`. Prohibido
+  `IgnoreQueryFilters()` fuera de `Project.Infrastructure`.
+- **Borrado físico PROHIBIDO**: implementar `ISoftDeletable`. El
+  `SoftDeleteInterceptor` convierte `EntityState.Deleted` en `Modified`
+  con `IsDeleted=true`.
+- **Sin `DateTime.Now`**: usar `TimeProvider` (inyectado).
+- **Entities**: implementar `IMultiTenant` cuando `DataScope=Tenant`.
+  Implementar `IOrganizationScoped` cuando el dato pertenece a una
+  unidad organizativa.
+- **Multi-tenancy**: leer siempre de `ITenantContext` u
+  `IOrganizationContext`. Nunca del request body.
+- **Sin secretos** en el repo: `dotnet user-secrets` o variables de
+  entorno. Plantillas con `<TU_VALOR>`.
 
-### 2. **Agente de Perfiles de Rendimiento**
-- **Descripción**: Herramienta para diagnósticos de rendimiento y perfilado
-- **Casos de uso**:
-  - Identificar cuellos de botella en el código
-  - Optimizar performance del servidor
-  - Análisis de memoria
-  - Benchmarking
+## Convenciones del Frontend
 
-### 3. **Gestor de Paquetes NuGet**
-- **Descripción**: Gestión de dependencias del backend
-- **Casos de uso**:
-  - Buscar versiones disponibles de paquetes
-  - Obtener READMEs de paquetes
-  - Actualizar paquetes a versiones compatibles
-  - Resolver vulnerabilidades
+- **Tokens CSS** en OKLCH como única fuente de color
+  (`src/shared/theme/tokens.css`).
+- **Módulos** con `ModuleManifest` (id, routes, nav, features, i18n). El
+  registry (`src/app/module-registry.ts`) los descubre con
+  `import.meta.glob`. Agregar un módulo = carpeta + manifest; nada más.
+- **Borrado físico backend** → no exponer `Delete` directo en UI;
+  siempre detrás de un confirm dialog.
+- **CSP `<meta>`** en `index.html`. `target="_blank"` siempre con
+  `rel="noopener noreferrer"`. Sin secretos en `localStorage`.
 
-### 4. **Búsqueda de Código**
-- **Descripción**: Búsqueda semántica en el workspace
-- **Casos de uso**:
-  - Encontrar funcionalidades específicas
-  - Localizar patrones de código
-  - Búsqueda contextual
+## Comandos Habituales
 
-### 5. **Análisis de Símbolos**
-- **Descripción**: Navegación y análisis de símbolos del código
-- **Casos de uso**:
-  - Ir a definición de clases/métodos
-  - Encontrar todas las referencias
-  - Ver implementaciones de interfaces
-  - Rastrear uso de símbolos
+- `dotnet build Project.sln --configuration Release -warnaserror`
+- `dotnet test Project.sln --no-build --configuration Release`
+- `cd project.client && pnpm verify`  (typecheck + lint + format + vitest)
+- `graphify update .`
+- `node scripts/new-module.mjs <name>` (frontend)
+- `./scripts/add-migration.sh <Module> <Name>` (backend EF)
 
-### 6. **Compilación y Build**
-- **Descripción**: Compilación del proyecto
-- **Casos de uso**:
-  - Validar cambios de código
-  - Identificar errores de compilación
-  - Verificar integridad de la solución
+## Reglas Para Commits Y PRs
 
-### 7. **Ejecución de Pruebas**
-- **Descripción**: Ejecutar y descubrir tests
-- **Casos de uso**:
-  - Ejecutar suite de pruebas
-  - Validar cambios
-  - Descubrir tests por tipo, nombre o estado
-
-### 8. **Documentación Microsoft Learn**
-- **Descripción**: Acceso a documentación oficial de Microsoft
-- **Casos de uso**:
-  - Consultar documentación de .NET 8
-  - Obtener ejemplos de código
-  - Guías de implementación
+- Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:` …).
+- Commits pequeños, una fase por rama y por PR.
+- Una rama `refactor/fase-N-<slug>` por fase.
+- PR siempre con resumen, la checklist de la fase y la evidencia de
+  verificación.
+- No commit directo a `master`, no reescribir historia.
+- Marcar `[x]` en el archivo de plan al completar cada paso. Si un paso se
+  adapta, añadir una nota breve "Nota de implementación".
 
 ## Stack Tecnológico
 
 ### Backend
-- **.NET 8**: Framework principal del servidor
-- **C#**: Lenguaje de programación
-- **ASP.NET Core**: Framework web
-- **NuGet**: Gestor de paquetes
+- .NET 10 LTS, C# 14, ASP.NET Core, EF Core 10, Mediator (martinothamar).
+- Multi-provider: SqlServer (Microsoft.Data.SqlClient), PostgreSQL
+  (Npgsql), MySQL (Oracle MySql.EntityFrameworkCore).
+- OpenTelemetry + Serilog + HybridCache (Redis opcional).
 
 ### Frontend
-- **React**: Biblioteca UI
-- **TypeScript**: Lenguaje tipado para JavaScript
-- **Vite**: Build tool y dev server
-- **npm/yarn**: Gestor de paquetes
+- React 19, TypeScript, Vite, zustand, axios, TanStack Query, react-router.
+- shadcn/ui + Radix + Tailwind v4 + tokens CSS en OKLCH.
+- Playwright (e2e) + MSW (unit) + vitest.
 
-## Workflows Comunes
+## ADRs
 
-### Agregar una Nueva Dependencia
-1. Buscar paquete con el agente de NuGet
-2. Obtener información del README
-3. Actualizar versión compatible
-4. Ejecutar build para validar
+Lee `docs/adr/0001-monolito-modular.md` y siguientes para entender las
+elecciones arquitectónicas. Cada ADR tiene estado, fecha y consecuencias.
 
-### Optimizar Rendimiento
-1. Usar agente de perfiles para medir
-2. Identificar cuellos de botella
-3. Implementar mejoras
-4. Validar con perfiles nuevamente
+## Pendientes Conocidos
 
-### Modernizar Código
-1. Activar agente de modernización
-2. Identificar componentes obsoletos
-3. Aplicar cambios sugeridos
-4. Ejecutar tests para validar
-
-### Investigar Código Existente
-1. Usar búsqueda de código para conceptos
-2. Usar análisis de símbolos para referencias
-3. Verificar con compilación
-4. Ejecutar tests relacionados
-
-## Mejores Prácticas
-
-- ✅ Siempre compilar después de cambios significativos
-- ✅ Ejecutar pruebas antes de hacer commit
-- ✅ Mantener dependencias actualizadas
-- ✅ Documentar cambios importantes
-- ✅ Usar análisis de código para verificar calidad
-
-## Recursos
-
-- [Documentación .NET 8](https://learn.microsoft.com/en-us/dotnet/)
-- [React TypeScript](https://react.dev/)
-- [Vite Documentation](https://vitejs.dev/)
-- [ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/)
-
-## Nota
-
-Este archivo se actualiza conforme se añadan nuevas herramientas y agentes al workspace.
-
-# Especificaciones
-- Existe un servicio generico para los crud llamado EntityService, el cual no necesita heredarse si no solo inyectarse, ya que se basa en el tipo de entidad que se le indique al inyectar, el tipo de su llave primaria y el request, por Ejemplo: 
-```csharp para hacer el crud de usuarios necesitamos: 
-   Clase de User que herede de IEntity<long> que es la interfaz que lleva las propiedades obligatorias de toda entidad de dominio y el tipo de dato de la llave primaria, en este caso long, esta clase llevaria todas las propiedades necesarias para crear un usuario, como por ejemplo: Nombre, Apellido, Email, etc.
-   crear los Dtos necesarios para el crud de usuarios
-   UserRequest, UserResponse
-   UserRequest debe implementar IRequest<long> que lleva las propiedades obligatorias de toda entidad de dominio y el tipo de dato de la llave primaria, tendria todas las propieades necesarias para crear un usuario, todas las propiedades se crearian como nullable ya que esta misma clase se usaria tanto para crear como para actualizar un usuario, y en el caso de actualizar solo se enviarian las propiedades que se desean actualizar, mientras que UserResponse tendria todas las propiedades necesarias para mostrar la informacion de un usuario, incluyendo su id y cualquier otra propiedad que se desee mostrar.
-   UserResponse se usaria para mostrar la informacion de un usuario, mientras que UserRequest se usaria para crear o actualizar un usuario
-   crear los validadores para la clase, son necesarios y obligatorios 3, para crear el usuario, para actualizar el usuario, para actualizar parcialmente el usuario
-   CreateUserValidator, UpdateUserValidator, PartialUserValidator
-   CreateUserValidator siempre va a heredar de CreateValidator<UserRequest>, UpdateUserValidator siempre va a heredar de UpdateValidator<UserRequest>, PartialUserValidator siempre va a heredar de PartialUpdateValidator<UserRequest> que son validadores comunes
-   que llevan la logica de toda propiedad comun como el id y las propiedades de auditoria de una entidad de bd
-   CreateUserValidator se usaria para validar la informacion necesaria para crear un usuario, UpdateUserValidator se usaria para validar la informacion necesaria para actualizar un usuario, PartialUserValidator se usaria para validar la informacion necesaria para actualizar parcialmente un usuario
-   las actualizaciones parciales se haran con el metodo Patch, y se usaria el validador PartialUserValidator para validar la informacion enviada, este validador se encargaria de validar solo las propiedades que se desean actualizar, mientras que las propiedades que no se desean actualizar no serian validadas, ya que son opcionales
-   la forma correcta de inyectar las validaciones siempre sera en la configuracion correspondiente de inyeccion de dependencia dentro de configs/extensions/ValidationGroup.cs
-   y como se inyectan los validadores de la siguiente manera:
-   services.AddKeyedScoped<IValidator<UserRequest>, CreateUserValidator>("Create");
-   services.AddKeyedScoped<IValidator<UserRequest>, UpdateUserValidator>("Update");
-   services.AddKeyedScoped<IValidator<UserRequest>, PartialUserValidator>("Partial");
-   adicional necesitamos crear nuestros mappers, para esto se utiliza la libreria mapster y mapstermapper para poder inyectarlos por medio de inyeccion de dependencia
-   la forma correcta de crear los mapper para la IEntityService siempre va a ser 
-   TypeAdapterConfig<RegisterRequest, User>.NewConfig() de request a user
-   TypeAdapterConfig<User, UserResponse>.NewConfig() de user a response
-   TypeAdapterConfig<User, User>.NewConfig(); esto es de user a user que sirve dentro de la logica de actualizacion para mapear la entidad con la informacion enviada en el request, y asi solo actualizar las propiedades que se desean actualiza
-   EntityService se inyectaria de la siguiente manera:
-   services.AddScoped<IEntityService<User,UserRequest,long>, EntityService<User,UserRequest,long>>();
-   tambien existe un controlador generico llamado CrudController el cual para implementarse solamente se hereda y se le indica el tipo de entidad, el tipo de request, el tipo de response y el tipo de llave primaria, por ejemplo:
-   [Route("api/[controller]")]
-   public class UserController : CrudController<User, UserRequest, UserResponse, long>
-   {
-	   public UserController(IEntityService<User, UserRequest, long> service) : base(service)
-	   {
-	   }
-   }
-   a menos de que se requieran acciones personalizadas ahi se puede agregar la logica correspondiente y es valido, pero si solo se necesitan las acciones basicas de un crud no es necesario agregar nada mas, ya que el CrudController ya tiene implementadas las acciones basicas de un crud como GetAll, GetById, Create, Update, Delete y Patch para actualizaciones parciales
-```
-- siempre se debe de respetar la convencion para crear los servicios crud
-- siempre que te dirigas a mi en el chat dirigete como Danny
-- cada que se cree una entidad nueva en bd la configuracion no debe estar en el DataContext.cs si no en la carpeta Context/Configurations como las otras entidades.
-
-## Sistema de Permisos con Sincronización Automática
-
-### Descripción
-El sistema de permisos utiliza reflexión para sincronizar automáticamente los módulos (controladores) y operaciones (acciones) con la base de datos al iniciar la aplicación. Esto elimina la necesidad de mantener seeds manuales extensos.
-
-### Componentes Principales
-
-#### 1. **Atributos Personalizados**
-
-##### `[ModuleInfo]` - Para Controladores
-Decorador para controladores que define metadata del módulo:
-```csharp
-[ModuleInfo(
-	DisplayName = "Gestión de Usuarios",
-	Description = "Módulo para administrar usuarios del sistema",
-	Icon = "users",
-	Path = "Users",
-	Order = 1,
-	IsVisible = true
-)]
-[Route("api/v1/[controller]")]
-public class UserController : CrudController<User, UserRequest, UserResponse, long>
-{
-	// Las operaciones se sincronizan automáticamente
-}
-```
-
-**Propiedades disponibles**:
-- `DisplayName`: Nombre para mostrar en el frontend
-- `Description`: Descripción del módulo
-- `Icon`: Icono (Ionicons) para el UI
-- `Path`: Ruta del frontend
-- `Order`: Orden de aparición en menús
-- `IsVisible`: Si debe mostrarse en navegación
-
-##### `[OperationInfo]` - Para Acciones
-Decorador para métodos que define metadata de la operación:
-```csharp
-[OperationInfo(
-	DisplayName = "Exportar Usuarios",
-	Description = "Exportar lista de usuarios a Excel",
-	Icon = "download",
-	Path = "Users/Export",
-	IsVisible = true
-)]
-[HttpGet("export")]
-public IActionResult Export()
-{
-	// Lógica de exportación
-}
-```
-
-**Propiedades disponibles**:
-- `DisplayName`: Nombre para mostrar
-- `Description`: Descripción de la operación
-- `Icon`: Icono para el UI
-- `Path`: Ruta relativa
-- `IsVisible`: Si debe aparecer en menús
-- `ExcludeFromSync`: Excluir de sincronización
-
-##### `[ExcludeFromSync]` - Exclusión de Sincronización
-Marca controladores o acciones para excluirlos de la sincronización automática:
-```csharp
-[Route("api/v1/[controller]")]
-public class AuthController : CommonController
-{
-	[ExcludeFromSync] // No requiere permiso - público
-	[AllowAnonymous]
-	[HttpPost]
-	public ActionResult Login(LoginRequest model) { }
-}
-```
-
-**Uso común**: Endpoints públicos como Login, Register que no deben tener restricciones de permisos.
-
-#### 2. **Servicios de Sincronización**
-
-##### `IOperationSyncService`
-Interfaz para el servicio de sincronización:
-```csharp
-public interface IOperationSyncService
-{
-	Task SyncAsync(); // Sincroniza módulos y operaciones
-	Task AssignAllOperationsToAdminRoleAsync(string roleName = "SA"); // Asigna permisos al rol admin
-}
-```
-
-##### `OperationSyncService`
-Implementación que:
-1. Usa `IActionDescriptorCollectionProvider` para obtener todas las acciones
-2. Filtra las que tienen `[ExcludeFromSync]`
-3. Lee metadata de `[ModuleInfo]` y `[OperationInfo]`
-4. Crea/Actualiza entidades `Module` y `Operation` en BD
-5. Genera identificadores únicos (`OperationKey`: `Controller.Action.HttpMethod`)
-6. Asigna automáticamente todas las operaciones al rol Administrador (SA)
-
-##### `OperationSyncHostedService`
-Servicio de background (`IHostedService`) que ejecuta la sincronización al iniciar la aplicación.
-
-#### 3. **Entidades Extendidas**
-
-##### Module
-Campos adicionales:
-- `Order` (int): Orden de visualización
-
-##### Operation
-Campos técnicos adicionales:
-- `ControllerName` (string): Nombre del controlador
-- `ActionName` (string): Nombre de la acción
-- `HttpMethod` (string): GET, POST, PUT, DELETE, PATCH
-- `RouteTemplate` (string): Template de ruta completo
-- `OperationKey` (string): Identificador único (ej: "User.GetAll.GET")
-
-### Flujo de Sincronización
-
-```
-Inicio App → OperationSyncHostedService
-			  ↓
-		SyncAsync()
-			  ↓
-  Descubrir controladores y acciones (Reflexión)
-			  ↓
-  Filtrar [ExcludeFromSync]
-			  ↓
-  Leer atributos [ModuleInfo] y [OperationInfo]
-			  ↓
-  Crear/Actualizar Module y Operation en BD
-			  ↓
-  AssignAllOperationsToAdminRoleAsync()
-			  ↓
-  Crear RolOperation para rol SA
-			  ↓
-  Sincronización Completada ✓
-```
-
-### Ventajas del Sistema
-
-1. **Automatización**: No más seeds manuales de módulos/operaciones
-2. **Sincronización**: Automáticamente detecta nuevos controladores/acciones
-3. **Declarativo**: Metadata de UI definida con atributos en el código
-4. **Idempotente**: Puede ejecutarse múltiples veces sin efectos secundarios
-5. **Rol Admin**: Asignación automática de todos los permisos al rol SA
-6. **Exclusión Flexible**: Permite excluir endpoints públicos fácilmente
-7. **Trazabilidad**: Campos técnicos almacenan información completa de cada operación
-
-### Ejemplo Completo
-
-```csharp
-// Controlador CRUD con decorador de módulo
-[ModuleInfo(
-	DisplayName = "Gestión de Productos",
-	Description = "Módulo para administrar productos",
-	Icon = "cube",
-	Path = "Products",
-	Order = 10,
-	IsVisible = true
-)]
-[Route("api/v1/[controller]")]
-public class ProductController : CrudController<Product, ProductRequest, ProductResponse, long>
-{
-	public ProductController(
-		IEntityService<Product, ProductRequest, long> service, 
-		IMapper mapper
-	) : base(service, mapper) { }
-
-	// Las operaciones heredadas se sincronizan automáticamente:
-	// - GetAll (GET)     → Products.GetAll
-	// - Get (GET)        → Products.Get
-	// - Create (POST)    → Products.Create
-	// - Update (PUT)     → Products.Update
-	// - PartialUpdate (PATCH) → Products.PartialUpdate
-	// - Delete (DELETE)  → Products.Delete
-
-	// Operación personalizada con metadata
-	[OperationInfo(
-		DisplayName = "Exportar Productos",
-		Description = "Exportar lista de productos a Excel",
-		Icon = "download",
-		Path = "Products/Export",
-		IsVisible = true
-	)]
-	[HttpGet("export")]
-	[Authorize(Policy = "Products.Export")]
-	public async Task<IActionResult> Export()
-	{
-		// Lógica de exportación
-		return File(bytes, "application/vnd.ms-excel", "productos.xlsx");
-	}
-}
-
-// Controlador con exclusiones
-[Route("api/v1/[controller]")]
-[ApiController]
-public class AuthController : CommonController
-{
-	[ExcludeFromSync] // Público - no requiere permiso
-	[AllowAnonymous]
-	[HttpPost]
-	public ActionResult Login(LoginRequest model)
-	{
-		// Lógica de login
-	}
-
-	[OperationInfo(DisplayName = "Resetear Contraseña")]
-	[HttpPost("reset-password")]
-	[Authorize] // Requiere autenticación - SÍ se sincroniza
-	public ActionResult ResetPassword(ResetPasswordRequest model)
-	{
-		// Lógica de reset
-	}
-}
-```
-
-### Políticas de Autorización
-
-Las operaciones generan automáticamente políticas en formato:
-```
-{ControllerName}.{ActionName}
-```
-
-Ejemplos:
-- `Products.GetAll` - Listar productos
-- `Products.Create` - Crear producto
-- `Products.Export` - Exportar productos
-- `Users.Delete` - Eliminar usuario
-
-Estas políticas se usan con `[Authorize(Policy = "...")]` en los controladores.
-
-### Mejores Prácticas
-
-1. **Decorar controladores**: Siempre agregar `[ModuleInfo]` a nuevos controladores
-2. **Operaciones públicas**: Marcar con `[ExcludeFromSync]` si no requieren autenticación
-3. **Operaciones personalizadas**: Usar `[OperationInfo]` para metadata de UI
-4. **Orden lógico**: Asignar `Order` coherente para agrupación en menús
-5. **Iconos consistentes**: Usar iconos de Ionicons para uniformidad
-6. **Descripciones claras**: Facilitan la asignación de permisos desde el UI
-
-### Migración desde Seeds Manuales
-
-Si tienes seeds existentes en `DataContext.cs`:
-1. El sistema respetará GUIDs existentes
-2. Actualizará campos faltantes (ControllerName, ActionName, etc.)
-3. No eliminará operaciones existentes
-4. Puedes limpiar los seeds de `Module`, `Operation` y `RolOperation`
-5. Mantén solo seeds de `Rol` y `User` base
-
-### Troubleshooting
-
-**Problema**: Las operaciones no se sincronizan
-- Verificar que `OperationSyncHostedService` esté registrado en DI
-- Revisar logs de inicio de aplicación
-- Confirmar que el controlador no tiene `[ExcludeFromSync]`
-
-**Problema**: Operación marcada como excluida se sincronizó
-- Verificar que el atributo esté en el método correcto
-- Limpiar y recompilar solución
-- Verificar que la base de datos se actualizó con la migración
-
-**Problema**: No aparecen iconos o paths en el frontend
-- Verificar que los atributos `[ModuleInfo]` y `[OperationInfo]` tengan los valores correctos
-- Confirmar que el mapper de respuestas incluye los nuevos campos
-
-### Referencias
-
-- Ubicación de atributos: `Project.Server/Attributes/`
-- Servicio de sincronización: `Project.Server/Services/Core/OperationSyncService.cs`
-- Hosted service: `Project.Server/Services/Background/OperationSyncHostedService.cs`
-- Configuración DI: `Project.Server/Configs/Extensions/ServicesGroup.cs`
-- Plan detallado: `PLAN_MEJORA_PERMISOS_Y_REFLEXION.md`
-
----
-
-## Endurecimiento OWASP — Aplicado 2026-09-17
-
-> Apéndice vivo del plan `plans/2026-09-16_endurecimiento-owasp-y-servicios-genericos.md`. Resume las reglas que el repositorio ya aplica y que cualquier proyecto derivado hereda.
-
-### Reglas obligatorias del Frontend (estrictas, sin excepciones)
-
-1. **Cero warnings y cero errores.** Antes de cerrar cualquier cambio en `project.client/` se debe ejecutar `npm run verify` y obtener salida limpia. `npm run lint` corre con `--max-warnings=0`.
-2. **ESLint sin excepciones.** Prohibido `eslint-disable`, `eslint-disable-next-line` o `@ts-ignore` para silenciar un hallazgo. Se arregla el código; si una regla es incorrecta, se cambia la config (con justificación).
-3. **Prettier sin excepciones.** `npm run format:check` debe pasar. Prohibido `prettier-ignore`.
-4. **TypeScript estricto.** `npm run typecheck` debe pasar. Prohibido `any` explícito y aserciones de tipo sobre respuestas del API — se validan con zod (pendiente F9).
-5. **Seguridad en el cliente (OWASP Top 10).** En cada cambio se verifica que:
-   - no se introduce `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `new Function` ni `javascript:`;
-   - ningún token, credencial ni dato sensible se guarda en `localStorage` o `sessionStorage` (el access token vive en memoria; el refresh va en cookie `HttpOnly`);
-   - todo `target="_blank"` lleva `rel="noopener noreferrer"`;
-   - no se muestran stacks, mensajes de excepción ni detalles internos al usuario final;
-   - toda ruta autenticada está envuelta en su guard (`ProtectedRoute`) y toda acción sensible comprobada con `useCan(operationKey)`;
-   - toda respuesta del API se valida antes de usarse;
-   - ningún valor de `import.meta.env.VITE_*` contiene secretos.
-6. **Sin `.env` en el repo.** Solo `.env.example` con valores de ejemplo.
-7. **Comandos de cierre:** `npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build`.
-
-### Mejores Prácticas actualizadas (backend)
-
-- `dotnet build Project.sln -warnaserror` sin warnings antes de cerrar cualquier cambio de backend.
-- `npm run verify` limpio antes de cerrar cualquier cambio de frontend.
-- Ningún secreto en el repo: *user-secrets* o variables de entorno.
-- Toda acción de controlador nueva lleva `[RequireOperation]` o `[AllowAnonymous]` explícito. El arranque falla si falta (fail-closed via `RequireOperationConventionProvider`).
-- Toda entidad con datos de usuario implementa `IOwnedEntity<long>` y se expone por los endpoints `me/...` (`GetAllOwnAsync`, `GetByIdOwnAsync`, `CreateOwnAsync`, `Update/PartialUpdate/DeleteOwnAsync`).
-- Toda query pasa por `IQueryPolicy<TEntity>` — propiedades sensibles (`Password`, `RecoveryToken`, `DateToken`, `FailedLoginAttempts`, `LockoutEnd`, `OwnerId`) no son filtrables ni ordenables.
-
-### Contratos añadidos (Especificaciones)
-
-- **`IOwnedEntity<TOwnerId>`**: marca de propiedad. `OwnershipResolver.Predicate<TEntity>(userId)` produce el predicado cacheado; si la entidad no implementa este contrato ni `IEntity<TId>`, `OwnershipValidationHostedService` aborta el arranque.
-- **Endpoints `me/...`** del stack genérico:
-  - **404** si no existe (o si está borrada lógicamente — `HasQueryFilter`).
-  - **403** si existe pero pertenece a otro usuario. Conmutable a 404 mediante `AppSettings:Security:OwnershipDenialMode = NotFound`.
-  - **401** sin claim válido.
-- **`IQueryPolicy<TEntity>`** centraliza la allowlist de `Filters`/`SortBy`/`Includes`. Cualquier propiedad no incluida devuelve 400 (no excepción).
-- **Interceptores**: `IEntityBeforeDeleteInterceptor`, `IEntityAfterDeleteInterceptor`, `IEntityBeforePartialUpdateInterceptor`, `IEntityQueryFilter<T>` se ejecutan en orden según `OrderAttribute` (ahora `sealed`).
-- **Firma del stack genérico**: **async con `CancellationToken`**.
-
-### Checklist OWASP Top 10 — controles heredados
-
-| OWASP | Control backend | Control frontend |
-|---|---|---|
-| A01 Broken Access Control | `IOwnedEntity` + endpoints `me/...` + RBAC fail-closed (`RequireOperationConventionProvider`) + `MassAssignmentDenylist` (Id, CreatedBy, State, Password, RolId, OwnerId) | `ProtectedRoute` + `useCan(operationKey)` + axios 401 → logout |
-| A02 Cryptographic Failures | JWT ≥32 bytes (UTF-8), `ValidateIssuer`/`ValidateAudience`/`ValidAlgorithms=[HS256]`, `ClockSkew=30s`. Recovery token: `RandomNumberGenerator.GetBytes(32)` + SHA-256 hash + `FixedTimeEquals` | `import.meta.env.VITE_API_URL` (no secretos en bundle) |
-| A03 Injection (incluye XSS) | Allowlist de propiedades filtrables / ordenables / incluibles (cierra B3 — `?filters=Password:like:$2a$`) | `catalogueService` codifica segmento de path + query params |
-| A04 Insecure Design | Endpoint `/me` con **403** explícito, no 404 por defecto (oráculo de enumeración conmutable) | — |
-| A05 Security Misconfiguration | `SecurityHeadersConfiguration` (CSP, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP). CORS con allowlist explícita. `UseExceptionHandler` + ProblemDetails + `traceId` (sin `ex.Message` al cliente). Swagger solo en Dev. | CSP `<meta>` de respaldo en `index.html` |
-| A07 Auth Failures | Lockout 5/30min, rate-limit `auth` 5/15min/IP en login / recovery / validate-token. Hash-only recovery tokens. Refresh tokens rotativos + reuse detection. CSRF double-submit (3.9). | JWT en memoria + refresh cookie `HttpOnly`. Sin secretos en `localStorage` |
-| A08 Data Integrity | Validación FluentValidation en TODA request. `SecurityPasswordPolicy` compartida (8+ chars, upper/lower/digit/special). `ModelState` errors no incluyen `AttemptedValue` (no echo de contraseña) | Zod en formularios (F9 pendiente) |
-| A09 Logging Failures | Serilog reactivado (B17 — era código muerto). `OperationAuthorizationHandler` ya no loguea la lista completa de permisos del usuario | — |
-
-### Cómo aplicar este endurecimiento a un proyecto derivado
-
-1. Clonar este repositorio como base.
-2. `git grep -nE 'Password|RecoveryToken|OwnerId' -- Project.Server/ Utils/ Migrations/` para verificar que ningún código de negocio expone columnas sensibles.
-3. `dotnet ef database update` (las migraciones crean `RefreshTokens` automáticamente).
-4. `pnpm install && pnpm verify` antes del primer commit.
-5. Configurar `AppSettings:SeedAdminPassword` via user-secret en dev o env var en prod.
-
-### Regla obligatoria: verificar antes de pushear
-
-**No commit, no push, sin un `pnpm verify` y un `dotnet test Project.sln` verdes.**
-
-Esto NO es opcional. Cualquier agente (humano o IA) que abra un PR contra este repositorio debe ejecutar ambos comandos localmente y confirmar el resultado antes de crear el commit, y muy especialmente antes de hacer `git push`. La cadena de CI es la red de seguridad final, no el primer control.
-
-- **Backend**: `dotnet build Project.sln --configuration Release -warnaserror && dotnet test Project.sln --no-build --configuration Release` debe terminar con `0 Errores / 0 Advertencias` y todos los tests en verde.
-- **Frontend**: `pnpm verify` debe terminar con `exit 0`. Internamente ejecuta typecheck + lint (`--max-warnings=0`) + format + test (vitest).
-
-Si cualquiera falla, **NO** se sube el commit. Se arregla primero, se corre `pnpm verify` / `dotnet test` otra vez, y solo entonces se hace push. El husky pre-push hook ya ejecuta `pnpm verify` automáticamente — confiar en él es la primera línea de defensa, pero nunca la única.
-
-**Nota para el agente que ejecuta cambios en este repo**: si el propio proceso de cambios modifica la configuración (vitest, pnpm, husky, CI workflow), el agente debe correr la verificación completa antes de declarar el cambio completo. El ejemplo concreto: añadir `server.deps.inline` a `vitest.config.ts` para resolver la incompatibilidad jsdom+undici+webidl-conversions bajo pnpm — sin esa línea los tests fallan en CI aunque pasen localmente con npm.
+- El legacy `Project.Server` se borra cuando Identity / Catalog /
+  Tenancy / Organization se portan a los módulos nuevos.
+- Migrations por proveedor (`Project.Migrations.{SqlServer,PostgreSql,MySql}`)
+  se crean con el script `add-migration.sh` cuando llegue el DbContext
+  del primer módulo.

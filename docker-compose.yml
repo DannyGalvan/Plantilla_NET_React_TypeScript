@@ -1,0 +1,86 @@
+# Development stack. Each profile starts one database. Use the migration
+# service from Project.MigrationService to apply the schema after the
+# database becomes healthy.
+
+services:
+  sqlserver:
+    profiles: ["sqlserver", "all"]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: plantilla-sqlserver
+    environment:
+      MSSQL_SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  postgres:
+    profiles: ["postgres", "all"]
+    image: postgres:16-alpine
+    container_name: plantilla-postgres
+    environment:
+      POSTGRES_USER: plantilla
+      POSTGRES_PASSWORD: plantilla
+      POSTGRES_DB: plantilla
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plantilla"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  mysql:
+    profiles: ["mysql", "all"]
+    image: mysql:8.0
+    container_name: plantilla-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: plantilla
+      MYSQL_USER: plantilla
+      MYSQL_PASSWORD: plantilla
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uplantilla", "-pplantilla"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    container_name: plantilla-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: plantilla-mailpit
+    ports:
+      - "8025:8025"   # UI
+      - "1025:1025"   # SMTP
+
+volumes:
+  sqlserver-data:
+  postgres-data:
+  mysql-data:
+
+# Usage:
+#   docker compose --profile postgres up -d
+#   dotnet run --project src/Host/Project.MigrationService -- migrate
+#   AppSettings__Database__Provider=PostgreSql AppSettings__ConnectionStrings__Default=... dotnet run --project src/Host/Project.Api
