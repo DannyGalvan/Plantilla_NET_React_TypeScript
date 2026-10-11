@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>API publica del modulo Identity: permisos y eventos de integracion. Lo unico que otros modulos pueden referenciar.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.SharedKernel\Project.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

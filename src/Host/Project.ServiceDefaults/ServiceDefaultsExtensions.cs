@@ -1,106 +1,105 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using OpenTelemetry.Instrumentation.AspNetCore;
-using OpenTelemetry.Instrumentation.Http;
-using OpenTelemetry.Instrumentation.EntityFrameworkCore;
-using OpenTelemetry.Instrumentation.Runtime;
 using Serilog;
-using Serilog.Sinks.OpenTelemetry;
+using Serilog.Formatting.Compact;
 
 namespace Project.ServiceDefaults;
 
 /// <summary>
-/// Aspire-style shared bootstrap. Wires logging, telemetry, health, cache and
-/// standard resilience handlers for outbound HttpClients. Consumed by
-/// <c>Project.Api</c> via <c>builder.AddServiceDefaults()</c>.
+/// Shared bootstrap for every host (API, migration service): structured logging, telemetry, health and resilience.
+/// OpenTelemetry exports only when <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> (or <c>Observability:OtlpEndpoint</c>) is set.
 /// </summary>
 public static class ServiceDefaultsExtensions
 {
-    public static WebApplicationBuilder AddServiceDefaults(this WebApplicationBuilder builder)
-    {
-        builder.AddSerilogDefaults();
-        builder.AddOpenTelemetryDefaults();
-        builder.AddDefaultHealthChecks();
-        builder.AddDefaultCaching();
-        builder.AddDefaultResilience();
-        return builder;
-    }
+    public const string ReadyTag = "ready";
 
-    private static WebApplicationBuilder AddSerilogDefaults(this WebApplicationBuilder builder)
+    public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
-        builder.Host.UseSerilog((context, services, config) =>
-        {
-            config
-                .ReadFrom.Configuration(context.Configuration)
-                .ReadFrom.Services(services)
-                .Enrich.FromLogContext()
-                .Enrich.WithProperty("service.name", context.HostingEnvironment.ApplicationName)
-                .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter())
-                .WriteTo.OpenTelemetry(opts =>
-                {
-                    opts.Endpoint = context.Configuration["Otel:Endpoint"] ?? "http://localhost:4317";
-                    opts.Protocol = OtlpProtocol.Grpc;
-                    opts.ResourceAttributes = new Dictionary<string, object>
-                    {
-                        ["service.name"] = context.HostingEnvironment.ApplicationName,
-                    };
-                });
-        });
-
-        return builder;
-    }
-
-    private static WebApplicationBuilder AddOpenTelemetryDefaults(this WebApplicationBuilder builder)
-    {
+        var otlp = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? builder.Configuration["Observability:OtlpEndpoint"];
         var serviceName = builder.Environment.ApplicationName;
 
-        builder.Services.AddOpenTelemetry()
-            .ConfigureResource(r => r.AddService(serviceName))
-            .WithTracing(tracing =>
-            {
-                tracing.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddEntityFrameworkCoreInstrumentation()
-                    .AddOtlpExporter(opts =>
-                    {
-                        opts.Endpoint = new Uri(builder.Configuration["Otel:Endpoint"] ?? "http://localhost:4317");
-                    });
-            });
-
-        return builder;
-    }
-
-    private static WebApplicationBuilder AddDefaultHealthChecks(this WebApplicationBuilder builder)
-    {
-        builder.Services.AddHealthChecks();
-        return builder;
-    }
-
-    private static WebApplicationBuilder AddDefaultCaching(this WebApplicationBuilder builder)
-    {
-        var redis = builder.Configuration["Cache:Redis:ConnectionString"];
-        if (!string.IsNullOrWhiteSpace(redis))
+        builder.Services.AddSerilog((services, logger) =>
         {
-            builder.Services.AddStackExchangeRedisCache(opts => opts.Configuration = redis);
+            logger
+                .ReadFrom.Configuration(builder.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("service", serviceName);
+
+            if (builder.Environment.IsDevelopment())
+            {
+                logger.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}");
+            }
+            else
+            {
+                logger.WriteTo.Console(new RenderedCompactJsonFormatter());
+            }
+
+            if (!string.IsNullOrWhiteSpace(otlp))
+            {
+                logger.WriteTo.OpenTelemetry(o =>
+                {
+                    o.Endpoint = otlp;
+                    o.ResourceAttributes = new Dictionary<string, object> { ["service.name"] = serviceName };
+                });
+            }
+        });
+
+        var telemetry = builder.Services.AddOpenTelemetry()
+            .ConfigureResource(r => r.AddService(serviceName))
+            .WithTracing(tracing => tracing
+                .AddSource(serviceName)
+                .AddAspNetCoreInstrumentation(o => o.Filter = context => !context.Request.Path.StartsWithSegments("/health"))
+                .AddHttpClientInstrumentation())
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation());
+
+        if (!string.IsNullOrWhiteSpace(otlp))
+        {
+            telemetry.UseOtlpExporter(OpenTelemetry.Exporter.OtlpExportProtocol.Grpc, new Uri(otlp));
         }
 
-        builder.Services.AddHybridCache();
+        builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+        builder.Services.ConfigureHttpClientDefaults(http => http.AddStandardResilienceHandler());
         return builder;
     }
 
-    private static WebApplicationBuilder AddDefaultResilience(this WebApplicationBuilder builder)
-    {
-        builder.Services.AddHttpClient();
-        return builder;
-    }
-}
-
-public static class WebApplicationDefaultsExtensions
-{
+    /// <summary>
+    /// <c>/health/live</c>: the process answers. <c>/health/ready</c>: dependencies (database) are reachable.
+    /// </summary>
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        app.MapHealthChecks("/health/live");
-        app.MapHealthChecks("/health/ready");
+        app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = check => check.Tags.Contains("live") })
+            .AllowAnonymous()
+            .DisableHttpMetrics();
+        app.MapHealthChecks("/health/ready", new HealthCheckOptions
+            {
+                Predicate = check => check.Tags.Contains(ReadyTag),
+                ResponseWriter = WriteJsonAsync,
+            })
+            .AllowAnonymous()
+            .DisableHttpMetrics();
         return app;
+    }
+
+    private static Task WriteJsonAsync(HttpContext context, HealthReport report)
+    {
+        context.Response.ContentType = "application/json";
+        return context.Response.WriteAsJsonAsync(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new { name = e.Key, status = e.Value.Status.ToString(), duration = e.Value.Duration.TotalMilliseconds }),
+        });
     }
 }

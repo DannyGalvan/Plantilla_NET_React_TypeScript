@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Infraestructura y endpoints (carpeta Presentation) del modulo Tenancy.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+    <ProjectReference Include="..\Project.Modules.Tenancy.Application\Project.Modules.Tenancy.Application.csproj" />
+  </ItemGroup>
+
+</Project>

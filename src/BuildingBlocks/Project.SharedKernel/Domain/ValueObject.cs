@@ -5,18 +5,21 @@ namespace Project.SharedKernel.Domain;
 /// </summary>
 public abstract class ValueObject : IEquatable<ValueObject>
 {
-    protected abstract IEnumerable<object?> GetEqualityComponents();
-
-    public bool Equals(ValueObject? other)
-    {
-        if (other is null) return false;
-        if (GetType() != other.GetType()) return false;
-        return GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
-    }
+    public bool Equals(ValueObject? other) =>
+        other is not null
+        && other.GetType() == GetType()
+        && GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
 
     public override bool Equals(object? obj) => Equals(obj as ValueObject);
 
     public override int GetHashCode() =>
-        GetEqualityComponents()
-            .Aggregate(1, (current, obj) => HashCode.Combine(current, obj?.GetHashCode() ?? 0));
+        GetEqualityComponents().Aggregate(17, (hash, component) => HashCode.Combine(hash, component));
+
+    protected abstract IEnumerable<object?> GetEqualityComponents();
+}
+
+/// <summary>Sequential identifiers (UUID v7): portable, generated in the app and index friendly.</summary>
+public static class NewId
+{
+    public static Guid Next() => Guid.CreateVersion7();
 }

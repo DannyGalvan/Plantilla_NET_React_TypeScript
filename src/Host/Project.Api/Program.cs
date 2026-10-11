@@ -1,46 +1,37 @@
+using Project.Application.Messaging;
+using Project.Modules.Catalog.Infrastructure;
+using Project.Modules.Identity.Infrastructure;
+using Project.Modules.Organization.Infrastructure;
+using Project.Modules.Tenancy.Infrastructure;
 using Project.ServiceDefaults;
-using Project.Server;
 using Project.Web;
+using Project.Web.Modules;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseDefaultServiceProvider(options =>
+builder.AddServiceDefaults();
+builder.AddPlatform();
+builder.Services.AddMediator(options =>
 {
-    options.ValidateOnBuild = false;
-    options.ValidateScopes = false;
+    options.ServiceLifetime = ServiceLifetime.Scoped;
+    options.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>), typeof(AuthorizationBehavior<,>)];
 });
 
-builder.AddServiceDefaults();
-builder.AddModules(new LegacyModule());
+// One line per module. Removing OrganizationModule turns the app into a single-company application.
+builder.AddModules(
+    new TenancyModule(),
+    new IdentityModule(),
+    new OrganizationModule(),
+    new CatalogModule());
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
-app.UseStatusCodePages();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHsts();
-}
-
-app.UseDefaultFiles();
-app.UseStaticFiles();
-app.UseRouting();
-app.UseCors("Default");
-app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
-
-if (app.Environment.IsDevelopment())
-{
-    // OpenAPI document via Microsoft.AspNetCore.OpenApi (Fase 1 plan). Scalar UI
-    // mounted later when we replace the SPA pipeline.
-}
-
+app.UsePlatform();
 app.MapModules();
 app.MapDefaultEndpoints();
-app.MapFallbackToFile("/index.html");
+app.MapFallbackToFile("/index.html").AllowAnonymous();
 
 app.Run();
 
+/// <summary>Entry point, public for WebApplicationFactory in the functional tests.</summary>
 public partial class Program;

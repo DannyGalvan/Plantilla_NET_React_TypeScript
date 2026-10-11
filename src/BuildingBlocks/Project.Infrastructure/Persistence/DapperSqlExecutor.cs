@@ -2,95 +2,81 @@ using System.Data;
 using System.Data.Common;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Project.Application.Abstractions;
-using Project.Infrastructure.Persistence.Providers;
 
 namespace Project.Infrastructure.Persistence;
 
 /// <summary>
-/// Dapper-based executor. Reuses the EF Core connection (and transaction)
-/// when one is active so the two paths are atomic. Falls back to a pooled
-/// connection otherwise.
+/// Dapper executor bound to a module DbContext. It reuses the context connection and, when EF has an open
+/// transaction, enlists in it, so EF writes and raw SQL commit or roll back together. The connection is the
+/// tenant connection when the tenant has a dedicated database.
 /// </summary>
-public sealed class DapperSqlExecutor<TContext> : ISqlExecutor
+public class DapperSqlExecutor<TContext>(TContext context) : ISqlExecutor
     where TContext : ModuleDbContext
 {
-    private readonly TContext _context;
-    private readonly IDbConnectionFactory _connectionFactory;
-    private readonly Providers.IDatabaseProvider _provider;
+    public ISqlDialect Dialect => context.Provider.Dialect;
 
-    public DapperSqlExecutor(
-        TContext context,
-        IDbConnectionFactory connectionFactory,
-        Providers.IDatabaseProvider provider)
+    public Task<IReadOnlyList<T>> QueryAsync<T>(string sql, object? args, CancellationToken ct) =>
+        RunAsync(async (connection, transaction) =>
+            (IReadOnlyList<T>)(await connection.QueryAsync<T>(Command(sql, args, transaction, CommandType.Text, ct))).AsList());
+
+    public Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? args, CancellationToken ct) =>
+        RunAsync((connection, transaction) =>
+            connection.QuerySingleOrDefaultAsync<T>(Command(sql, args, transaction, CommandType.Text, ct)));
+
+    public Task<int> ExecuteAsync(string sql, object? args, CancellationToken ct) =>
+        RunAsync((connection, transaction) => connection.ExecuteAsync(Command(sql, args, transaction, CommandType.Text, ct)));
+
+    public Task<IReadOnlyList<T>> QueryProcedureAsync<T>(string procedure, object? args, CancellationToken ct)
     {
-        _context = context;
-        _connectionFactory = connectionFactory;
-        _provider = provider;
+        var (text, type) = Dialect.Procedure(context.Schema, procedure, ParameterNames(args));
+        return RunAsync(async (connection, transaction) =>
+            (IReadOnlyList<T>)(await connection.QueryAsync<T>(Command(text, args, transaction, type, ct))).AsList());
     }
 
-    public async Task<IReadOnlyList<T>> QueryAsync<T>(string sql, object? args = null, CancellationToken ct = default)
+    public Task<int> ExecuteProcedureAsync(string procedure, object? args, CancellationToken ct)
     {
-        var (conn, tx, owns) = await GetConnection(ct);
+        var (text, type) = Dialect.Procedure(context.Schema, procedure, ParameterNames(args));
+        return RunAsync((connection, transaction) => connection.ExecuteAsync(Command(text, args, transaction, type, ct)));
+    }
+
+    private CommandDefinition Command(string sql, object? args, IDbTransaction? transaction, CommandType type, CancellationToken ct) =>
+        new(sql, args, transaction, context.Database.GetCommandTimeout(), type, cancellationToken: ct);
+
+    private async Task<TResult> RunAsync<TResult>(Func<DbConnection, IDbTransaction?, Task<TResult>> action)
+    {
+        var connection = context.Database.GetDbConnection();
+        var opened = false;
+        if (connection.State != ConnectionState.Open)
+        {
+            await context.Database.OpenConnectionAsync();
+            opened = true;
+        }
+
         try
         {
-            var rows = await conn.QueryAsync<T>(new CommandDefinition(sql, args, tx, cancellationToken: ct));
-            return rows.AsList();
+            return await action(connection, context.Database.CurrentTransaction?.GetDbTransaction());
         }
         finally
         {
-            if (owns) await conn.DisposeAsync();
+            if (opened)
+            {
+                await context.Database.CloseConnectionAsync();
+            }
         }
     }
 
-    public async Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? args = null, CancellationToken ct = default)
+    private static IReadOnlyList<string> ParameterNames(object? args) => args switch
     {
-        var (conn, tx, owns) = await GetConnection(ct);
-        try
-        {
-            return await conn.QuerySingleOrDefaultAsync<T>(new CommandDefinition(sql, args, tx, cancellationToken: ct));
-        }
-        finally
-        {
-            if (owns) await conn.DisposeAsync();
-        }
-    }
-
-    public async Task<int> ExecuteAsync(string sql, object? args = null, CancellationToken ct = default)
-    {
-        var (conn, tx, owns) = await GetConnection(ct);
-        try
-        {
-            return await conn.ExecuteAsync(new CommandDefinition(sql, args, tx, cancellationToken: ct));
-        }
-        finally
-        {
-            if (owns) await conn.DisposeAsync();
-        }
-    }
-
-    public Task<IReadOnlyList<T>> QueryProcedureAsync<T>(string procedure, object? args = null, CancellationToken ct = default) =>
-        QueryAsync<T>(_provider.Dialect.CallProcedureSyntax(procedure), args, ct);
-
-    public Task<int> ExecuteProcedureAsync(string procedure, object? args = null, CancellationToken ct = default) =>
-        ExecuteAsync(_provider.Dialect.CallProcedureSyntax(procedure), args, ct);
-
-    private async Task<(DbConnection conn, IDbTransaction? tx, bool owns)> GetConnection(CancellationToken ct)
-    {
-        var existing = _context.Database.GetDbConnection();
-        if (existing.State != ConnectionState.Open)
-        {
-            await existing.OpenAsync(ct);
-        }
-
-        var currentTx = _context.Database.CurrentTransaction;
-        if (currentTx is not null && ReferenceEquals(existing, _context.Database.GetDbConnection()))
-        {
-            return (existing, currentTx.GetDbTransaction(), false);
-        }
-
-        return (existing, null, false);
-    }
+        null => [],
+        DynamicParameters dynamic => dynamic.ParameterNames.ToList(),
+        IDictionary<string, object?> dictionary => dictionary.Keys.ToList(),
+        _ => args.GetType().GetProperties().Select(p => p.Name).ToList(),
+    };
 }
+
+/// <summary>Executor exposed to the application layer of a module as <c>ISqlExecutor&lt;TModuleKey&gt;</c>.</summary>
+public sealed class ModuleSqlExecutor<TModuleKey, TContext>(TContext context)
+    : DapperSqlExecutor<TContext>(context), ISqlExecutor<TModuleKey>
+    where TContext : ModuleDbContext;

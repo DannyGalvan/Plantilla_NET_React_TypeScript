@@ -1,13 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <Description>Infraestructura compartida: EF Core multi-proveedor, Dapper, interceptores, outbox, tenancy, cache y migraciones.</Description>
+  </PropertyGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <Using Include="Microsoft.AspNetCore.Builder" />
-    <Using Include="Microsoft.AspNetCore.Http" />
-    <Using Include="Microsoft.Extensions.Configuration" />
-    <Using Include="Microsoft.Extensions.DependencyInjection" />
-    <Using Include="Microsoft.Extensions.Hosting" />
-    <Using Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,12 +15,13 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="MySql.EntityFrameworkCore" />
     <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Project.SharedKernel\Project.SharedKernel.csproj" />
     <ProjectReference Include="..\Project.Application\Project.Application.csproj" />
-    <ProjectReference Include="..\Project.Web\Project.Web.csproj" />
   </ItemGroup>
 
 </Project>

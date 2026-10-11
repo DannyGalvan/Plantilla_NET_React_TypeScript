@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Dominio del modulo Identity: entidades, agregados y eventos de dominio.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.SharedKernel\Project.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

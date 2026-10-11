@@ -1,18 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
+    <Description>Worker de despliegue: aplica migraciones, sincroniza permisos, ejecuta seeders y termina.</Description>
     <OutputType>Exe</OutputType>
-    <UserSecretsId>plantilla-net-react-typescript-migrations-secrets</UserSecretsId>
+    <UserSecretsId>project-template-api</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <Content Include="..\Project.Api\appsettings*.json" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
     <ProjectReference Include="..\Project.ServiceDefaults\Project.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+    <ProjectReference Include="..\..\Modules\Tenancy\Project.Modules.Tenancy.Infrastructure\Project.Modules.Tenancy.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Project.Modules.Identity.Infrastructure\Project.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Organization\Project.Modules.Organization.Infrastructure\Project.Modules.Organization.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Catalog\Project.Modules.Catalog.Infrastructure\Project.Modules.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Migrations\Project.Migrations.SqlServer\Project.Migrations.SqlServer.csproj" />
+    <ProjectReference Include="..\..\Migrations\Project.Migrations.PostgreSql\Project.Migrations.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\Migrations\Project.Migrations.MySql\Project.Migrations.MySql.csproj" />
   </ItemGroup>
 
 </Project>

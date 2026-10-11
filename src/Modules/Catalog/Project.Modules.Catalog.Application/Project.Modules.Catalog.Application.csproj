@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Casos de uso del modulo Catalog (CQRS con Mediator), DTOs, validadores y mapeos.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Riok.Mapperly" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.Modules.Catalog.Domain\Project.Modules.Catalog.Domain.csproj" />
+    <ProjectReference Include="..\Project.Modules.Catalog.Contracts\Project.Modules.Catalog.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
