@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DOTNET_VERSION: "8.0.x"
+  DOTNET_VERSION: "10.0.x"
 
 jobs:
   backend:
@@ -36,7 +36,7 @@ jobs:
         run: dotnet test Project.sln --no-build --configuration Release --logger "trx;LogFileName=backend.trx"
 
       - name: Vulnerability scan
-        run: dotnet list Project.Server/Project.Server.csproj package --vulnerable --include-transitive
+        run: dotnet list Project.sln package --vulnerable --include-transitive
 
   frontend:
     name: Frontend (React + TS)
