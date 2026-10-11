@@ -7,7 +7,7 @@ namespace Project.Modules.Catalog.Domain;
 /// in <see cref="Project.Infrastructure.Persistence.ModuleDbContext"/> applies
 /// when tenancy is active.
 /// </summary>
-public sealed class Product : AggregateRoot<Guid>
+public sealed class Product : AggregateRoot<Guid>, IMultiTenant
 {
     public string Sku { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -18,7 +18,7 @@ public sealed class Product : AggregateRoot<Guid>
     public Guid TenantId { get; set; }
 }
 
-public sealed class Category : AggregateRoot<Guid>
+public sealed class Category : AggregateRoot<Guid>, IMultiTenant
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }

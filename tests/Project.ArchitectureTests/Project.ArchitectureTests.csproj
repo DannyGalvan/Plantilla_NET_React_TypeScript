@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\Project.SharedKernel\Project.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Project.Web\Project.Web.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\Project.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Project.Modules.Identity.csproj">
+      <PrivateAssets>contentFiles;analyzers;buildMetadata;compile;runtime</PrivateAssets>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Modules\Organization\Project.Modules.Organization.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Tenancy\Project.Modules.Tenancy.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -6,7 +6,7 @@ namespace Project.Modules.Identity.Domain;
 /// Identity aggregate. Carries lockout, security stamp and permissions
 /// version (incremented on RolePermissionsChanged to invalidate caches).
 /// </summary>
-public sealed class User : AggregateRoot<Guid>
+public sealed class User : AggregateRoot<Guid>, IMultiTenant
 {
     public required string UserName { get; set; }
     public required string Email { get; set; }
