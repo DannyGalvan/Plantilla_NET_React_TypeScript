@@ -1,4 +1,4 @@
-import type { Authorizations } from "./Authorizations";
+import type { Authorizations } from './Authorizations';
 
 export interface InitialAuth {
   isLoggedIn: boolean;

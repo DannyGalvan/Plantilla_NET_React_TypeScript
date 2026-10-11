@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 interface ResponseProps {
   readonly message: string;
@@ -20,9 +20,9 @@ export function Response({ message, type, complement }: ResponseProps) {
   return (
     <div
       className={`my-1 flex w-full flex-row rounded-md ${
-        type ? "bg-emerald-500" : "bg-rose-500"
+        type ? 'bg-emerald-500' : 'bg-rose-500'
       } p-2 shadow-lg transition-opacity duration-1000 ${
-        !visible ? "opacity-0" : "opacity-100"
+        !visible ? 'opacity-0' : 'opacity-100'
       }`}
     >
       <div className="ml-1">

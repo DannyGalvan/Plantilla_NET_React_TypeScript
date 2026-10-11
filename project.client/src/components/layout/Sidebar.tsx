@@ -1,12 +1,12 @@
 /* eslint-disable react/jsx-max-depth */
-import { Button, Tooltip } from "@heroui/react";
-import { useCallback, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Button, Tooltip } from '@heroui/react';
+import { useCallback, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 
-import { Images } from "../../assets/images/images";
-import { nameRoutes } from "../../configs/constants";
-import { useAuth } from "../../hooks/useAuth";
-import { SubMenu } from "../links/SubMenu";
+import { Images } from '../../assets/images/images';
+import { nameRoutes } from '../../configs/constants';
+import { useAuth } from '../../hooks/useAuth';
+import { SubMenu } from '../links/SubMenu';
 
 interface SidebarProps {
   readonly isOpen: boolean;
@@ -35,15 +35,15 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       <button
         aria-label="Cerrar menú"
         className={`fixed inset-0 z-47 cursor-pointer bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         type="button"
         onClick={closeSidebar}
         onKeyDown={(event) => {
           if (
-            event.key === "Escape" ||
-            event.key === "Enter" ||
-            event.key === " "
+            event.key === 'Escape' ||
+            event.key === 'Enter' ||
+            event.key === ' '
           ) {
             closeSidebar();
           }
@@ -53,8 +53,8 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       <aside
         className={`fixed left-0 top-0 z-48 flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300 ease-in-out dark:border-zinc-800 dark:bg-[#18181b] md:sticky whitespace-nowrap ${
           isOpen
-            ? "w-[16rem] translate-x-0 shadow-xl md:shadow-none"
-            : "w-18 -translate-x-full md:translate-x-0"
+            ? 'w-[16rem] translate-x-0 shadow-xl md:shadow-none'
+            : 'w-18 -translate-x-full md:translate-x-0'
         }`}
       >
         <div className="flex h-16 shrink-0 items-center justify-center border-b border-gray-200 dark:border-zinc-800 relative w-full overflow-hidden">
@@ -63,11 +63,11 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
             to={nameRoutes.root}
           >
             <div
-              className={`relative flex items-center justify-center transition-all duration-300 ${isOpen ? "w-30" : "w-10"}`}
+              className={`relative flex items-center justify-center transition-all duration-300 ${isOpen ? 'w-30' : 'w-10'}`}
             >
               <img
                 alt="Logo"
-                className={`object-contain transition-all duration-300 ${isOpen ? "w-full rounded-xl" : "w-8 h-8 rounded-md"}`}
+                className={`object-contain transition-all duration-300 ${isOpen ? 'w-full rounded-xl' : 'w-8 h-8 rounded-md'}`}
                 src={Images.logo}
               />
             </div>
@@ -88,10 +88,10 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                   className={`relative flex items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all w-full
                         ${
                           pathname === nameRoutes.root
-                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50'
                         } 
-                        ${isOpen ? "justify-start px-3" : "justify-center px-0"}
+                        ${isOpen ? 'justify-start px-3' : 'justify-center px-0'}
                       `}
                   to={nameRoutes.root}
                 >
@@ -99,7 +99,7 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                     <i className="bi bi-house-door-fill text-xl" />
                   </div>
                   <div
-                    className={`flex items-center overflow-hidden transition-all duration-300 ${isOpen ? "w-auto opacity-100 ml-3" : "w-0 opacity-0"}`}
+                    className={`flex items-center overflow-hidden transition-all duration-300 ${isOpen ? 'w-auto opacity-100 ml-3' : 'w-0 opacity-0'}`}
                   >
                     <span>Inicio</span>
                   </div>
@@ -136,14 +136,14 @@ export function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
           <div className="w-full">
             <Tooltip closeDelay={0} delay={0} isDisabled={isOpen}>
               <Button
-                className={`relative flex items-center rounded-lg py-2 text-[0.9rem] font-bold text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 bg-transparent w-full ${isOpen ? "justify-start px-3" : "justify-center px-0!"}`}
+                className={`relative flex items-center rounded-lg py-2 text-[0.9rem] font-bold text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 bg-transparent w-full ${isOpen ? 'justify-start px-3' : 'justify-center px-0!'}`}
                 onClick={closeSesion}
               >
                 <div className="flex items-center justify-center w-6 h-6 shrink-0">
                   <i className="bi bi-box-arrow-left text-xl" />
                 </div>
                 <div
-                  className={`flex items-center overflow-hidden transition-all duration-300 ${isOpen ? "w-auto opacity-100 ml-3" : "w-0 opacity-0"}`}
+                  className={`flex items-center overflow-hidden transition-all duration-300 ${isOpen ? 'w-auto opacity-100 ml-3' : 'w-0 opacity-0'}`}
                 >
                   <span>Salir</span>
                 </div>

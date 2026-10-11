@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 import Select, {
   type ActionMeta,
   type GroupBase,
@@ -6,7 +6,7 @@ import Select, {
   type OptionsOrGroups,
   type SelectInstance,
   type SingleValue,
-} from "react-select";
+} from 'react-select';
 
 export type OptionValue =
   | SingleValue<{ label: string; value: string }>
@@ -41,13 +41,13 @@ export function OptionsSelect({
   isInvalid = false,
   isReadOnly = false,
   isRequired = false,
-  errorMessage = "",
-  placeholder = "Select an option",
+  errorMessage = '',
+  placeholder = 'Select an option',
   onChange,
   ref,
 }: OptionSelectProps) {
   const noOptionsMessage = useCallback(() => {
-    return "No hay opciones disponibles";
+    return 'No hay opciones disponibles';
   }, []);
 
   return (
@@ -55,15 +55,15 @@ export function OptionsSelect({
       <div
         className={`rounded-xl transition-colors ${
           isInvalid
-            ? "bg-danger-50 hover:bg-danger-100"
-            : "bg-default-100 hover:bg-default-200"
+            ? 'bg-danger-50 hover:bg-danger-100'
+            : 'bg-default-100 hover:bg-default-200'
         }`}
       >
         <label
-          className={`${isInvalid ? "text-danger" : "text-default-500"} text-xs ms-3 pt-2 block`}
+          className={`${isInvalid ? 'text-danger' : 'text-default-500'} text-xs ms-3 pt-2 block`}
           htmlFor={label}
         >
-          {label}{" "}
+          {label}{' '}
           {isRequired ? (
             <span className="text-danger font-bold ml-1">*</span>
           ) : null}
@@ -85,77 +85,77 @@ export function OptionsSelect({
           styles={{
             control: (base) => ({
               ...base,
-              borderRadius: "0.5rem",
-              borderColor: "transparent",
-              boxShadow: "none",
-              backgroundColor: "transparent",
-              minHeight: "40px",
-              cursor: "pointer",
-              ":hover": {
-                ...base[":hover"],
-                borderColor: "transparent",
+              borderRadius: '0.5rem',
+              borderColor: 'transparent',
+              boxShadow: 'none',
+              backgroundColor: 'transparent',
+              minHeight: '40px',
+              cursor: 'pointer',
+              ':hover': {
+                ...base[':hover'],
+                borderColor: 'transparent',
               },
             }),
             menu: (base) => ({
               ...base,
-              borderRadius: "0.5rem",
-              backgroundColor: "hsl(var(--heroui-content1))",
-              boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
+              borderRadius: '0.5rem',
+              backgroundColor: 'hsl(var(--heroui-content1))',
+              boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.15)',
               zIndex: 9999,
             }),
             menuList: (base) => ({
               ...base,
               zIndex: 9999,
-              maxHeight: "150px",
-              overflowY: "auto",
-              padding: "0.5rem",
+              maxHeight: '150px',
+              overflowY: 'auto',
+              padding: '0.5rem',
             }),
             option: (base, state) => ({
               ...base,
               backgroundColor: state.isSelected
-                ? "hsl(var(--heroui-primary))"
+                ? 'hsl(var(--heroui-primary))'
                 : state.isFocused
-                  ? "hsl(var(--heroui-default-200))"
-                  : "transparent",
+                  ? 'hsl(var(--heroui-default-200))'
+                  : 'transparent',
               color: state.isSelected
-                ? "hsl(var(--heroui-primary-foreground))"
-                : "hsl(var(--heroui-foreground))",
-              borderRadius: "0.375rem",
-              cursor: "pointer",
-              ":active": {
-                backgroundColor: "hsl(var(--heroui-primary-200))",
+                ? 'hsl(var(--heroui-primary-foreground))'
+                : 'hsl(var(--heroui-foreground))',
+              borderRadius: '0.375rem',
+              cursor: 'pointer',
+              ':active': {
+                backgroundColor: 'hsl(var(--heroui-primary-200))',
               },
             }),
             placeholder: (base) => ({
               ...base,
               color: isInvalid
-                ? "hsl(var(--heroui-danger))"
-                : "hsl(var(--heroui-default-500))",
+                ? 'hsl(var(--heroui-danger))'
+                : 'hsl(var(--heroui-default-500))',
             }),
             singleValue: (base) => ({
               ...base,
-              color: "hsl(var(--heroui-foreground))",
+              color: 'hsl(var(--heroui-foreground))',
             }),
             multiValue: (base) => ({
               ...base,
-              backgroundColor: "hsl(var(--heroui-default-200))",
-              borderRadius: "0.375rem",
+              backgroundColor: 'hsl(var(--heroui-default-200))',
+              borderRadius: '0.375rem',
             }),
             multiValueLabel: (base) => ({
               ...base,
-              color: "hsl(var(--heroui-foreground))",
+              color: 'hsl(var(--heroui-foreground))',
             }),
             multiValueRemove: (base) => ({
               ...base,
-              color: "hsl(var(--heroui-foreground-500))",
-              ":hover": {
-                backgroundColor: "hsl(var(--heroui-danger-100))",
-                color: "hsl(var(--heroui-danger))",
+              color: 'hsl(var(--heroui-foreground-500))',
+              ':hover': {
+                backgroundColor: 'hsl(var(--heroui-danger-100))',
+                color: 'hsl(var(--heroui-danger))',
               },
             }),
             input: (base) => ({
               ...base,
-              color: "hsl(var(--heroui-foreground))",
+              color: 'hsl(var(--heroui-foreground))',
             }),
           }}
           onChange={onChange}

@@ -1,24 +1,24 @@
-import { toast } from "@heroui/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
-import { useParams } from "react-router";
+import { toast } from '@heroui/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect } from 'react';
+import { useParams } from 'react-router';
 
-import { OperationResponseColumns } from "../../components/column/OperationResponseColumns";
-import { RolForm } from "../../components/form/RolForm";
-import { LoadingComponent } from "../../components/spinner/LoadingComponent";
-import { TableServer } from "../../components/table/TableServer";
-import { getOperations } from "../../services/operationService";
-import { getRolOperations } from "../../services/rolOperationService";
-import { getRolById, updateRol } from "../../services/rolService";
-import { useErrorsStore } from "../../stores/useErrorsStore";
-import { useOperationStore } from "../../stores/useOperationStore";
-import { customStyles } from "../../theme/tableTheme";
-import type { ApiResponse } from "../../types/ApiResponse";
-import type { RolOperationResponse } from "../../types/RolOperationResponse";
-import type { RolRequest } from "../../types/RolRequest";
-import type { RolResponse } from "../../types/RolResponse";
-import type { ApiError } from "../../types/errors";
-import { validationFailureToString } from "../../utils/converted";
+import { OperationResponseColumns } from '../../components/column/OperationResponseColumns';
+import { RolForm } from '../../components/form/RolForm';
+import { LoadingComponent } from '../../components/spinner/LoadingComponent';
+import { TableServer } from '../../components/table/TableServer';
+import { getOperations } from '../../services/operationService';
+import { getRolOperations } from '../../services/rolOperationService';
+import { getRolById, updateRol } from '../../services/rolService';
+import { useErrorsStore } from '../../stores/useErrorsStore';
+import { useOperationStore } from '../../stores/useOperationStore';
+import { customStyles } from '../../theme/tableTheme';
+import type { ApiResponse } from '../../types/ApiResponse';
+import type { RolOperationResponse } from '../../types/RolOperationResponse';
+import type { RolRequest } from '../../types/RolRequest';
+import type { RolResponse } from '../../types/RolResponse';
+import type { ApiError } from '../../types/errors';
+import { validationFailureToString } from '../../utils/converted';
 
 export function UpdateRolPage() {
   const { setError } = useErrorsStore();
@@ -31,7 +31,7 @@ export function UpdateRolPage() {
     isLoading,
     error,
   } = useQuery<ApiResponse<RolResponse>, ApiError>({
-    queryKey: ["rolToUpdate", id],
+    queryKey: ['rolToUpdate', id],
     queryFn: () => getRolById(Number(id)),
   });
 
@@ -39,7 +39,7 @@ export function UpdateRolPage() {
     ApiResponse<RolOperationResponse[]>,
     ApiError
   >({
-    queryKey: ["operationsForRol", id],
+    queryKey: ['operationsForRol', id],
     queryFn: () =>
       getRolOperations({
         filters: `RolId:eq:${id}`,
@@ -63,10 +63,10 @@ export function UpdateRolPage() {
         return response;
       }
 
-      await client.invalidateQueries({ queryKey: ["roles"] });
-      await client.invalidateQueries({ queryKey: ["rolToUpdate", id] });
+      await client.invalidateQueries({ queryKey: ['roles'] });
+      await client.invalidateQueries({ queryKey: ['rolToUpdate', id] });
 
-      toast.success("Rol actualizado correctamente");
+      toast.success('Rol actualizado correctamente');
 
       return response;
     },
@@ -79,7 +79,7 @@ export function UpdateRolPage() {
         pageNumber: page,
         pageSize,
         filters,
-        include: "Module",
+        include: 'Module',
         includeTotal: false,
       });
     },
@@ -109,7 +109,7 @@ export function UpdateRolPage() {
         />
       ) : (
         <div>
-          Error: {error instanceof Error ? error.message : "Unknown error"}
+          Error: {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       )}
       <h2 className="text-xl font-bold text-center">

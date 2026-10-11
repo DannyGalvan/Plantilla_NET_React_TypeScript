@@ -1,4 +1,4 @@
-import logo from "./react.svg";
+import logo from './react.svg';
 
 export const Images = {
   logo: logo,

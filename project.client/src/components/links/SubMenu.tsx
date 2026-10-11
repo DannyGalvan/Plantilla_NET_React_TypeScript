@@ -1,9 +1,9 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Link, useLocation } from "react-router";
+import { AnimatePresence, motion } from 'framer-motion';
+import { useCallback, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Link, useLocation } from 'react-router';
 
-import type { Authorizations } from "../../types/Authorizations";
+import type { Authorizations } from '../../types/Authorizations';
 
 export function SubMenu({
   data,
@@ -59,10 +59,10 @@ export function SubMenu({
         className={`relative flex w-full items-center rounded-lg py-2.5 text-[0.9rem] font-bold transition-all
             ${
               isActive || subMenuOpen
-                ? "bg-blue-50/50 text-blue-700 dark:bg-zinc-800/80 dark:text-blue-400"
-                : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50"
+                ? 'bg-blue-50/50 text-blue-700 dark:bg-zinc-800/80 dark:text-blue-400'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/50'
             }
-            ${isCollapsed ? "justify-center px-0" : "justify-between px-3"}
+            ${isCollapsed ? 'justify-center px-0' : 'justify-between px-3'}
           `}
         type="button"
         onClick={toggleSubMenu}
@@ -73,7 +73,7 @@ export function SubMenu({
           </div>
 
           <div
-            className={`flex items-center transition-all duration-300 overflow-hidden ${isCollapsed ? "opacity-0 w-0" : "w-auto opacity-100 ml-3"}`}
+            className={`flex items-center transition-all duration-300 overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'w-auto opacity-100 ml-3'}`}
           >
             <span className="tracking-wide whitespace-nowrap">
               {data.module.name}
@@ -85,14 +85,14 @@ export function SubMenu({
         {!isCollapsed && (
           <div className="flex items-center transition-all opacity-100">
             <i
-              className={`bi bi-chevron-down text-sm transition-transform duration-300 ${subMenuOpen ? "rotate-180" : ""}`}
+              className={`bi bi-chevron-down text-sm transition-transform duration-300 ${subMenuOpen ? 'rotate-180' : ''}`}
             />
           </div>
         )}
       </button>
 
       {/* --- MENÚ FLOTANTE CUSTOM (SIN PARPADEO Y SIN REACT ARIA POPOVER) --- */}
-      {isCollapsed && isHovered && btnRect && typeof document !== "undefined"
+      {isCollapsed && isHovered && btnRect && typeof document !== 'undefined'
         ? createPortal(
             <div
               className="fixed z-9999 pl-3"
@@ -123,8 +123,8 @@ export function SubMenu({
                         <Link
                           className={`block w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                             pathname === menu.path
-                              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                              : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/80"
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-800/80'
                           }`}
                           to={menu.path}
                           onClick={handleLinkClick}
@@ -144,11 +144,11 @@ export function SubMenu({
       <AnimatePresence>
         {!isCollapsed && subMenuOpen ? (
           <motion.ul
-            animate={{ height: "auto", opacity: 1 }}
+            animate={{ height: 'auto', opacity: 1 }}
             className="flex flex-col gap-1 overflow-hidden pl-9 pr-2 mt-1"
             exit={{ height: 0, opacity: 0 }}
             initial={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
             {data.operations
               .filter((x) => x.isVisible)
@@ -157,8 +157,8 @@ export function SubMenu({
                   <Link
                     className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       pathname === menu.path
-                        ? "bg-blue-100/50 text-blue-700 dark:bg-zinc-800 dark:text-blue-400"
-                        : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white"
+                        ? 'bg-blue-100/50 text-blue-700 dark:bg-zinc-800 dark:text-blue-400'
+                        : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white'
                     }`}
                     to={menu.path}
                   >

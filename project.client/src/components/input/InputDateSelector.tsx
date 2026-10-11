@@ -1,14 +1,14 @@
-import type { DateValue, RangeValue } from "@heroui/react";
+import type { DateValue, RangeValue } from '@heroui/react';
 import {
   DateField,
   DateRangePicker,
   Label,
   RangeCalendar,
-} from "@heroui/react";
-import { I18nProvider } from "@react-aria/i18n";
-import { useCallback } from "react";
+} from '@heroui/react';
+import { I18nProvider } from '@react-aria/i18n';
+import { useCallback } from 'react';
 
-import { useRangeOfDatesStore } from "../../stores/useRangeOfDatesStore";
+import { useRangeOfDatesStore } from '../../stores/useRangeOfDatesStore';
 
 interface InputDateSelectorProps {
   readonly label: string;
@@ -27,7 +27,7 @@ export function InputDateSelector({ label }: InputDateSelectorProps) {
         });
         setCalendarDate(date);
       } else {
-        setRageOfDates({ start: "", end: "" });
+        setRageOfDates({ start: '', end: '' });
         setCalendarDate(null);
       }
     },

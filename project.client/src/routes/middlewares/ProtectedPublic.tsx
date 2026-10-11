@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
-import { Navigate } from "react-router";
+import type { ReactNode } from 'react';
+import { Navigate } from 'react-router';
 
-import { nameRoutes } from "../../configs/constants";
-import { useAuth } from "../../hooks/useAuth";
-import { useErrorsStore } from "../../stores/useErrorsStore";
+import { nameRoutes } from '../../configs/constants';
+import { useAuth } from '../../hooks/useAuth';
+import { useErrorsStore } from '../../stores/useErrorsStore';
 
 interface ProtectedPublicProps {
   readonly children: ReactNode;

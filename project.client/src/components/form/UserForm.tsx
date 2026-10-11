@@ -5,24 +5,24 @@ import {
   Input,
   Label,
   TextField,
-} from "@heroui/react";
-import { useCallback, type ChangeEvent } from "react";
-import { useNavigate } from "react-router";
-import type { SingleValue } from "react-select";
+} from '@heroui/react';
+import { useCallback, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router';
+import type { SingleValue } from 'react-select';
 
-import { useForm } from "../../hooks/useForm";
-import { getRoles } from "../../services/rolService";
-import type { ApiResponse } from "../../types/ApiResponse";
-import type { RolResponse } from "../../types/RolResponse";
-import type { UserRequest } from "../../types/UserRequest";
-import type { ValidationFailure } from "../../types/ValidationFailure";
-import { validateUser } from "../../validations/userValidation";
-import { Response } from "../messages/Response";
-import { CatalogueSelect } from "../select/CatalogueSelect";
-import { OptionsSelect, type OptionValue } from "../select/OptionsSelect";
+import { useForm } from '../../hooks/useForm';
+import { getRoles } from '../../services/rolService';
+import type { ApiResponse } from '../../types/ApiResponse';
+import type { RolResponse } from '../../types/RolResponse';
+import type { UserRequest } from '../../types/UserRequest';
+import type { ValidationFailure } from '../../types/ValidationFailure';
+import { validateUser } from '../../validations/userValidation';
+import { Response } from '../messages/Response';
+import { CatalogueSelect } from '../select/CatalogueSelect';
+import { OptionsSelect, type OptionValue } from '../select/OptionsSelect';
 
 interface CreateUserFormProps {
-  readonly type: "create";
+  readonly type: 'create';
   readonly initialForm: UserRequest;
   readonly onSubmit: (
     form: UserRequest,
@@ -30,7 +30,7 @@ interface CreateUserFormProps {
 }
 
 interface EditUserFormProps {
-  readonly type: "edit";
+  readonly type: 'edit';
   readonly initialForm: UserRequest;
   readonly onSubmit: (
     form: UserRequest,
@@ -40,7 +40,7 @@ interface EditUserFormProps {
 type UserFormProps = CreateUserFormProps | EditUserFormProps;
 
 export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
-  const isEditing = type === "edit";
+  const isEditing = type === 'edit';
   const navigate = useNavigate();
 
   const { form, errors, handleChange, handleSubmit, success, message } =
@@ -59,7 +59,7 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
     (name: string) => (opt: OptionValue) => {
       const option = opt as SingleValue<{ label: string; value: string }>;
       handleChange({
-        target: { name, value: option?.value || "" },
+        target: { name, value: option?.value || '' },
       } as React.ChangeEvent<HTMLInputElement>);
     },
     [handleChange],
@@ -74,13 +74,13 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
   );
 
   const handleCancel = useCallback(() => {
-    navigate("/user");
+    navigate('/user');
   }, [navigate]);
 
   return (
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-center mb-6">
-        {isEditing ? "Editar Usuario" : "Crear Usuario"}
+        {isEditing ? 'Editar Usuario' : 'Crear Usuario'}
       </h1>
 
       {success != null && <Response message={message} type={success} />}
@@ -96,13 +96,13 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.name}
             name="name"
-            onChange={handleTextChange("name")}
+            onChange={handleTextChange('name')}
           >
             <Label className="font-bold">Nombre Completo</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="text"
-              value={form.name || ""}
+              value={form.name || ''}
             />
 
             {errors?.name ? (
@@ -115,13 +115,13 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.email}
             name="email"
-            onChange={handleTextChange("email")}
+            onChange={handleTextChange('email')}
           >
             <Label className="font-bold">Correo Electrónico</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="email"
-              value={form.email || ""}
+              value={form.email || ''}
             />
 
             {errors?.email ? (
@@ -134,13 +134,13 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.userName}
             name="userName"
-            onChange={handleTextChange("userName")}
+            onChange={handleTextChange('userName')}
           >
             <Label className="font-bold">Nombre de Usuario</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="text"
-              value={form.userName || ""}
+              value={form.userName || ''}
             />
 
             {errors?.userName ? (
@@ -153,15 +153,15 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             isInvalid={!!errors?.password}
             isRequired={!isEditing}
             name="password"
-            onChange={handleTextChange("password")}
+            onChange={handleTextChange('password')}
           >
             <Label className="font-bold">
-              {isEditing ? "Nueva Contraseña (opcional)" : "Contraseña"}
+              {isEditing ? 'Nueva Contraseña (opcional)' : 'Contraseña'}
             </Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="password"
-              value={form.password || ""}
+              value={form.password || ''}
             />
 
             {errors?.password ? (
@@ -173,13 +173,13 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.identificationDocument}
             name="identificationDocument"
-            onChange={handleTextChange("identificationDocument")}
+            onChange={handleTextChange('identificationDocument')}
           >
             <Label className="font-bold">Documento de Identificación</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="text"
-              value={form.identificationDocument || ""}
+              value={form.identificationDocument || ''}
             />
 
             {errors?.identificationDocument ? (
@@ -191,13 +191,13 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.number}
             name="number"
-            onChange={handleTextChange("number")}
+            onChange={handleTextChange('number')}
           >
             <Label className="font-bold">Número de Teléfono</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="text"
-              value={form.number || ""}
+              value={form.number || ''}
             />
 
             {errors?.number ? (
@@ -208,10 +208,10 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
           <CatalogueSelect
             isRequired
             defaultValue={
-              type === "edit"
+              type === 'edit'
                 ? {
-                    label: initialForm.rol?.name ?? "",
-                    value: initialForm.rolId?.toString() ?? "",
+                    label: initialForm.rol?.name ?? '',
+                    value: initialForm.rolId?.toString() ?? '',
                   }
                 : null
             }
@@ -224,7 +224,7 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             placeholder="Seleccione un rol"
             queryFn={getRoles}
             selectorFn={selectorRol}
-            onChange={handleSelectChange("rolId")}
+            onChange={handleSelectChange('rolId')}
           />
 
           <OptionsSelect
@@ -232,21 +232,21 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             defaultValue={
               form.state !== null && form.state !== undefined
                 ? {
-                    label: form.state === 1 ? "Activo" : "Inactivo",
+                    label: form.state === 1 ? 'Activo' : 'Inactivo',
                     value: form.state.toString(),
                   }
-                : { label: "Activo", value: "1" }
+                : { label: 'Activo', value: '1' }
             }
             errorMessage={errors?.state as string}
             isInvalid={!!errors?.state}
             label="Estado"
             name="state"
             options={[
-              { label: "Activo", value: "1" },
-              { label: "Inactivo", value: "0" },
+              { label: 'Activo', value: '1' },
+              { label: 'Inactivo', value: '0' },
             ]}
             placeholder="Seleccione un estado"
-            onChange={handleSelectChange("state")}
+            onChange={handleSelectChange('state')}
           />
         </div>
 
@@ -266,7 +266,7 @@ export function UserForm({ type, initialForm, onSubmit }: UserFormProps) {
             type="submit"
             variant="primary"
           >
-            {isEditing ? "Actualizar" : "Crear"}
+            {isEditing ? 'Actualizar' : 'Crear'}
           </Button>
         </div>
       </Form>

@@ -1,16 +1,16 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
 import {
   api,
   readToken,
   setAuthorization,
-} from "../configs/axios/interceptors";
-import { authInitialState } from "../configs/constants";
-import { tryParseEnvelope } from "../services/zodApi";
-import type { Authorizations } from "../types/Authorizations";
-import type { InitialAuth } from "../types/InitialAuth";
-import { authWithRefreshResponseSchema } from "../types/schemas";
-import { retrase } from "../utils/viewTransition";
+} from '../configs/axios/interceptors';
+import { authInitialState } from '../configs/constants';
+import { tryParseEnvelope } from '../services/zodApi';
+import type { Authorizations } from '../types/Authorizations';
+import type { InitialAuth } from '../types/InitialAuth';
+import { authWithRefreshResponseSchema } from '../types/schemas';
+import { retrase } from '../utils/viewTransition';
 
 interface AuthState {
   authState: InitialAuth;
@@ -32,7 +32,7 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-const apiBaseUrl = api.defaults.baseURL ?? "";
+const apiBaseUrl = api.defaults.baseURL ?? '';
 
 export const useAuthStore = create<AuthState>((set) => ({
   authState: authInitialState,
@@ -41,10 +41,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true });
     try {
       const response = await fetch(`${apiBaseUrl}Auth/Refresh`, {
-        method: "POST",
-        credentials: "include",
+        method: 'POST',
+        credentials: 'include',
         headers: {
-          ...(readXsrfCookie() ? { "X-XSRF-TOKEN": readXsrfCookie()! } : {}),
+          ...(readXsrfCookie() ? { 'X-XSRF-TOKEN': readXsrfCookie()! } : {}),
         },
       });
 
@@ -56,10 +56,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           const auth: InitialAuth = {
             isLoggedIn: true,
             redirect: false,
-            email: data.email ?? "",
-            token: data.token ?? "",
-            userName: data.userName ?? "",
-            name: data.name ?? "",
+            email: data.email ?? '',
+            token: data.token ?? '',
+            userName: data.userName ?? '',
+            name: data.name ?? '',
             userId: data.userId ?? 0,
             operations: (data.operations ?? []) as unknown as Authorizations[],
           };
@@ -67,10 +67,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           set({ authState: auth });
         }
       } else if (response.status !== 401) {
-        console.warn("refresh bootstrap failed", response.status);
+        console.warn('refresh bootstrap failed', response.status);
       }
     } catch (error) {
-      console.error("auth sync failed", error);
+      console.error('auth sync failed', error);
     } finally {
       set({ loading: false });
     }
@@ -85,14 +85,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true });
     try {
       await fetch(`${apiBaseUrl}Auth/Logout`, {
-        method: "POST",
-        credentials: "include",
+        method: 'POST',
+        credentials: 'include',
         headers: {
-          ...(readXsrfCookie() ? { "X-XSRF-TOKEN": readXsrfCookie()! } : {}),
+          ...(readXsrfCookie() ? { 'X-XSRF-TOKEN': readXsrfCookie()! } : {}),
         },
       });
     } catch (error) {
-      console.error("logout request failed", error);
+      console.error('logout request failed', error);
     } finally {
       setAuthorization(null);
       set({ authState: authInitialState, loading: false });
@@ -104,9 +104,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 export const currentAuthToken = readToken;
 
 function readXsrfCookie(): string | null {
-  if (typeof document === "undefined") return null;
-  const target = "XSRF-TOKEN=";
-  const parts = document.cookie.split(";");
+  if (typeof document === 'undefined') return null;
+  const target = 'XSRF-TOKEN=';
+  const parts = document.cookie.split(';');
   for (const raw of parts) {
     const cookie = raw.trim();
     if (cookie.startsWith(target)) {

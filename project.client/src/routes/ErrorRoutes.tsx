@@ -1,10 +1,10 @@
-import type { RouteObject } from "react-router";
+import type { RouteObject } from 'react-router';
 
-import { nameRoutes } from "../configs/constants";
-import { NotFound } from "../pages/error/NotFound";
-import LoadingPage from "../pages/public/LoadingPage";
+import { nameRoutes } from '../configs/constants';
+import { NotFound } from '../pages/error/NotFound';
+import LoadingPage from '../pages/public/LoadingPage';
 
-import Protected from "./middlewares/Protected";
+import Protected from './middlewares/Protected';
 
 export const ErrorRoutes: RouteObject[] = [
   {
@@ -31,7 +31,7 @@ export const ErrorRoutes: RouteObject[] = [
   },
   {
     path: nameRoutes.error,
-    lazy: () => import("../pages/error/ErrorPage"),
+    lazy: () => import('../pages/error/ErrorPage'),
     hydrateFallbackElement: <LoadingPage />,
   },
   {

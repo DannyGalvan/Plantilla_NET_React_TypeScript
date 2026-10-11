@@ -1,12 +1,12 @@
-import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useState } from "react";
+import type { ChangeEvent, FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useErrorsStore } from "../stores/useErrorsStore";
-import type { ApiResponse } from "../types/ApiResponse";
-import type { ValidationFailure } from "../types/ValidationFailure";
-import { ApiError } from "../types/errors";
+import { useErrorsStore } from '../stores/useErrorsStore';
+import type { ApiResponse } from '../types/ApiResponse';
+import type { ValidationFailure } from '../types/ValidationFailure';
+import { ApiError } from '../types/errors';
 
-import { useResponse } from "./useResponse";
+import { useResponse } from './useResponse';
 
 export interface ErrorObject {
   [key: string]: string | string[];
@@ -81,7 +81,7 @@ export const useForm = <T, U>(
     handleApiResponse({
       success: null,
       data: null,
-      message: "Error en la validación del formulario",
+      message: 'Error en la validación del formulario',
       totalResults: 0,
     });
 
@@ -98,7 +98,7 @@ export const useForm = <T, U>(
             setForm(initialForm);
           }
           e.target.dispatchEvent(
-            new Event("reset", { bubbles: true, cancelable: true }),
+            new Event('reset', { bubbles: true, cancelable: true }),
           );
         }
 
@@ -118,7 +118,7 @@ export const useForm = <T, U>(
           handleApiResponse({
             success: false,
             data: null,
-            message: "Unexpected error. Please retry.",
+            message: 'Unexpected error. Please retry.',
             totalResults: 0,
           });
         }
@@ -127,7 +127,7 @@ export const useForm = <T, U>(
       handleApiResponse({
         success: false,
         data: null,
-        message: "Error en la validación del formulario",
+        message: 'Error en la validación del formulario',
         totalResults: 0,
       });
     }

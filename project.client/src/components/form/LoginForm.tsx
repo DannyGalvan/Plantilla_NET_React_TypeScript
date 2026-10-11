@@ -5,15 +5,15 @@ import {
   Input,
   Label,
   TextField,
-} from "@heroui/react";
-import { useCallback, type ChangeEvent } from "react";
-import { Link } from "react-router";
+} from '@heroui/react';
+import { useCallback, type ChangeEvent } from 'react';
+import { Link } from 'react-router';
 
-import { nameRoutes } from "../../configs/constants";
-import { useForm } from "../../hooks/useForm";
-import type { ApiResponse } from "../../types/ApiResponse";
-import { validateLogin } from "../../validations/loginValidation";
-import { Response } from "../messages/Response";
+import { nameRoutes } from '../../configs/constants';
+import { useForm } from '../../hooks/useForm';
+import type { ApiResponse } from '../../types/ApiResponse';
+import { validateLogin } from '../../validations/loginValidation';
+import { Response } from '../messages/Response';
 
 export interface LoginFormData {
   userName: string;
@@ -51,13 +51,13 @@ export function LoginForm({ initialForm, onSubmit }: LoginFormProps) {
           className="w-full flex flex-col gap-1"
           isInvalid={!!errors?.userName}
           name="userName"
-          onChange={handleTextChange("userName")}
+          onChange={handleTextChange('userName')}
         >
           <Label className="font-bold">Nombre de usuario</Label>
           <Input
             className="w-full px-3 py-2 border rounded-md"
             type="text"
-            value={form.userName || ""}
+            value={form.userName || ''}
             variant="primary"
           />
           {errors?.userName ? (
@@ -70,13 +70,13 @@ export function LoginForm({ initialForm, onSubmit }: LoginFormProps) {
           className="w-full flex flex-col gap-1"
           isInvalid={!!errors?.password}
           name="password"
-          onChange={handleTextChange("password")}
+          onChange={handleTextChange('password')}
         >
           <Label className="font-bold">Contraseña</Label>
           <Input
             className="w-full px-3 py-2 border rounded-md"
             type="password"
-            value={form.password || ""}
+            value={form.password || ''}
             variant="primary"
           />
           {errors?.password ? (

@@ -1,12 +1,12 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
-import type { InitialAuth } from "../../types/InitialAuth";
+import type { InitialAuth } from '../../types/InitialAuth';
 import {
   ForbiddenError,
   InternalServerError,
   NetworkError,
   UnauthorizedError,
-} from "../../types/errors";
+} from '../../types/errors';
 
 /**
  * Base URL is taken from `import.meta.env.VITE_API_URL` and falls back to
@@ -14,13 +14,13 @@ import {
  * URL is forwarded to the API.
  */
 export const API_URL =
-  (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "") + "/api/v1/";
+  (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '') + '/api/v1/';
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
 });
 
@@ -33,24 +33,24 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // lazily to avoid a circular import at module load.
   const token = readToken();
   if (token) {
-    config.headers.set("Authorization", `Bearer ${token}`);
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
 
   // 3.9 — double-submit CSRF: echo the XSRF-TOKEN cookie (set by the
   // backend on login/refresh) as the X-XSRF-TOKEN header. The backend
   // /Auth/Refresh endpoint requires the cookie and the header to match.
-  const xsrf = readCookie("XSRF-TOKEN");
+  const xsrf = readCookie('XSRF-TOKEN');
   if (xsrf) {
-    config.headers.set("X-XSRF-TOKEN", xsrf);
+    config.headers.set('X-XSRF-TOKEN', xsrf);
   }
 
   return config;
 });
 
 function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
+  if (typeof document === 'undefined') return null;
   const target = `${name}=`;
-  const parts = document.cookie.split(";");
+  const parts = document.cookie.split(';');
   for (const raw of parts) {
     const cookie = raw.trim();
     if (cookie.startsWith(target)) {
@@ -69,7 +69,7 @@ api.interceptors.response.use(
     // F8 (a): guard against network failures (no `error.response`).
     if (!error.response) {
       throw new NetworkError(
-        "No se pudo contactar al servidor. Verifique su conexión.",
+        'No se pudo contactar al servidor. Verifique su conexión.',
       );
     }
 
@@ -79,17 +79,17 @@ api.interceptors.response.use(
       // Token expired / invalid — clear the in-memory store.
       clearToken();
       throw new UnauthorizedError(
-        "Tu sesión ha expirado, vuelve a iniciar sesión.",
+        'Tu sesión ha expirado, vuelve a iniciar sesión.',
       );
     }
 
     if (status === 403) {
-      throw new ForbiddenError("No tienes permisos para realizar esta acción.");
+      throw new ForbiddenError('No tienes permisos para realizar esta acción.');
     }
 
     if (status === 500) {
       throw new InternalServerError(
-        "Hubo un error en el servidor. Notifica al desarrollador.",
+        'Hubo un error en el servidor. Notifica al desarrollador.',
       );
     }
 
@@ -112,7 +112,7 @@ export const setAuthorization = (token: string | null | undefined) => {
   // F8 (d): the previous guard `token !== undefined || token !== null` was
   // always true (||, not &&). Now we accept undefined/null/empty as
   // "clear the token".
-  if (typeof token !== "string" || token.length === 0) {
+  if (typeof token !== 'string' || token.length === 0) {
     currentToken = null;
     delete api.defaults.headers.common.Authorization;
     return;
@@ -137,8 +137,8 @@ export const clearToken = () => setAuthorization(null);
 // WRITE to it.
 // ============================================================
 export const rehydrateLegacyAuth = (): InitialAuth | null => {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem("@auth");
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem('@auth');
   if (!raw) return null;
   try {
     return JSON.parse(raw) as InitialAuth;

@@ -1,13 +1,13 @@
-import { Button, Dropdown, toast } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
-import { useNavigate } from "react-router";
+import { Button, Dropdown, toast } from '@heroui/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router';
 
-import { deleteRol } from "../../services/rolService";
-import type { RolResponse } from "../../types/RolResponse";
-import { validationFailureToString } from "../../utils/converted";
-import { Icon } from "../icons/Icon";
-import { ConfirmDialog } from "../modal/ConfirmDialog";
+import { deleteRol } from '../../services/rolService';
+import type { RolResponse } from '../../types/RolResponse';
+import { validationFailureToString } from '../../utils/converted';
+import { Icon } from '../icons/Icon';
+import { ConfirmDialog } from '../modal/ConfirmDialog';
 
 interface RolButtonProps {
   readonly data: RolResponse;
@@ -35,7 +35,7 @@ export function RolButton({ data }: RolButtonProps) {
 
       if (response.success) {
         toast.success(`Rol "${data.name}" eliminado correctamente`);
-        await queryClient.invalidateQueries({ queryKey: ["roles"] });
+        await queryClient.invalidateQueries({ queryKey: ['roles'] });
         setIsDeleteDialogOpen(false);
       } else {
         toast.danger(
@@ -44,7 +44,7 @@ export function RolButton({ data }: RolButtonProps) {
       }
     } catch (error) {
       toast.danger(
-        `Error al eliminar el rol: ${error instanceof Error ? error.message : "Error desconocido"}`,
+        `Error al eliminar el rol: ${error instanceof Error ? error.message : 'Error desconocido'}`,
       );
     } finally {
       setIsDeleting(false);

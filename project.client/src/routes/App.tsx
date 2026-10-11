@@ -1,16 +1,16 @@
-import { Toast } from "@heroui/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { lazy, useEffect } from "react";
+import { Toast } from '@heroui/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { lazy, useEffect } from 'react';
 
-import { useAuth } from "../hooks/useAuth";
-import ErrorBoundary from "../pages/error/ErrorBoundary";
-import LoadingPage from "../pages/public/LoadingPage";
+import { useAuth } from '../hooks/useAuth';
+import ErrorBoundary from '../pages/error/ErrorBoundary';
+import LoadingPage from '../pages/public/LoadingPage';
 
 const LazyAppRoutes = lazy(() =>
-  import("./AppRoutes").catch((error) => {
-    console.error("Error loading AppRoutes", error);
+  import('./AppRoutes').catch((error) => {
+    console.error('Error loading AppRoutes', error);
     throw error; // Para que ErrorBoundary lo capture
   }),
 );
@@ -20,7 +20,7 @@ const client = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 0,
-      networkMode: "online",
+      networkMode: 'online',
       staleTime: 1000 * 60 * 5,
     },
     mutations: {

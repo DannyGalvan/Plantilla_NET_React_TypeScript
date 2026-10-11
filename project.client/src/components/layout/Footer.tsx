@@ -1,6 +1,6 @@
-import { Link } from "react-router";
+import { Link } from 'react-router';
 
-import { nameRoutes } from "../../configs/constants";
+import { nameRoutes } from '../../configs/constants';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -22,7 +22,7 @@ export function Footer() {
 
       <div className="flex items-center gap-2 font-medium text-xs">
         <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600 dark:bg-zinc-800 dark:text-gray-300 border border-gray-200 dark:border-zinc-700 shadow-inner">
-          Versión{" "}
+          Versión{' '}
           <span className="font-bold text-gray-800 dark:text-gray-100">
             1.0.0
           </span>

@@ -1,4 +1,4 @@
-import type { OperationResponse } from "./OperationResponse";
+import type { OperationResponse } from './OperationResponse';
 
 export interface ModuleResponse {
   id: number;

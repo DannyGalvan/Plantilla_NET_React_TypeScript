@@ -1,5 +1,5 @@
-import { useAuthStore } from "../stores/useAuthStore";
-import { toAllOperations } from "../utils/converted";
+import { useAuthStore } from '../stores/useAuthStore';
+import { toAllOperations } from '../utils/converted';
 
 export const useAuth = () => {
   const { authState, loading, logout, signIn, syncAuth } = useAuthStore();

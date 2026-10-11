@@ -1,14 +1,14 @@
-import { AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { afterEach, describe, expect, it } from "vitest";
+import { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   ForbiddenError,
   InternalServerError,
   NetworkError,
   UnauthorizedError,
-} from "../../types/errors";
+} from '../../types/errors';
 
-import { api, clearToken, readToken, setAuthorization } from "./interceptors";
+import { api, clearToken, readToken, setAuthorization } from './interceptors';
 
 /**
  * Cast a plain object to `AxiosError`. The real constructor does runtime
@@ -33,7 +33,7 @@ function rejectedOf(): (err: unknown) => Promise<unknown> {
     }
   ).handlers;
   const rejected = handlers.at(-1)?.rejected;
-  if (!rejected) throw new Error("interceptor not registered");
+  if (!rejected) throw new Error('interceptor not registered');
   return rejected;
 }
 
@@ -41,22 +41,22 @@ afterEach(() => {
   clearToken();
 });
 
-describe("axios response interceptor", () => {
-  it("throws NetworkError when the response is absent", () => {
+describe('axios response interceptor', () => {
+  it('throws NetworkError when the response is absent', () => {
     const rejected = rejectedOf();
     // The interceptor's `rejected` may throw synchronously (axios contract);
     // catch the thrown instance and assert the type directly.
     expect(() => rejected(networkError())).toThrow(NetworkError);
   });
 
-  it("throws UnauthorizedError on 401 and clears the token", () => {
-    setAuthorization("token-to-clear");
-    expect(readToken()).toBe("token-to-clear");
+  it('throws UnauthorizedError on 401 and clears the token', () => {
+    setAuthorization('token-to-clear');
+    expect(readToken()).toBe('token-to-clear');
 
     const rejected = rejectedOf();
     let thrown: unknown;
     try {
-      rejected(fakeAxiosError(401, { message: "expired" }));
+      rejected(fakeAxiosError(401, { message: 'expired' }));
     } catch (error) {
       thrown = error;
     }
@@ -64,39 +64,39 @@ describe("axios response interceptor", () => {
     expect(readToken()).toBeNull();
   });
 
-  it("throws ForbiddenError on 403", () => {
+  it('throws ForbiddenError on 403', () => {
     const rejected = rejectedOf();
     let thrown: unknown;
     try {
-      rejected(fakeAxiosError(403, { message: "nope" }));
+      rejected(fakeAxiosError(403, { message: 'nope' }));
     } catch (error) {
       thrown = error;
     }
     expect(thrown).toBeInstanceOf(ForbiddenError);
   });
 
-  it("throws InternalServerError on 500", () => {
+  it('throws InternalServerError on 500', () => {
     const rejected = rejectedOf();
     let thrown: unknown;
     try {
-      rejected(fakeAxiosError(500, { message: "boom" }));
+      rejected(fakeAxiosError(500, { message: 'boom' }));
     } catch (error) {
       thrown = error;
     }
     expect(thrown).toBeInstanceOf(InternalServerError);
   });
 
-  it("surfaces the server envelope message on other 4xx", () => {
+  it('surfaces the server envelope message on other 4xx', () => {
     const rejected = rejectedOf();
     expect(() =>
-      rejected(fakeAxiosError(400, { message: "validation failed" })),
-    ).toThrow("validation failed");
+      rejected(fakeAxiosError(400, { message: 'validation failed' })),
+    ).toThrow('validation failed');
   });
 });
 
-describe("request interceptor", () => {
-  it("attaches Authorization header when a token is set", () => {
-    setAuthorization("abc.def.ghi");
+describe('request interceptor', () => {
+  it('attaches Authorization header when a token is set', () => {
+    setAuthorization('abc.def.ghi');
     const handlers = (
       api.interceptors.request as unknown as {
         handlers: Array<{
@@ -107,7 +107,7 @@ describe("request interceptor", () => {
       }
     ).handlers;
     const fulfilled = handlers.at(-1)?.fulfilled;
-    if (!fulfilled) throw new Error("interceptor not registered");
+    if (!fulfilled) throw new Error('interceptor not registered');
 
     const config = {
       headers: { set: () => undefined, get: () => undefined },

@@ -1,4 +1,4 @@
-import { useAuth } from "./useAuth";
+import { useAuth } from './useAuth';
 
 /**
  * F3: hook that returns whether the current user is allowed to perform
@@ -12,6 +12,6 @@ export const useCan = (operationKey: string): boolean => {
   const { allOperations } = useAuth();
   if (!operationKey) return false;
   return (allOperations ?? []).some(
-    (op) => (op.name ?? "").toString() === operationKey,
+    (op) => (op.name ?? '').toString() === operationKey,
   );
 };

@@ -1,10 +1,10 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 
-import { UserResponseColumns } from "../../components/column/UserResponseColumns";
-import { TableServer } from "../../components/table/TableServer";
-import { getUsers } from "../../services/userService";
-import { useUserStore } from "../../stores/useUserStore";
-import { customStyles } from "../../theme/tableTheme";
+import { UserResponseColumns } from '../../components/column/UserResponseColumns';
+import { TableServer } from '../../components/table/TableServer';
+import { getUsers } from '../../services/userService';
+import { useUserStore } from '../../stores/useUserStore';
+import { customStyles } from '../../theme/tableTheme';
 
 export function UserPage() {
   const { filters, setFilters } = useUserStore();
@@ -15,7 +15,7 @@ export function UserPage() {
         pageNumber: page,
         pageSize,
         filters,
-        include: "rol",
+        include: 'rol',
         includeTotal: false,
       });
     },

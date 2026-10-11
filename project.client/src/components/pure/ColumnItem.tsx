@@ -1,6 +1,6 @@
-import { Label, Switch } from "@heroui/react";
-import { useCallback } from "react";
-import type { TableColumn } from "react-data-table-component";
+import { Label, Switch } from '@heroui/react';
+import { useCallback } from 'react';
+import type { TableColumn } from 'react-data-table-component';
 
 interface ColumnItemProps<T> {
   readonly column: TableColumn<T>;

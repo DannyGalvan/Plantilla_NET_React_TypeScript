@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import { Navigate } from "react-router";
+import type { ReactNode } from 'react';
+import { Navigate } from 'react-router';
 
-import { nameRoutes } from "../../configs/constants";
-import { useAuth } from "../../hooks/useAuth";
+import { nameRoutes } from '../../configs/constants';
+import { useAuth } from '../../hooks/useAuth';
 
 interface ProtectedRouteProps {
   readonly children: ReactNode;
@@ -26,7 +26,7 @@ function ProtectedRoute({ children, operation }: ProtectedRouteProps) {
     return <Navigate to={nameRoutes.changePassword} />;
   }
 
-  if (!allOperations.some((op) => (op.name ?? "").toString() === operation)) {
+  if (!allOperations.some((op) => (op.name ?? '').toString() === operation)) {
     return <Navigate to={nameRoutes.error} />;
   }
 

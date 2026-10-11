@@ -1,17 +1,17 @@
-import { toast } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { toast } from '@heroui/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
-import { RolForm } from "../../components/form/RolForm";
-import { createRol } from "../../services/rolService";
-import type { RolRequest } from "../../types/RolRequest";
+import { RolForm } from '../../components/form/RolForm';
+import { createRol } from '../../services/rolService';
+import type { RolRequest } from '../../types/RolRequest';
 
 export function CreateRolPage() {
   const client = useQueryClient();
 
   const initialData: RolRequest = {
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     state: 1,
   };
 
@@ -24,9 +24,9 @@ export function CreateRolPage() {
         return response;
       }
 
-      await client.invalidateQueries({ queryKey: ["roles"] });
+      await client.invalidateQueries({ queryKey: ['roles'] });
 
-      toast.success("Rol creado correctamente");
+      toast.success('Rol creado correctamente');
 
       return response;
     },

@@ -1,7 +1,7 @@
-import { Modal } from "@heroui/react";
-import type { TableColumn } from "react-data-table-component";
+import { Modal } from '@heroui/react';
+import type { TableColumn } from 'react-data-table-component';
 
-import { ColumnItem } from "../pure/ColumnItem";
+import { ColumnItem } from '../pure/ColumnItem';
 
 interface ModalTableProps<T> {
   readonly columns: TableColumn<T>[];

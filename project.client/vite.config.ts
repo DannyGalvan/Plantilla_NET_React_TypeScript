@@ -1,21 +1,21 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { env } from "node:process";
-import { fileURLToPath, URL } from "node:url";
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { env } from 'node:process';
+import { fileURLToPath, URL } from 'node:url';
 
-import tailwindcss from "@tailwindcss/vite";
-import viteReact from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
-import compress from "vite-plugin-compression";
-import tsconfigPaths from "vite-tsconfig-paths";
+import tailwindcss from '@tailwindcss/vite';
+import viteReact from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import compress from 'vite-plugin-compression';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 const baseFolder =
-  env.APPDATA !== undefined && env.APPDATA !== ""
+  env.APPDATA !== undefined && env.APPDATA !== ''
     ? `${env.APPDATA}/ASP.NET/https`
     : `${env.HOME}/.aspnet/https`;
 
-const certificateName = "project.client";
+const certificateName = 'project.client';
 const certFilePath = join(baseFolder, `${certificateName}.pem`);
 const keyFilePath = join(baseFolder, `${certificateName}.key`);
 
@@ -29,20 +29,20 @@ if (!existsSync(certFilePath) || !existsSync(keyFilePath)) {
   if (
     0 !==
     spawnSync(
-      "dotnet",
+      'dotnet',
       [
-        "dev-certs",
-        "https",
-        "--export-path",
+        'dev-certs',
+        'https',
+        '--export-path',
         certFilePath,
-        "--format",
-        "Pem",
-        "--no-password",
+        '--format',
+        'Pem',
+        '--no-password',
       ],
-      { stdio: "inherit" },
+      { stdio: 'inherit' },
     ).status
   ) {
-    throw new Error("Could not create certificate.");
+    throw new Error('Could not create certificate.');
   }
 }
 
@@ -51,16 +51,16 @@ export default defineConfig({
   plugins: [viteReact(), compress(), tsconfigPaths(), tailwindcss()],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {
     proxy: {
-      "/api": {
-        target: "https://localhost:7266/api",
+      '/api': {
+        target: 'https://localhost:7266/api',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ""),
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
     port: 60263,

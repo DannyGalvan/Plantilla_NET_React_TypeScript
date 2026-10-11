@@ -1,18 +1,18 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { useAuth } from "../../hooks/useAuth";
-import { useErrorsStore } from "../../stores/useErrorsStore";
+import { useAuth } from '../../hooks/useAuth';
+import { useErrorsStore } from '../../stores/useErrorsStore';
 
-vi.mock("../../hooks/useAuth", () => ({
+vi.mock('../../hooks/useAuth', () => ({
   useAuth: vi.fn(),
 }));
-vi.mock("../../stores/useErrorsStore", () => ({
+vi.mock('../../stores/useErrorsStore', () => ({
   useErrorsStore: vi.fn(),
 }));
 
-import ProtectedPublic from "./ProtectedPublic";
+import ProtectedPublic from './ProtectedPublic';
 
 const mockedUseAuth = vi.mocked(useAuth);
 const mockedUseErrorsStore = vi.mocked(useErrorsStore);
@@ -21,8 +21,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("ProtectedPublic", () => {
-  it("renders children when the user is logged in and there is no error", () => {
+describe('ProtectedPublic', () => {
+  it('renders children when the user is logged in and there is no error', () => {
     mockedUseAuth.mockReturnValue({ isLoggedIn: true } as never);
     mockedUseErrorsStore.mockReturnValue({ error: null } as never);
 
@@ -34,10 +34,10 @@ describe("ProtectedPublic", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("child")).toHaveTextContent("OK");
+    expect(screen.getByTestId('child')).toHaveTextContent('OK');
   });
 
-  it("hides children when the user is not logged in", () => {
+  it('hides children when the user is not logged in', () => {
     mockedUseAuth.mockReturnValue({ isLoggedIn: false } as never);
     mockedUseErrorsStore.mockReturnValue({ error: null } as never);
 
@@ -49,13 +49,13 @@ describe("ProtectedPublic", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByTestId("child")).toBeNull();
+    expect(screen.queryByTestId('child')).toBeNull();
   });
 
-  it("hides children when an error is in the store", () => {
+  it('hides children when an error is in the store', () => {
     mockedUseAuth.mockReturnValue({ isLoggedIn: true } as never);
     mockedUseErrorsStore.mockReturnValue({
-      error: { name: "ForbiddenError", statusCode: "403", message: "nope" },
+      error: { name: 'ForbiddenError', statusCode: '403', message: 'nope' },
     } as never);
 
     render(
@@ -66,6 +66,6 @@ describe("ProtectedPublic", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByTestId("child")).toBeNull();
+    expect(screen.queryByTestId('child')).toBeNull();
   });
 });

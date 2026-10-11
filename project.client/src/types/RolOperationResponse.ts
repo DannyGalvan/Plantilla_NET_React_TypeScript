@@ -1,5 +1,5 @@
-import type { OperationResponse } from "./OperationResponse";
-import type { RolResponse } from "./RolResponse";
+import type { OperationResponse } from './OperationResponse';
+import type { RolResponse } from './RolResponse';
 
 export interface RolOperationResponse {
   id: number;

@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import type { ApiResponse } from "../types/ApiResponse";
-import type { filterOptions } from "../types/FilterTypes";
-import type { UserRequest } from "../types/UserRequest";
-import type { UserResponse } from "../types/UserResponse";
-import { userResponseSchema } from "../types/schemas";
+import type { ApiResponse } from '../types/ApiResponse';
+import type { filterOptions } from '../types/FilterTypes';
+import type { UserRequest } from '../types/UserRequest';
+import type { UserResponse } from '../types/UserResponse';
+import { userResponseSchema } from '../types/schemas';
 
-import { zodApi } from "./zodApi";
+import { zodApi } from './zodApi';
 
 /** Schema for `GET /User?…` — returns an array of users. */
 const userListSchema = z.array(userResponseSchema);
@@ -53,7 +53,7 @@ export const createUser = async (
   user: UserRequest,
 ): Promise<ApiResponse<UserResponse>> => {
   const env = await zodApi.post<z.infer<typeof userSchema>, UserRequest>(
-    "User",
+    'User',
     userSchema,
     user,
   );
@@ -64,7 +64,7 @@ export const updateUser = async (
   user: UserRequest,
 ): Promise<ApiResponse<UserResponse>> => {
   const env = await zodApi.put<z.infer<typeof userSchema>, UserRequest>(
-    "User",
+    'User',
     userSchema,
     user,
   );

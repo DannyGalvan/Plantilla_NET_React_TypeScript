@@ -1,4 +1,4 @@
-import type { CountryResponse } from "./CountryResponse";
+import type { CountryResponse } from './CountryResponse';
 
 export interface MunicipalityResponse {
   code: string;

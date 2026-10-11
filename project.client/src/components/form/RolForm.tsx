@@ -5,20 +5,20 @@ import {
   Input,
   Label,
   TextField,
-} from "@heroui/react";
-import { useCallback, type ChangeEvent } from "react";
-import { useNavigate } from "react-router";
+} from '@heroui/react';
+import { useCallback, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router';
 
-import { useForm } from "../../hooks/useForm";
-import type { ApiResponse } from "../../types/ApiResponse";
-import type { RolRequest } from "../../types/RolRequest";
-import type { ValidationFailure } from "../../types/ValidationFailure";
-import { validateRol } from "../../validations/rolValidation";
-import { Response } from "../messages/Response";
-import { OptionsSelect, type OptionValue } from "../select/OptionsSelect";
+import { useForm } from '../../hooks/useForm';
+import type { ApiResponse } from '../../types/ApiResponse';
+import type { RolRequest } from '../../types/RolRequest';
+import type { ValidationFailure } from '../../types/ValidationFailure';
+import { validateRol } from '../../validations/rolValidation';
+import { Response } from '../messages/Response';
+import { OptionsSelect, type OptionValue } from '../select/OptionsSelect';
 
 interface CreateRolFormProps {
-  readonly type: "create";
+  readonly type: 'create';
   readonly initialForm: RolRequest;
   readonly onSubmit: (
     form: RolRequest,
@@ -26,7 +26,7 @@ interface CreateRolFormProps {
 }
 
 interface EditRolFormProps {
-  readonly type: "edit";
+  readonly type: 'edit';
   readonly initialForm: RolRequest;
   readonly onSubmit: (
     form: RolRequest,
@@ -36,7 +36,7 @@ interface EditRolFormProps {
 type RolFormProps = CreateRolFormProps | EditRolFormProps;
 
 export function RolForm({ type, initialForm, onSubmit }: RolFormProps) {
-  const isEditing = type === "edit";
+  const isEditing = type === 'edit';
   const navigate = useNavigate();
 
   const { form, errors, handleChange, handleSubmit, success, message } =
@@ -54,38 +54,38 @@ export function RolForm({ type, initialForm, onSubmit }: RolFormProps) {
   const handleStateChange = useCallback(
     (newValue: OptionValue) => {
       const value =
-        newValue && !Array.isArray(newValue) && "value" in newValue
+        newValue && !Array.isArray(newValue) && 'value' in newValue
           ? Number((newValue as { value: string }).value)
           : null;
 
       handleChange({
-        target: { name: "state", value },
+        target: { name: 'state', value },
       } as unknown as ChangeEvent<HTMLInputElement>);
     },
     [handleChange],
   );
 
   const handleCancel = useCallback(() => {
-    navigate("/rol");
+    navigate('/rol');
   }, [navigate]);
 
   const stateOptions = [
-    { label: "Activo", value: "1" },
-    { label: "Inactivo", value: "0" },
+    { label: 'Activo', value: '1' },
+    { label: 'Inactivo', value: '0' },
   ];
 
   const currentState =
     form.state !== null && form.state !== undefined
       ? {
-          label: form.state === 1 ? "Activo" : "Inactivo",
+          label: form.state === 1 ? 'Activo' : 'Inactivo',
           value: form.state.toString(),
         }
-      : { label: "Activo", value: "1" };
+      : { label: 'Activo', value: '1' };
 
   return (
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-center mb-6">
-        {isEditing ? "Editar Rol" : "Crear Rol"}
+        {isEditing ? 'Editar Rol' : 'Crear Rol'}
       </h1>
 
       {success != null && <Response message={message} type={success} />}
@@ -101,13 +101,13 @@ export function RolForm({ type, initialForm, onSubmit }: RolFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.name}
             name="name"
-            onChange={handleTextChange("name")}
+            onChange={handleTextChange('name')}
           >
             <Label className="font-bold">Nombre del Rol</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="text"
-              value={form.name || ""}
+              value={form.name || ''}
             />
 
             {errors?.name ? (
@@ -120,13 +120,13 @@ export function RolForm({ type, initialForm, onSubmit }: RolFormProps) {
             className="w-full flex flex-col gap-1"
             isInvalid={!!errors?.description}
             name="description"
-            onChange={handleTextChange("description")}
+            onChange={handleTextChange('description')}
           >
             <Label className="font-bold">Descripción</Label>
             <Input
               className="w-full px-3 py-2 border rounded-md"
               type="text"
-              value={form.description || ""}
+              value={form.description || ''}
             />
 
             {errors?.description ? (
@@ -163,7 +163,7 @@ export function RolForm({ type, initialForm, onSubmit }: RolFormProps) {
             type="submit"
             variant="primary"
           >
-            {isEditing ? "Actualizar" : "Crear"}
+            {isEditing ? 'Actualizar' : 'Crear'}
           </Button>
         </div>
       </Form>

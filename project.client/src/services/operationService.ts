@@ -1,11 +1,11 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import type { ApiResponse } from "../types/ApiResponse";
-import type { filterOptions } from "../types/FilterTypes";
-import type { OperationResponse } from "../types/OperationResponse";
-import { operationResponseSchema } from "../types/schemas";
+import type { ApiResponse } from '../types/ApiResponse';
+import type { filterOptions } from '../types/FilterTypes';
+import type { OperationResponse } from '../types/OperationResponse';
+import { operationResponseSchema } from '../types/schemas';
 
-import { zodApi } from "./zodApi";
+import { zodApi } from './zodApi';
 
 const operationListSchema = z.array(operationResponseSchema);
 

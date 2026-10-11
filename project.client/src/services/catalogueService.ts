@@ -1,11 +1,11 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import type { ApiResponse } from "../types/ApiResponse";
-import type { CatalogueResponse } from "../types/CatalogueResponse";
-import type { filterOptions } from "../types/FilterTypes";
-import { catalogueResponseItemSchema } from "../types/schemas";
+import type { ApiResponse } from '../types/ApiResponse';
+import type { CatalogueResponse } from '../types/CatalogueResponse';
+import type { filterOptions } from '../types/FilterTypes';
+import { catalogueResponseItemSchema } from '../types/schemas';
 
-import { zodApi } from "./zodApi";
+import { zodApi } from './zodApi';
 
 const catalogueListSchema = z.array(catalogueResponseItemSchema);
 

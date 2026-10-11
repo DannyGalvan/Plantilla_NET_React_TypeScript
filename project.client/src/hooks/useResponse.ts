@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { ApiResponse } from "../types/ApiResponse";
-import type { ValidationFailure } from "../types/ValidationFailure";
-import { toCamelCase } from "../utils/converted";
+import type { ApiResponse } from '../types/ApiResponse';
+import type { ValidationFailure } from '../types/ValidationFailure';
+import { toCamelCase } from '../utils/converted';
 
-import type { ErrorObject } from "./useForm";
+import type { ErrorObject } from './useForm';
 
 export const useResponse = <T, U>() => {
   const [dataResult, setDataResult] = useState<T>();
   const [fieldErrors, setFieldErrors] = useState<ErrorObject>();
-  const [apiMessage, setApiMessage] = useState<string>("");
+  const [apiMessage, setApiMessage] = useState<string>('');
   const [success, setSuccess] = useState<boolean | null>(null);
 
   const mapValidationFailuresToFieldErrors = (errors: ValidationFailure[]) => {

@@ -1,4 +1,4 @@
-import type { Key } from "@heroui/react";
+import type { Key } from '@heroui/react';
 import {
   Button,
   Input,
@@ -6,13 +6,13 @@ import {
   ListBox,
   Select,
   TextField,
-} from "@heroui/react";
-import { useCallback, type Ref } from "react";
+} from '@heroui/react';
+import { useCallback, type Ref } from 'react';
 
-import type { TableColumnWithFilters } from "../../types/TableColumnWithFilters";
-import { Col } from "../grid/Col";
-import { Row } from "../grid/Row";
-import { Icon } from "../icons/Icon";
+import type { TableColumnWithFilters } from '../../types/TableColumnWithFilters';
+import { Col } from '../grid/Col';
+import { Row } from '../grid/Row';
+import { Icon } from '../icons/Icon';
 
 interface TableSearchProps<T> {
   readonly selectedField: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -29,7 +29,7 @@ export function TableSearch<T extends object>({
 }: TableSearchProps<T>) {
   const handleOnKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" || e.key === "Tab") {
+      if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         filterData();
       }

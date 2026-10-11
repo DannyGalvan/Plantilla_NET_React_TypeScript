@@ -1,11 +1,11 @@
-import { toast } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { toast } from '@heroui/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
-import { UserForm } from "../../components/form/UserForm";
-import { initialUser } from "../../configs/constants";
-import { createUser } from "../../services/userService";
-import type { UserRequest } from "../../types/UserRequest";
+import { UserForm } from '../../components/form/UserForm';
+import { initialUser } from '../../configs/constants';
+import { createUser } from '../../services/userService';
+import type { UserRequest } from '../../types/UserRequest';
 
 export function CreateUserPage() {
   const client = useQueryClient();
@@ -19,9 +19,9 @@ export function CreateUserPage() {
         return response;
       }
 
-      await client.invalidateQueries({ queryKey: ["users"] });
+      await client.invalidateQueries({ queryKey: ['users'] });
 
-      toast.success("Usuario creado correctamente");
+      toast.success('Usuario creado correctamente');
 
       return response;
     },

@@ -1,14 +1,14 @@
-import { Button, Label, TextField } from "@heroui/react";
-import type { ChangeEvent } from "react";
-import { useCallback } from "react";
+import { Button, Label, TextField } from '@heroui/react';
+import type { ChangeEvent } from 'react';
+import { useCallback } from 'react';
 
-import { Col } from "../../components/grid/Col";
-import { Response } from "../../components/messages/Response";
-import { useAuth } from "../../hooks/useAuth";
-import { useForm } from "../../hooks/useForm";
-import ProtectedPublic from "../../routes/middlewares/ProtectedPublic";
-import { changePassword } from "../../services/authService";
-import { validateChangePassword } from "../../validations/changePasswordValidation";
+import { Col } from '../../components/grid/Col';
+import { Response } from '../../components/messages/Response';
+import { useAuth } from '../../hooks/useAuth';
+import { useForm } from '../../hooks/useForm';
+import ProtectedPublic from '../../routes/middlewares/ProtectedPublic';
+import { changePassword } from '../../services/authService';
+import { validateChangePassword } from '../../validations/changePasswordValidation';
 
 export interface ChangePasswordForm {
   idUser: number;
@@ -18,8 +18,8 @@ export interface ChangePasswordForm {
 
 const initialForm: ChangePasswordForm = {
   idUser: 0,
-  password: "",
-  confirmPassword: "",
+  password: '',
+  confirmPassword: '',
 };
 
 export function Component() {
@@ -43,7 +43,7 @@ export function Component() {
   const handlePasswordChange = useCallback(
     (val: string) => {
       handleChange({
-        target: { name: "password", value: val },
+        target: { name: 'password', value: val },
       } as unknown as ChangeEvent<HTMLInputElement>);
     },
     [handleChange],
@@ -52,7 +52,7 @@ export function Component() {
   const handleConfirmPasswordChange = useCallback(
     (val: string) => {
       handleChange({
-        target: { name: "confirmPassword", value: val },
+        target: { name: 'confirmPassword', value: val },
       } as unknown as ChangeEvent<HTMLInputElement>);
     },
     [handleChange],
@@ -107,4 +107,4 @@ export function Component() {
   );
 }
 
-Component.displayName = "ChangePasswordPage";
+Component.displayName = 'ChangePasswordPage';

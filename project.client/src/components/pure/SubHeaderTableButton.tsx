@@ -1,6 +1,6 @@
-import { Button, Tooltip } from "@heroui/react";
+import { Button, Tooltip } from '@heroui/react';
 
-import { Icon } from "../icons/Icon";
+import { Icon } from '../icons/Icon';
 
 interface SubHeaderTableButtonProps {
   readonly onClick: () => void;

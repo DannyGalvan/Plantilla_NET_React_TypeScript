@@ -1,13 +1,13 @@
-import { Button, Dropdown, toast } from "@heroui/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
-import { useNavigate } from "react-router";
+import { Button, Dropdown, toast } from '@heroui/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router';
 
-import { deleteUser } from "../../services/userService";
-import type { UserResponse } from "../../types/UserResponse";
-import { validationFailureToString } from "../../utils/converted";
-import { Icon } from "../icons/Icon";
-import { ConfirmDialog } from "../modal/ConfirmDialog";
+import { deleteUser } from '../../services/userService';
+import type { UserResponse } from '../../types/UserResponse';
+import { validationFailureToString } from '../../utils/converted';
+import { Icon } from '../icons/Icon';
+import { ConfirmDialog } from '../modal/ConfirmDialog';
 
 interface UserButtonProps {
   readonly data: UserResponse;
@@ -35,7 +35,7 @@ export function UserButton({ data }: UserButtonProps) {
 
       if (response.success) {
         toast.success(`Usuario "${data.name}" eliminado correctamente`);
-        await queryClient.invalidateQueries({ queryKey: ["users"] });
+        await queryClient.invalidateQueries({ queryKey: ['users'] });
         setIsDeleteDialogOpen(false);
       } else {
         toast.danger(
@@ -44,7 +44,7 @@ export function UserButton({ data }: UserButtonProps) {
       }
     } catch (error) {
       toast.danger(
-        `Error al eliminar el usuario: ${error instanceof Error ? error.message : "Error desconocido"}`,
+        `Error al eliminar el usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`,
       );
     } finally {
       setIsDeleting(false);

@@ -1,5 +1,5 @@
-import type { ModuleResponse } from "./ModuleResponse";
-import type { RolOperationResponse } from "./RolOperationResponse";
+import type { ModuleResponse } from './ModuleResponse';
+import type { RolOperationResponse } from './RolOperationResponse';
 
 export interface OperationResponse {
   id: number;

@@ -1,11 +1,11 @@
-import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
-import { useCallback, useState } from "react";
-import { useLocation } from "react-router";
+import { AnimatePresence, motion } from 'framer-motion';
+import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
+import { useLocation } from 'react-router';
 
-import { Footer } from "../components/layout/Footer";
-import { Header } from "../components/layout/Header";
-import { Sidebar } from "../components/layout/Sidebar";
+import { Footer } from '../components/layout/Footer';
+import { Header } from '../components/layout/Header';
+import { Sidebar } from '../components/layout/Sidebar';
 
 interface LayoutProps {
   readonly children: ReactNode;
@@ -13,7 +13,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       return window.innerWidth >= 768; // Empieza extendido en escritorio, colapsado/oculto en móvil
     }
     return false;
@@ -39,7 +39,7 @@ export function Layout({ children }: LayoutProps) {
         <div
           className="flex-1 overflow-auto px-4 py-0 pt-5 pb-5 scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-zinc-700"
           id="scroll"
-          style={{ scrollBehavior: "smooth" }}
+          style={{ scrollBehavior: 'smooth' }}
         >
           <AnimatePresence mode="wait">
             <motion.main
@@ -48,7 +48,7 @@ export function Layout({ children }: LayoutProps) {
               className="h-full w-full"
               exit={{ opacity: 0, y: -15 }}
               initial={{ opacity: 0, y: 15 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
             >
               {children}
             </motion.main>

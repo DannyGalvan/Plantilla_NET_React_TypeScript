@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component } from 'react';
 
 interface ErrorBoundaryProps {
   readonly children: React.ReactNode;

@@ -1,4 +1,4 @@
-import type { TableColumn } from "react-data-table-component";
+import type { TableColumn } from 'react-data-table-component';
 
 export type TableColumnWithFilters<T> =
   | (TableColumn<T> & {

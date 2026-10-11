@@ -1,6 +1,6 @@
-import { RouterProvider } from "react-router";
+import { RouterProvider } from 'react-router';
 
-import { useAuthorizationRoutes } from "../hooks/useAuthorizationRoutes";
+import { useAuthorizationRoutes } from '../hooks/useAuthorizationRoutes';
 
 function AppRoutes() {
   const routes = useAuthorizationRoutes();

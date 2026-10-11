@@ -1,5 +1,5 @@
-import type { Module } from "./Module";
-import type { Operations } from "./Operations";
+import type { Module } from './Module';
+import type { Operations } from './Operations';
 
 export interface Authorizations {
   module: Module;

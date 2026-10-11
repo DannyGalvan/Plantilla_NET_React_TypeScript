@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 
-import { Col } from "../../components/grid/Col";
-import { Row } from "../../components/grid/Row";
-import { nameRoutes } from "../../configs/constants";
-import { useAuth } from "../../hooks/useAuth";
-import ProtectedError from "../../routes/middlewares/ProtectedError";
-import { useErrorsStore } from "../../stores/useErrorsStore";
+import { Col } from '../../components/grid/Col';
+import { Row } from '../../components/grid/Row';
+import { nameRoutes } from '../../configs/constants';
+import { useAuth } from '../../hooks/useAuth';
+import ProtectedError from '../../routes/middlewares/ProtectedError';
+import { useErrorsStore } from '../../stores/useErrorsStore';
 
 export function Component() {
   const navigate = useNavigate();
   const { error, resetError } = useErrorsStore();
   const { logout, isLoggedIn } = useAuth();
 
-  const [text, setText] = useState("Regresar");
+  const [text, setText] = useState('Regresar');
 
   useEffect(() => {
-    if (error?.statusCode === "404" || error?.statusCode === "403") {
-      setText("Regresar");
-    } else if (error?.statusCode === "500" || error?.statusCode === "401") {
+    if (error?.statusCode === '404' || error?.statusCode === '403') {
+      setText('Regresar');
+    } else if (error?.statusCode === '500' || error?.statusCode === '401') {
       resetError();
       logout();
       navigate(nameRoutes.login);
@@ -27,13 +27,13 @@ export function Component() {
 
   const handleClick = useCallback(() => {
     resetError();
-    if (error?.statusCode === "404") {
+    if (error?.statusCode === '404') {
       if (isLoggedIn) {
         navigate(-1);
       } else {
         navigate(nameRoutes.login);
       }
-    } else if (error?.statusCode === "403") {
+    } else if (error?.statusCode === '403') {
       navigate(-3);
     } else {
       navigate(-1);
@@ -55,7 +55,7 @@ export function Component() {
               tabIndex={0}
               onClick={handleClick}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   handleClick();
                 }
@@ -70,4 +70,4 @@ export function Component() {
   );
 }
 
-Component.displayName = "ErrorPage";
+Component.displayName = 'ErrorPage';

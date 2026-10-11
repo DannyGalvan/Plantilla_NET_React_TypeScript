@@ -1,18 +1,18 @@
-import { Button, Spinner, toast } from "@heroui/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
-import { useParams } from "react-router";
+import { Button, Spinner, toast } from '@heroui/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
 
 import {
   createRolOperation,
   getRolOperations,
   updateRolOperation,
-} from "../../services/rolOperationService";
-import type { ApiResponse } from "../../types/ApiResponse";
-import type { OperationResponse } from "../../types/OperationResponse";
-import type { RolOperationResponse } from "../../types/RolOperationResponse";
-import { validationFailureToString } from "../../utils/converted";
-import { Icon } from "../icons/Icon";
+} from '../../services/rolOperationService';
+import type { ApiResponse } from '../../types/ApiResponse';
+import type { OperationResponse } from '../../types/OperationResponse';
+import type { RolOperationResponse } from '../../types/RolOperationResponse';
+import { validationFailureToString } from '../../utils/converted';
+import { Icon } from '../icons/Icon';
 
 interface OperationButtonProps {
   readonly data: OperationResponse;
@@ -26,7 +26,7 @@ export function OperationButton({ data }: OperationButtonProps) {
   const { data: operationsResponse } = useQuery<
     ApiResponse<RolOperationResponse[]>
   >({
-    queryKey: ["operationsForRol", id],
+    queryKey: ['operationsForRol', id],
     queryFn: async () =>
       getRolOperations({
         filters: `RolId:eq:${id}`,
@@ -68,7 +68,7 @@ export function OperationButton({ data }: OperationButtonProps) {
 
       if (response.success) {
         await client.invalidateQueries({
-          queryKey: ["operationsForRol", id],
+          queryKey: ['operationsForRol', id],
         });
 
         toast.success(`Permiso ${data.name} removido correctamente`);
@@ -96,7 +96,7 @@ export function OperationButton({ data }: OperationButtonProps) {
 
     if (response.success) {
       await client.invalidateQueries({
-        queryKey: ["operationsForRol", id],
+        queryKey: ['operationsForRol', id],
       });
       toast.success(`Permiso ${data.name} asignado correctamente`);
       setIsLoading(false);
@@ -111,10 +111,10 @@ export function OperationButton({ data }: OperationButtonProps) {
 
   return (
     <Button
-      className={hasPermission ? "text-white" : ""}
+      className={hasPermission ? 'text-white' : ''}
       isPending={isLoading}
       size="sm"
-      variant={hasPermission ? "danger" : "primary"}
+      variant={hasPermission ? 'danger' : 'primary'}
       onPress={handleSubmit}
     >
       {({ isPending }) => (
@@ -125,7 +125,7 @@ export function OperationButton({ data }: OperationButtonProps) {
           ) : (
             <Icon name="bi bi-plus" />
           )}
-          {hasPermission ? "Eliminar" : "Asignar"}
+          {hasPermission ? 'Eliminar' : 'Asignar'}
         </>
       )}
     </Button>

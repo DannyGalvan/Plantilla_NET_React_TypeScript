@@ -1,9 +1,9 @@
-import { ZodError } from "zod";
+import { ZodError } from 'zod';
 
-import type { ErrorObject } from "../hooks/useForm";
-import type { Authorizations } from "../types/Authorizations";
-import type { Operations } from "../types/Operations";
-import type { ValidationFailure } from "../types/ValidationFailure";
+import type { ErrorObject } from '../hooks/useForm';
+import type { Authorizations } from '../types/Authorizations';
+import type { Operations } from '../types/Operations';
+import type { ValidationFailure } from '../types/ValidationFailure';
 
 export const toCamelCase = (inputString: string) => {
   return inputString.replace(
@@ -15,7 +15,7 @@ export const toCamelCase = (inputString: string) => {
 };
 
 export const dataFormatter = (number: number) =>
-  `Q${Intl.NumberFormat("en").format(number).toString()}`;
+  `Q${Intl.NumberFormat('en').format(number).toString()}`;
 
 export const toAllOperations = (operations: Authorizations[]) => {
   const allOperations: Operations[] = [];
@@ -36,9 +36,9 @@ export const toFormatTime = (date: string) => {
   const minutes: number = tempDate.getMinutes();
 
   // Formatear la hora si es necesario (por ejemplo, agregar ceros delante si es menor que 10)
-  const formatHour: string = hours < 10 ? "0" + hours : hours.toString();
+  const formatHour: string = hours < 10 ? '0' + hours : hours.toString();
   const formatMinute: string =
-    minutes < 10 ? "0" + minutes : minutes.toString();
+    minutes < 10 ? '0' + minutes : minutes.toString();
 
   // Crear una cadena de texto con la hora
   const formatHours = `${formatHour}:${formatMinute}`;
@@ -48,7 +48,7 @@ export const toFormatTime = (date: string) => {
 };
 
 export const toFormatDate = (date: string) => {
-  const dateTemp = date.length === 10 ? date + "T06:00:00" : date;
+  const dateTemp = date.length === 10 ? date + 'T06:00:00' : date;
 
   // Crear un objeto Date con la fecha
   const fecha: Date = new Date(dateTemp);
@@ -59,8 +59,8 @@ export const toFormatDate = (date: string) => {
   const año: number = fecha.getFullYear();
 
   // Formatear la fecha si es necesario (por ejemplo, agregar ceros delante si es menor que 10)
-  const diaFormateado: string = dia < 10 ? "0" + dia : dia.toString();
-  const mesFormateado: string = mes < 10 ? "0" + mes : mes.toString();
+  const diaFormateado: string = dia < 10 ? '0' + dia : dia.toString();
+  const mesFormateado: string = mes < 10 ? '0' + mes : mes.toString();
 
   // Crear una cadena de texto con la fecha
   const fechaFormateada = `${año}-${mesFormateado}-${diaFormateado}`;
@@ -74,7 +74,7 @@ export const dateNow = () => {
   const offset = now.getTimezoneOffset(); // Obtiene la diferencia en minutos entre UTC y la zona horaria local
   now.setMinutes(now.getMinutes() - offset); // Ajusta la fecha restando la diferencia
 
-  const formattedDate = now.toISOString().split("T")[0];
+  const formattedDate = now.toISOString().split('T')[0];
   return formattedDate;
 };
 
@@ -98,7 +98,7 @@ export const handleOneLevelZodError = ({ issues }: ZodError<unknown>) => {
   const formData: ErrorObject = {};
 
   issues.forEach(({ path, message }) => {
-    formData[path.join("-")] = message;
+    formData[path.join('-')] = message;
   });
 
   return formData;
@@ -114,29 +114,29 @@ export const copyToClipboard = async (textToCopy: string) => {
   try {
     await navigator.clipboard.writeText(textToCopy);
   } catch (err) {
-    console.error("Error al copiar el texto: ", err);
+    console.error('Error al copiar el texto: ', err);
   }
 };
 
 export const validationFailureToString = (
   errors: ValidationFailure[] | null,
 ) => {
-  if (!errors) return "";
+  if (!errors) return '';
 
   return errors
     .map((error) => `${error.propertyName}: ${error.errorMessage}`)
-    .join(", ");
+    .join(', ');
 };
 
 export const errorObjectToString = (errorObject?: ErrorObject) => {
-  if (!errorObject) return "";
+  if (!errorObject) return '';
 
   return Object.entries(errorObject)
     .map(
       ([key, value]) =>
-        `${key}: ${Array.isArray(value) ? value.join(", ") : value}`,
+        `${key}: ${Array.isArray(value) ? value.join(', ') : value}`,
     )
-    .join(", ");
+    .join(', ');
 };
 
 export const mapValidationFailuresToFieldErrors = (
@@ -158,7 +158,7 @@ export const mapValidationFailuresToFieldErrors = (
 };
 
 export const constructFilters = (filters: string) => {
-  if (filters.startsWith(" AND ")) {
+  if (filters.startsWith(' AND ')) {
     filters = filters.slice(5); // Eliminar el prefijo " AND " si existe
   }
 
@@ -172,14 +172,14 @@ const isFileLike = (v: unknown): v is FileLike =>
   v instanceof File || v instanceof Blob;
 
 const isSimple = (v: unknown): v is SimpleValue =>
-  typeof v === "string" ||
-  typeof v === "number" ||
-  typeof v === "boolean" ||
+  typeof v === 'string' ||
+  typeof v === 'number' ||
+  typeof v === 'boolean' ||
   v === null ||
   v instanceof Date;
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null && !Array.isArray(v) && !isFileLike(v);
+  typeof v === 'object' && v !== null && !Array.isArray(v) && !isFileLike(v);
 
 function appendSimple(form: FormData, key: string, value: SimpleValue): void {
   if (value === null) return; // omite nulos
@@ -199,7 +199,7 @@ function appendSimple(form: FormData, key: string, value: SimpleValue): void {
 export function customToFormData(
   obj: Record<string, unknown>,
   form: FormData = new FormData(),
-  namespace = "",
+  namespace = '',
 ): FormData {
   for (const key of Object.keys(obj)) {
     const value = obj[key];

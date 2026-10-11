@@ -1,6 +1,6 @@
-import { Button, Modal } from "@heroui/react";
+import { Button, Modal } from '@heroui/react';
 
-import { Icon } from "../icons/Icon";
+import { Icon } from '../icons/Icon';
 
 interface ConfirmDialogProps {
   readonly isOpen: boolean;
@@ -19,8 +19,8 @@ export function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmText = "Confirmar",
-  cancelText = "Cancelar",
+  confirmText = 'Confirmar',
+  cancelText = 'Cancelar',
   isLoading = false,
 }: ConfirmDialogProps) {
   return (

@@ -1,12 +1,12 @@
-import { useMemo } from "react";
-import { createBrowserRouter, type RouteObject } from "react-router";
+import { useMemo } from 'react';
+import { createBrowserRouter, type RouteObject } from 'react-router';
 
-import { nameRoutes } from "../configs/constants";
-import { Root } from "../containers/Root";
-import { ErrorRoutes } from "../routes/ErrorRoutes";
-import { PublicRoutes } from "../routes/PublicRoutes";
+import { nameRoutes } from '../configs/constants';
+import { Root } from '../containers/Root';
+import { ErrorRoutes } from '../routes/ErrorRoutes';
+import { PublicRoutes } from '../routes/PublicRoutes';
 
-import { useAuth } from "./useAuth";
+import { useAuth } from './useAuth';
 
 /**
  * Phase 4 F2 fix: filter the route tree that actually holds children, and
@@ -25,7 +25,7 @@ export const useAuthorizationRoutes = () => {
     () =>
       new Set(
         (allOperations ?? [])
-          .map((op) => (op.name ?? "").toString())
+          .map((op) => (op.name ?? '').toString())
           .filter((k) => k.length > 0),
       ),
     [allOperations],

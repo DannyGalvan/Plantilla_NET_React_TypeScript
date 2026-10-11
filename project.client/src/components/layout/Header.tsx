@@ -1,6 +1,6 @@
-import { Button } from "@heroui/react";
-import { useTheme } from "next-themes";
-import { useCallback, useEffect, useState } from "react";
+import { Button } from '@heroui/react';
+import { useTheme } from 'next-themes';
+import { useCallback, useEffect, useState } from 'react';
 
 interface HeaderProps {
   readonly toggleSidebar: () => void;
@@ -15,7 +15,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
   }, []);
 
   const handleThemeChange = useCallback(() => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   }, [setTheme, resolvedTheme]);
 
   return (
@@ -35,7 +35,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
             className="flex h-10 w-10 min-w-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700 transition-colors"
             onClick={handleThemeChange}
           >
-            {resolvedTheme === "dark" ? (
+            {resolvedTheme === 'dark' ? (
               <i className="bi bi-sun-fill text-lg" />
             ) : (
               <i className="bi bi-moon-stars-fill text-lg" />

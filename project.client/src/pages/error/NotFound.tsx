@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 
-import { Col } from "../../components/grid/Col";
-import { Row } from "../../components/grid/Row";
-import { nameRoutes } from "../../configs/constants";
-import { useAuth } from "../../hooks/useAuth";
+import { Col } from '../../components/grid/Col';
+import { Row } from '../../components/grid/Row';
+import { nameRoutes } from '../../configs/constants';
+import { useAuth } from '../../hooks/useAuth';
 
 interface NotFoundProps {
   readonly Message: string;
@@ -15,25 +15,25 @@ export function NotFound({ Message, Number }: NotFoundProps) {
   const navigate = useNavigate();
   const { isLoggedIn, logout } = useAuth();
 
-  const [text, setText] = useState("Regresar");
+  const [text, setText] = useState('Regresar');
 
   useEffect(() => {
-    if (Number === "404" || Number === "403") {
-      setText("Regresar");
-    } else if (Number === "500" || Number === "401") {
+    if (Number === '404' || Number === '403') {
+      setText('Regresar');
+    } else if (Number === '500' || Number === '401') {
       logout();
       navigate(nameRoutes.login);
     }
   }, [Number, logout, navigate]);
 
   const handleClick = useCallback(() => {
-    if (Number === "404") {
+    if (Number === '404') {
       if (isLoggedIn) {
         navigate(-1);
       } else {
         navigate(nameRoutes.login);
       }
-    } else if (Number === "403") {
+    } else if (Number === '403') {
       navigate(-3);
     }
   }, [Number, isLoggedIn, navigate]);
@@ -50,7 +50,7 @@ export function NotFound({ Message, Number }: NotFoundProps) {
             tabIndex={0}
             onClick={handleClick}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
+              if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 handleClick();
               }

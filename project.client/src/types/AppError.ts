@@ -1,4 +1,4 @@
-import type { HttpStatusCode } from "./StatusCode";
+import type { HttpStatusCode } from './StatusCode';
 
 export interface AppError {
   statusCode: HttpStatusCode;

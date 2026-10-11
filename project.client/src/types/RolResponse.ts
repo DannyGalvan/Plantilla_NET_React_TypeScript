@@ -1,4 +1,4 @@
-import type { RolOperationResponse } from "./RolOperationResponse";
+import type { RolOperationResponse } from './RolOperationResponse';
 
 export interface RolResponse {
   id: number;

@@ -1,8 +1,8 @@
-import { Navigate } from "react-router";
+import { Navigate } from 'react-router';
 
-import { nameRoutes } from "../../configs/constants";
-import { useAuth } from "../../hooks/useAuth";
-import { useErrorsStore } from "../../stores/useErrorsStore";
+import { nameRoutes } from '../../configs/constants';
+import { useAuth } from '../../hooks/useAuth';
+import { useErrorsStore } from '../../stores/useErrorsStore';
 
 interface ProtectedProps {
   readonly children: React.ReactNode;

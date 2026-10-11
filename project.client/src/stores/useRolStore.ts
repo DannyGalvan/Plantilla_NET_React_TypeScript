@@ -1,6 +1,6 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
-import type { ListFilter } from "../types/ListFilter";
+import type { ListFilter } from '../types/ListFilter';
 
 interface RolFilterState {
   filters: ListFilter;
@@ -8,6 +8,6 @@ interface RolFilterState {
 }
 
 export const useRolStore = create<RolFilterState>((set) => ({
-  filters: { filter: "", page: 1, pageSize: 10 },
+  filters: { filter: '', page: 1, pageSize: 10 },
   setFilters: (filters) => set({ filters }),
 }));

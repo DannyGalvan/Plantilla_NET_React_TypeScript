@@ -1,14 +1,14 @@
-import type { AxiosResponse, RawAxiosRequestHeaders } from "axios";
-import type { z } from "zod";
+import type { AxiosResponse, RawAxiosRequestHeaders } from 'axios';
+import type { z } from 'zod';
 
 import {
   api,
   clearToken,
   readToken,
   setAuthorization,
-} from "../configs/axios/interceptors";
-import type { ApiResponse } from "../types/ApiResponse";
-import { apiEnvelopeSchema } from "../types/schemas";
+} from '../configs/axios/interceptors';
+import type { ApiResponse } from '../types/ApiResponse';
+import { apiEnvelopeSchema } from '../types/schemas';
 
 /**
  * Phase 4.9 — validated API helper.
@@ -22,7 +22,7 @@ import { apiEnvelopeSchema } from "../types/schemas";
  */
 
 export class SchemaError extends Error {
-  override readonly name = "SchemaError";
+  override readonly name = 'SchemaError';
   readonly issues: ReadonlyArray<{
     readonly path: string;
     readonly message: string;
@@ -41,7 +41,7 @@ function flattenIssues(error: z.ZodError): Array<{
   readonly message: string;
 }> {
   return error.issues.map((issue) => ({
-    path: issue.path.join(".") || "(root)",
+    path: issue.path.join('.') || '(root)',
     message: issue.message,
   }));
 }
@@ -77,7 +77,7 @@ function parseEnvelopeInternal(raw: unknown): ParsedEnvelope {
   const envelope = apiEnvelopeSchema.safeParse(raw);
   if (!envelope.success) {
     throw new SchemaError(
-      "API envelope did not match the expected shape.",
+      'API envelope did not match the expected shape.',
       flattenIssues(envelope.error),
     );
   }
@@ -93,7 +93,7 @@ function parseData<T>(raw: unknown, dataSchema: z.ZodType<T>): T {
   const inner = dataSchema.safeParse(raw);
   if (!inner.success) {
     throw new SchemaError(
-      "API response data did not match the expected shape.",
+      'API response data did not match the expected shape.',
       flattenIssues(inner.error),
     );
   }

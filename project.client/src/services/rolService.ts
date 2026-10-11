@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import type { ApiResponse } from "../types/ApiResponse";
-import type { filterOptions } from "../types/FilterTypes";
-import type { RolRequest } from "../types/RolRequest";
-import type { RolResponse } from "../types/RolResponse";
-import { rolResponseSchema } from "../types/schemas";
+import type { ApiResponse } from '../types/ApiResponse';
+import type { filterOptions } from '../types/FilterTypes';
+import type { RolRequest } from '../types/RolRequest';
+import type { RolResponse } from '../types/RolResponse';
+import { rolResponseSchema } from '../types/schemas';
 
-import { zodApi } from "./zodApi";
+import { zodApi } from './zodApi';
 
 const rolListSchema = z.array(rolResponseSchema);
 const rolSchema = rolResponseSchema;
@@ -46,14 +46,14 @@ export const getRolById = async (
 export const createRol = async (
   rol: RolRequest,
 ): Promise<ApiResponse<RolResponse>> =>
-  zodApi.post<Rol, RolRequest>("Rol", rolSchema, rol) as Promise<
+  zodApi.post<Rol, RolRequest>('Rol', rolSchema, rol) as Promise<
     ApiResponse<RolResponse>
   >;
 
 export const updateRol = async (
   rol: RolRequest,
 ): Promise<ApiResponse<RolResponse>> =>
-  zodApi.put<Rol, RolRequest>("Rol", rolSchema, rol) as Promise<
+  zodApi.put<Rol, RolRequest>('Rol', rolSchema, rol) as Promise<
     ApiResponse<RolResponse>
   >;
 
