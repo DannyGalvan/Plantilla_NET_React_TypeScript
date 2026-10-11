@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>plantilla-net-react-typescript-migrations-secrets</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.ServiceDefaults\Project.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>
