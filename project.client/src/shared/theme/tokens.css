@@ -1,0 +1,146 @@
+/* ============================================================================
+ * OKLCH design tokens (shadcn-style, Fase 6 plan §7.2).
+ * Single source of truth for color, radius and density. Brand color is
+ * applied at runtime by ThemeProvider via the --primary override.
+ * ============================================================================ */
+
+:root {
+    /* Semantic surfaces (light) */
+    --background: oklch(0.99 0 0);
+    --foreground: oklch(0.15 0 0);
+
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0 0);
+
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0 0);
+
+    --primary: oklch(0.55 0.22 264);
+    --primary-foreground: oklch(0.98 0 0);
+
+    --secondary: oklch(0.95 0.01 264);
+    --secondary-foreground: oklch(0.2 0 0);
+
+    --muted: oklch(0.96 0.005 264);
+    --muted-foreground: oklch(0.45 0.01 264);
+
+    --accent: oklch(0.93 0.02 264);
+    --accent-foreground: oklch(0.2 0 0);
+
+    --destructive: oklch(0.55 0.22 27);
+    --destructive-foreground: oklch(0.98 0 0);
+
+    --success: oklch(0.6 0.18 142);
+    --success-foreground: oklch(0.98 0 0);
+
+    --warning: oklch(0.78 0.16 78);
+    --warning-foreground: oklch(0.18 0 0);
+
+    --info: oklch(0.7 0.13 220);
+    --info-foreground: oklch(0.98 0 0);
+
+    --border: oklch(0.9 0.005 264);
+    --input: oklch(0.9 0.005 264);
+    --ring: var(--primary);
+
+    /* Chart palette (categorical) */
+    --chart-1: oklch(0.65 0.22 41);
+    --chart-2: oklch(0.6 0.18 184);
+    --chart-3: oklch(0.55 0.22 304);
+    --chart-4: oklch(0.7 0.18 78);
+    --chart-5: oklch(0.62 0.22 16);
+
+    /* Sidebar tokens */
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: var(--ring);
+
+    /* Shape + density */
+    --radius: 0.5rem;
+    --font-sans: "Inter Variable", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --spacing: 0.25rem;
+
+    --chart-prefix: light;
+}
+
+.dark {
+    --background: oklch(0.12 0 0);
+    --foreground: oklch(0.95 0 0);
+    --card: oklch(0.16 0 0);
+    --card-foreground: oklch(0.95 0 0);
+    --popover: oklch(0.16 0 0);
+    --popover-foreground: oklch(0.95 0 0);
+    --primary: oklch(0.7 0.18 264);
+    --primary-foreground: oklch(0.15 0 0);
+    --secondary: oklch(0.22 0.005 264);
+    --secondary-foreground: oklch(0.95 0 0);
+    --muted: oklch(0.22 0.005 264);
+    --muted-foreground: oklch(0.7 0 0);
+    --accent: oklch(0.24 0.01 264);
+    --accent-foreground: oklch(0.95 0 0);
+    --destructive: oklch(0.55 0.22 27);
+    --destructive-foreground: oklch(0.98 0 0);
+    --success: oklch(0.65 0.18 142);
+    --success-foreground: oklch(0.15 0 0);
+    --warning: oklch(0.78 0.16 78);
+    --warning-foreground: oklch(0.18 0 0);
+    --info: oklch(0.7 0.13 220);
+    --info-foreground: oklch(0.15 0 0);
+    --border: oklch(0.26 0.005 264);
+    --input: oklch(0.26 0.005 264);
+    --ring: var(--primary);
+
+    --chart-1: oklch(0.7 0.22 41);
+    --chart-2: oklch(0.7 0.18 184);
+    --chart-3: oklch(0.7 0.22 304);
+    --chart-4: oklch(0.75 0.18 78);
+    --chart-5: oklch(0.7 0.22 16);
+
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(0.275 0 0);
+    --sidebar-ring: var(--ring);
+}
+
+/* Brand presets — picked at runtime by ThemeProvider based on BrandingSettings. */
+[data-theme="ocean"] {
+    --primary: oklch(0.62 0.18 220);
+    --primary-foreground: oklch(0.98 0 0);
+    --sidebar-primary: var(--primary);
+}
+
+[data-theme="forest"] {
+    --primary: oklch(0.55 0.16 142);
+    --primary-foreground: oklch(0.98 0 0);
+    --sidebar-primary: var(--primary);
+}
+
+[data-theme="sunset"] {
+    --primary: oklch(0.65 0.22 30);
+    --primary-foreground: oklch(0.98 0 0);
+    --sidebar-primary: var(--primary);
+}
+
+[data-theme="corporate"] {
+    --primary: oklch(0.45 0.15 240);
+    --primary-foreground: oklch(0.98 0 0);
+    --sidebar-primary: var(--primary);
+}
+
+/* Density presets (controlled by --spacing multiplier) */
+[data-density="compact"] {
+    --spacing: 0.2rem;
+}
+[data-density="comfortable"] {
+    --spacing: 0.3rem;
+}
