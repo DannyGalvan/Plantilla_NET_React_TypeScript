@@ -74,11 +74,9 @@ namespace Project.Server
 
             app.UseSecurityHeaders();
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            // Swagger/OpenAPI removed from the legacy host. The new
+            // Project.Api exposes the OpenAPI document via Microsoft.AspNetCore.OpenApi
+            // (Fase 1 plan). SwaggerConfiguration.AddSwaggerConfiguration is now a no-op.
 
             app.UseDefaultFiles();
             app.UseStaticFiles();

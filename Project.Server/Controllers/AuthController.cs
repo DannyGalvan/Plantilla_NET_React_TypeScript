@@ -179,6 +179,7 @@ namespace Project.Server.Controllers
         // -- Authenticated endpoints ---------------------------------------------
 
         [Authorize]
+        [RequireOperation("Auth.PostResetPassword")]
         [HttpPost("ResetPassword")]
         public async Task<IActionResult> PostResetPassword([FromBody] ResetPasswordRequest model, CancellationToken ct = default)
         {
