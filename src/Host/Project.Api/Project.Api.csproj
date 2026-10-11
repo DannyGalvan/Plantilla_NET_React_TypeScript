@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>plantilla-net-react-typescript-api-secrets</UserSecretsId>
+    <SpaRoot>..\..\..\project.client</SpaRoot>
+    <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
+    <SpaProxyServerUrl>https://localhost:60263</SpaProxyServerUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Project.ServiceDefaults\Project.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+    <ProjectReference Include="..\..\..\Project.Server\Project.Server.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\project.client\project.client.esproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>
