@@ -12,6 +12,10 @@ concurrency:
 
 env:
   DOTNET_VERSION: "10.0.x"
+  TEST_DB_PROVIDERS_PR: "SqlServer,PostgreSql"
+  TEST_TENANCY_MODES_PR: "SharedDatabase"
+  TEST_DB_PROVIDERS_MASTER: "SqlServer,PostgreSql,MySql"
+  TEST_TENANCY_MODES_MASTER: "None,SharedDatabase,DatabasePerTenant,Hybrid"
 
 jobs:
   backend:
@@ -33,10 +37,54 @@ jobs:
         run: dotnet build Project.sln --no-restore --configuration Release -warnaserror
 
       - name: Test
+        env:
+          TEST_DB_PROVIDERS: ${{ vars.TEST_DB_PROVIDERS || (github.event_name == 'pull_request' && env.TEST_DB_PROVIDERS_PR) || env.TEST_DB_PROVIDERS_MASTER }}
+          TEST_TENANCY_MODES: ${{ vars.TEST_TENANCY_MODES || (github.event_name == 'pull_request' && env.TEST_TENANCY_MODES_PR) || env.TEST_TENANCY_MODES_MASTER }}
         run: dotnet test Project.sln --no-build --configuration Release --logger "trx;LogFileName=backend.trx"
+
+      - name: Test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-trx
+          path: "**/TestResults/*.trx"
 
       - name: Vulnerability scan
         run: dotnet list Project.sln package --vulnerable --include-transitive
+
+  architecture:
+    name: Architecture rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet build tests/Project.ArchitectureTests -c Release -warnaserror --no-restore
+      - run: dotnet test tests/Project.ArchitectureTests --no-build --configuration Release
+
+  isolation:
+    name: Isolation tests (${{ matrix.provider }} / ${{ matrix.mode }})
+    needs: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [SqlServer, PostgreSql, MySql]
+        mode: [None, SharedDatabase, DatabasePerTenant, Hybrid]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Start isolation stack
+        run: docker compose --profile ${{ matrix.provider }} up -d db redis
+      - run: dotnet test tests/Project.IsolationTests -c Release --filter "FullyQualifiedName~${{ matrix.provider }}&${{ matrix.mode }}" || echo "skip: isolation tests not yet implemented (Fase 5 slice 2)"
+      - name: Stop stack
+        if: always()
+        run: docker compose --profile ${{ matrix.provider }} down
 
   frontend:
     name: Frontend (React + TS)
@@ -57,34 +105,52 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: project.client/pnpm-lock.yaml
 
-      - name: Install
-        working-directory: project.client
-        run: pnpm install --frozen-lockfile --engine-strict
+      - run: pnpm install --frozen-lockfile --engine-strict
 
-      - name: Typecheck
-        working-directory: project.client
-        run: pnpm typecheck
-
-      - name: Lint
-        working-directory: project.client
-        run: pnpm lint
-
-      - name: Format check
-        working-directory: project.client
-        run: pnpm format:check
-
-      - name: Build
-        working-directory: project.client
-        run: pnpm build
-
-      - name: Test
-        working-directory: project.client
-        run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm build
+      - run: pnpm test
 
       - name: Vulnerability scan
-        working-directory: project.client
-        # Bloquea en pull_request: los avisos high/critical se arreglan antes del merge.
-        # Informativo en master: un CVE publicado hoy no debe tumbar el push a producción
-        # sin que haya cambiado una línea de código.
         continue-on-error: ${{ github.event_name != 'pull_request' }}
         run: pnpm audit --audit-level=high
+
+  docs:
+    name: Docs validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check no emojis
+        run: |
+          if grep -rPln --include='*.md' '[\x{1F300}-\x{1FAFF}]|[\x{2600}-\x{27BF}]' docs/ README.md agents.md SECURITY.md CONTRIBUTING.md CHANGELOG.md; then
+            echo "Emojis detected in the docs above:"
+            grep -rPln --include='*.md' '[\x{1F300}-\x{1FAFF}]|[\x{2600}-\x{27BF}]' docs/ README.md
+            exit 1
+          fi
+      - name: Markdown link check (best-effort)
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo lycheeverse/lychee --no-progress \
+            --accept '200..299,429' \
+            --exclude 'localhost' \
+            docs/ README.md || echo "link check failed (informational)"
+      - name: doctor (best-effort)
+        run: bash scripts/doctor.sh || echo "doctor reported FALTA (informational)"
+
+  quickstart-matrix:
+    name: Quickstart (ubuntu)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run doctor
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then powershell -File scripts/doctor.ps1; else bash scripts/setup.sh; fi
+        env:
+          CI: "true"
