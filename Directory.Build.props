@@ -20,7 +20,7 @@
       - CA1305: pasar CultureInfo.InvariantCulture a DateTime.ToString.
       Las revaluaremos al cierre de cada fase.
     -->
-    <NoWarn>$(NoWarn);CA1848;CA1873;CA1727;CA1305;CA1861;CA2016</NoWarn>
+    <NoWarn>$(NoWarn);CA1848;CA1873;CA1727;CA1305;CA1861;CA2016;AD0001</NoWarn>
   </PropertyGroup>
 
 </Project>

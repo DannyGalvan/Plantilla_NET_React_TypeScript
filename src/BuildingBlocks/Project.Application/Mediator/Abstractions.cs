@@ -1,9 +1,7 @@
+using Mediator;
 using Project.SharedKernel;
 
 namespace Project.Application.Mediator;
-
-/// <summary>Base marker for requests handled via <c>ISender</c>.</summary>
-public interface IRequest<TResponse>;
 
 /// <summary>Command that returns Result (no value).</summary>
 public interface ICommand : IRequest<Result>;
