@@ -13,7 +13,6 @@
   - Tema claro/oscuro/auto, preset (default/ocean/forest/sunset/corporate),
     density (compact/comfortable), radius y color primario overridable
     desde `ThemeCustomizer`.
-  - `primaryOverride` se valida en el servidor con contraste AA antes de
-    aceptarse.
+  - Los colores de marca guardados en el servidor se validan (hex u OKLCH) antes de aceptarse.
 - **Alternativas descartadas:** Material UI (overhead), Bootstrap (exceso
   de overrides), HeroUI (mixing v2/v3, demo obsoleta).

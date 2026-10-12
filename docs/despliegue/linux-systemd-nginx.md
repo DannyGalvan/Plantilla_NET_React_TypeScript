@@ -1,179 +1,64 @@
-# Despliegue en Linux + systemd + nginx
+# Despliegue en Linux con systemd y nginx
 
-> Ubuntu 22.04/24.04 o RHEL 9 con el runtime de ASP.NET Core 10. La SPA la
-> sirve nginx directamente; el API corre detrás de un socket TCP interno.
+**Para qué sirve este documento:** publicar la API como servicio systemd detrás de nginx.
+**Requisitos previos:** Ubuntu 22.04/24.04 o RHEL 9, runtime ASP.NET Core 10, nginx. **Tiempo estimado:** 30 minutos.
 
-## Requisitos
-
-```bash
-# Ubuntu / Debian
-sudo apt install -y aspnetcore-runtime-10.0 nginx
-
-# RHEL / Fedora
-sudo dnf install -y aspnetcore-runtime-10.0 nginx
-```
-
-## Publicar
+## 1. Publicar (en la máquina de build)
 
 ```bash
-dotnet publish src/Host/Project.Api/Project.Api.csproj \
-  -c Release \
-  -o ./out
+dotnet publish src/Host/Project.Api -c Release -o out/api                 # incluye la SPA (requiere Node y pnpm)
+dotnet publish src/Host/Project.MigrationService -c Release -o out/migrations
 ```
 
-## Estructura en el servidor
+Para no instalar el runtime en el servidor agrega `-r linux-x64 --self-contained true` y cambia `ExecStart` al ejecutable.
 
-```
-/opt/project/
-  api/
-    Project.Api.dll
-    appsettings.json
-  logs/
-/etc/project/
-  api.env                 # EnvironmentFile= con los secretos
-/etc/systemd/system/
-  project-api.service
-/etc/nginx/sites-available/
-  project.conf
-```
-
-## `project-api.service`
-
-```ini
-[Unit]
-Description=Plantilla API
-After=network.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=project
-Group=project
-WorkingDirectory=/opt/project/api
-ExecStart=/usr/bin/dotnet /opt/project/api/Project.Api.dll
-Restart=always
-RestartSec=5
-
-# Hardening
-NoNewPrivileges=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/opt/project/logs
-PrivateTmp=true
-PrivateDevices=true
-
-# Recursos
-MemoryMax=512M
-TasksMax=512
-
-# Secretos vía EnvironmentFile (chmod 600)
-EnvironmentFile=/etc/project/api.env
-
-[Install]
-WantedBy=multi-user.target
-```
+## 2. Instalar (en el servidor)
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now project-api
-sudo journalctl -u project-api -f
+sudo apt-get install -y aspnetcore-runtime-10.0 nginx rsync      # RHEL: sudo dnf install aspnetcore-runtime-10.0 nginx rsync
+sudo ./deploy/linux/install.sh out
+sudo nano /etc/project/api.env                                  # completa los valores <...>
 ```
 
-## `/etc/nginx/sites-available/project.conf`
+`install.sh` crea el usuario de sistema `project`, copia los binarios a `/opt/project`, instala las unidades
+`project-api.service` y `project-migrations.service` y crea `/etc/project/api.env` (permisos 600) a partir de
+`deploy/linux/api.env.example`.
 
-```nginx
-upstream project_api {
-    server 127.0.0.1:5000;
-    keepalive 32;
-}
-
-server {
-    listen 80;
-    listen [::]:80;
-    server_name app.example.com;
-
-    # Redirect HTTP -> HTTPS en producción
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name app.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/app.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Frame-Options "DENY" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "no-referrer" always;
-    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
-
-    client_max_body_size 25m;
-
-    # gzip / brotli
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript;
-
-    # Frontend estático
-    root /opt/project/api/wwwroot;
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # API
-    location /api/ {
-        proxy_pass http://project_api;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Connection "";
-        proxy_read_timeout 60s;
-    }
-
-    # Forwarded headers en el API (recordar KnownProxies/KnownNetworks)
-    # Los añade Program.cs cuando el header X-Forwarded-For llega.
-
-    # Health
-    location /health/ { proxy_pass http://project_api; }
-}
-```
+## 3. Migrar e iniciar
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/project.conf /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+sudo systemctl start project-migrations     # oneshot: migra, sincroniza permisos y siembra
+sudo systemctl enable --now project-api     # Kestrel en http://127.0.0.1:5000
 ```
 
-## TLS con Let's Encrypt
+## 4. nginx y TLS
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d app.example.com
+sudo cp deploy/linux/nginx-project.conf /etc/nginx/conf.d/project.conf   # cambia erp.example.com y los certificados
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d erp.example.com
 ```
 
-El certificado se renueva automáticamente vía systemd timer.
+`api.env` ya declara `Hosting__KnownProxies__0=127.0.0.1` para confiar en las cabeceras `X-Forwarded-*` de nginx.
 
-## Actualización sin caída
-
-Dos instancias en puertos distintos, balanceadas por nginx con
-`least_conn` o `ip_hash`. Subes la nueva al puerto 5001, validas, rotas
-nginx a 5001 y apagas 5000.
+## Cómo verificar que funcionó
 
 ```bash
-sudo systemctl start project-api@5001
-curl -i http://127.0.0.1:5001/health/live   # 200 OK
-sudo vim /etc/nginx/sites-available/project.conf   # cambiar server 127.0.0.1:5000 -> 5001
-sudo systemctl reload nginx
-sudo systemctl stop project-api@5000   # o elimina la instancia anterior
+systemctl status project-api
+curl -s http://127.0.0.1:5000/health/ready
+journalctl -u project-api -f
 ```
 
-## Logs
+## Actualizar
 
-- API: `journalctl -u project-api -f` o `tail -F /opt/project/logs/*.log`.
-- nginx: `tail -F /var/log/nginx/project.access.log`.
-- Correlación por `traceId` (`Serilog` lo incluye en cada log).
+```bash
+sudo ./deploy/linux/install.sh out
+sudo systemctl start project-migrations && sudo systemctl restart project-api
+```
+
+Sin caída: dos instancias en puertos distintos (copia la unidad con otro `ASPNETCORE_URLS`) en el `upstream` de nginx y
+reinícialas una a la vez. Requiere Redis.
+
+## Problemas comunes
+
+Ver [troubleshooting.md](../troubleshooting.md#linux).

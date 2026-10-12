@@ -1,115 +1,38 @@
 # Permisos y navegación
 
-> Cómo declarar permisos, gatear endpoints y construir el menú lateral.
-
-## Formato
-
-`{module}.{resource}.{action}` en minúsculas. Constantes en
-`Contracts/Permissions.cs` del módulo. Nunca derivados del nombre del
-controller.
+## Declarar
 
 ```csharp
+// Contracts
 public static class InventoryPermissions
 {
-    public const string ProductsRead   = "inventory.products.read";
-    public const string ProductsCreate = "inventory.products.create";
-    public const string ProductsUpdate = "inventory.products.update";
-    public const string ProductsDelete = "inventory.products.delete";
+    public const string Module = "inventory";
+    public static class Warehouses { public const string Prefix = "inventory.warehouses"; public const string Read = Prefix + ".read"; }
+}
+
+// Application: descubierto automáticamente por AddModuleConventions
+public sealed class InventoryPermissionProvider : IPermissionProvider
+{
+    public IEnumerable<PermissionDefinition> GetPermissions() => [ new(InventoryPermissions.Warehouses.Read, "inventory", "permissions.inventory.warehouses.read", "warehouses") ];
+    public IEnumerable<NavigationDefinition> GetNavigation() =>
+        [ new("inventory.warehouses", "inventory", "inventory:warehouses.title", "/inventory/warehouses", "layers", InventoryPermissions.Warehouses.Read, 500) ];
 }
 ```
 
-## Backend
+`MapCrud` usa `<prefijo>.read|create|update|delete|restore`. Los endpoints propios usan `.RequirePermission("...")`.
 
-### Aplicar el permiso
+## Sincronización
 
-```csharp
-app.MapCrud<Product, Guid, ProductDto, CreateProductDto, UpdateProductDto>(
-    "products", "inventory.products");
-```
+El migrador inserta los permisos nuevos, elimina los que ya no se declaran (también de los roles), da todos al rol
+`SuperAdmin` y todos los asignables al rol `Administrator` de cada tenant.
 
-`MapCrud` añade `RequirePermission("inventory.products.read")` a `GET /`,
-`RequirePermission("inventory.products.create")` a `POST /`,
-etc. La metadata vive en `PermissionAttribute`.
+## Menú
 
-### Permitir sin auth
-
-```csharp
-app.MapGet("/platform/config", ...).AllowAnonymous();
-```
-
-### Fail-closed (Fase 5)
-
-`RequireOperationConvention` recorre todos los endpoints registrados al
-arrancar. Si alguno no tiene `[RequireOperation]` ni `[AllowAnonymous]`,
-el host no arranca. Esto fuerza la convención en CI.
+`GET /api/v1/me/navigation` devuelve las entradas filtradas por permiso y feature flag. La SPA las dibuja con el icono
+indicado (mapa en `src/shared/components/icon.tsx`) y la clave de traducción `labelKey`.
 
 ## Frontend
 
-### Proteger una ruta
-
-```tsx
-<Route element={<RequirePermission permission="inventory.products.create" />}>
-  <Route path="/products/new" element={<ProductFormPage />} />
-</Route>
-```
-
-`RequirePermission` lee `usePermission(perm)`. Si el usuario no la tiene,
-redirige a `/` con un toast. Si no hay sesión, `RequireAuth` (más
-externo) redirige a `/login`.
-
-### Gatear un botón
-
-```tsx
-const canCreate = usePermission('inventory.products.create');
-{canCreate && <Button onClick={openCreateDialog}>Nuevo producto</Button>}
-```
-
-### Menú lateral
-
-Cada módulo declara su `ModuleManifest.nav`:
-
-```ts
-export default {
-  id: 'inventory',
-  routes: [...],
-  nav: [
-    {
-      key: 'inventory.products',
-      labelKey: 'inventory.nav.products',
-      icon: 'package',
-      to: '/inventory/products',
-      permission: 'inventory.products.read',
-      order: 50,
-    },
-  ],
-};
-```
-
-El `AppShell` (en `src/components/app-shell/Sidebar.tsx`, cuando llegue
-Fase 8 slice 2) renderiza el menú:
-
-- Itera los manifests en orden de `id`.
-- Filtra los items por permiso del usuario.
-- Agrupa por módulo.
-
-El menú se renderiza solo si el usuario tiene permiso; nunca items sin
-permiso.
-
-## Cómo se invalidan los permisos
-
-`RolePermissionsChanged` (evento de dominio cuando un admin cambia los
-permisos de un rol) incrementa `pv` del usuario afectado. El
-`HybridCachePermissionService` invalida la cache `perm:{tid}:{userId}:{pv}`.
-Los siguientes requests resuelven permisos actualizados **sin re-login**.
-
-## Buenas prácticas
-
-- **No derives permisos del nombre del controller**. Si renombras
-  `UserController` a `AccountController`, rompes a todos los usuarios que
-  ya tenían el token viejo.
-- **No uses `*` como permiso**. La cache key incluye la acción; si
-  permites `inventory.*`, no hay forma de invalidar una acción concreta.
-- **No metas permisos en el JWT**. El token lleva `sub`/`tid`/`pv`. Los
-  permisos vienen de `IPermissionService` con cache.
-- **No leas `User.Roles` directamente**. Usa `IPermissionService.HasAsync`
-  para chequear; respeta el cache y la invalidación.
+- Rutas: `handle: { permission: 'inventory.warehouses.read' }` muestra 403 si falta.
+- Acciones: `<Can permission="inventory.warehouses.create">...</Can>` o `usePermission(...)`.
+- Son solo mejoras de experiencia: la API valida siempre.

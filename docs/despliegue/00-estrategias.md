@@ -1,39 +1,32 @@
-# 00 · Estrategias de despliegue
+# Estrategias de despliegue
+
+**Para qué sirve este documento:** elegir dónde y cómo publicar la aplicación.
 
 ## Comparativa
 
-| Estrategia | Complejidad | Escala | Costes | Cuándo conviene |
+| Destino | Complejidad | Escalado | Cuándo conviene | Guía |
 |---|---|---|---|---|
-| Docker único (`docker compose up`) | baja | vertical (1 host) | bajo | demo, MVP, validación |
-| Docker Swarm | baja-media | horizontal (≤ 50 nodos) | bajo | equipos sin experiencia k8s |
-| IIS + Windows Server | media | vertical + ARR | medio | empresas con infraestructura Windows |
-| Linux + systemd + nginx | baja-media | vertical | bajo | apps pequeñas en VMs |
-| Kubernetes (k8s) | alta | horizontal (sin techo práctico) | medio-alto | > 3 instancias, multi-región, SRE |
-| App Service / Container Apps | baja | auto | medio | "no quiero administrar VMs" |
-| Aspire (dev) | muy baja | N/A | bajo | desarrollo local |
+| Docker / Compose | Baja | Réplicas detrás de un proxy | Cualquier servidor con Docker, nubes, VPS | [docker.md](docker.md) |
+| Linux nativo | Media | Varias instancias con nginx | Servidores Linux sin contenedores | [linux-systemd-nginx.md](linux-systemd-nginx.md) |
+| IIS | Media | Web farm | Infraestructura Windows existente | [iis-windows-server.md](iis-windows-server.md) |
+
+Cualquier plataforma que ejecute contenedores (Kubernetes, Azure Container Apps, AWS ECS) usa las mismas imágenes de
+`deploy/docker` con las sondas `/health/live` y `/health/ready`.
 
 ## Topologías
 
-### 1. SPA servida por el propio API (`Hosting:ServeSpa=true`, default)
+1. **SPA servida por la API** (por defecto): un solo despliegue, sin CORS. La SPA compilada se publica en `wwwroot`.
+2. **SPA separada** (CDN o nginx propio): `Hosting:ServeSpa=false`, `Cors:AllowedOrigins` con el dominio de la SPA. La
+   cookie de refresh es `SameSite=Strict`, por lo que la SPA y la API deben compartir el sitio (por ejemplo
+   `app.miempresa.com` y `api.miempresa.com`).
 
-- Un solo artefacto. Sin CORS. El reverse proxy redirige `/` a `wwwroot/`.
-- Más simple. Menos coste.
+## Orden de despliegue
 
-### 2. SPA en CDN / nginx separado
+1. Respaldo de la base de datos.
+2. Migraciones con `Project.MigrationService` ([migraciones en producción](migraciones-en-produccion.md)).
+3. Despliegue de la nueva versión de la API.
+4. Verificación: `GET /health/ready` responde 200 e inicio de sesión de prueba.
+5. Si falla: volver a la versión anterior de la API. Las migraciones deben ser compatibles hacia atrás (patrón
+   expandir y luego contraer) para que la versión anterior siga funcionando.
 
-- API en un dominio, frontend en otro. Cookies SameSite=None + Secure.
-- Más complejo. Requiere configurar `Hosting:ServeSpa=false` y CORS.
-- Útil si el frontend se cachea agresivamente (Cloudflare, CloudFront) o se sirve desde S3+CloudFront.
-
-## Orden de despliegue universal
-
-1. Backup de la BD (si existe).
-2. Correr `MigrationService` (o `efbundle`).
-3. Esperar `/health/ready` del API.
-4. Rolling restart de las instancias de API.
-5. Smoke test del endpoint raíz.
-6. Si rollback: reverse migration + redeploy versión anterior.
-
-## Comprobación previa
-
-[`docs/despliegue/checklist-produccion.md`](checklist-produccion.md) tiene la lista marcable de pre-producción. Tildala antes de promover a producción.
+Antes de salir a producción revisa el [checklist](checklist-produccion.md).

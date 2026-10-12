@@ -3,12 +3,12 @@
 - **Estado:** aceptado.
 - **Fecha:** 2026-10-11.
 - **Contexto:** los casos de uso del backend deben vivir en clases únicas
-  para SRP. Un bus interno de mensajes simplifica el pipeline (logging →
-  validation → authorization → caching → transaction).
+  para SRP. Un bus interno de mensajes simplifica el pipeline (logging,
+  validación y autorización).
 - **Decisión:** `Mediator.Abstractions` + `Mediator.SourceGenerator` de
   `martinothamar`. El source generator evita reflexión y soporta `sealed`
   parcial. Los handlers abiertos (genéricos sin cerrar) no se soportan
-  bien; el CRUD genérico de Fase 3 vive en `ICrudService` por esa razón.
+  bien; el CRUD genérico vive en `ICrudService` por esa razón.
 - **Consecuencias:**
   - Pipelines componibles vía `IPipelineBehavior`.
   - Handlers `sealed`, validación con FluentValidation por assembly scan.

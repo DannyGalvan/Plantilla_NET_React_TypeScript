@@ -11,8 +11,9 @@
   con `RequirePermission(...)` metadata.
 - **Consecuencias:**
   - Menos archivos boilerplate por endpoint.
-  - Versionado con `Asp.Versioning.Http` (group version).
+  - Versión fija en el prefijo `/api/v1`. Una versión 2 se agrega como otro grupo de rutas cuando haga falta;
+    no se incluye `Asp.Versioning` para no pagar su complejidad sin necesidad.
   - OpenAPI por `Microsoft.AspNetCore.OpenApi` + Scalar en Development.
-  - Validación por FluentValidation decorando el `Command` directamente.
+  - Validación por FluentValidation en el pipeline de Mediator y en el CRUD genérico.
 - **Alternativas descartadas:** Carter (exceso de magic), FastEndpoints
   (sobrecarga cognitiva), controllers MVC (lo que reemplaza el legacy).

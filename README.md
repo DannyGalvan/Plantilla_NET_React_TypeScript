@@ -1,91 +1,171 @@
-# Plantilla_NET_React_TypeScript
+<div align="center">
 
-Base empresarial modular en .NET 10 LTS y React 19 + TypeScript para construir desde una app de inventario de una sola empresa hasta un SaaS multi-tenant con bases dedicadas, todo por configuración y sin código a medida.
+# Plantilla .NET + React
+
+Base empresarial modular en .NET 10 y React 19 para construir desde aplicaciones pequeñas hasta CRM, ERP y SaaS
+multi-tenant con los mismos patrones, la misma seguridad y despliegue en cualquier plataforma.
+
+[Documentación](docs/README.md) ·
+[Inicio rápido](docs/02-inicio-rapido.md) ·
+[Arquitectura](docs/05-arquitectura.md) ·
+[Despliegue](docs/despliegue/00-estrategias.md) ·
+[Contribuir](CONTRIBUTING.md) ·
+[Changelog](CHANGELOG.md)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/DannyGalvan/Plantilla_NET_React_TypeScript/ci.yml?branch=master&style=flat-square&label=CI)](https://github.com/DannyGalvan/Plantilla_NET_React_TypeScript/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-supported-4169E1?style=flat-square&logo=postgresql&logoColor=white)](docs/guias/acceso-a-datos.md)
+[![SQL Server](https://img.shields.io/badge/SQL_Server-supported-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white)](docs/guias/acceso-a-datos.md)
+[![MySQL](https://img.shields.io/badge/MySQL-supported-4479A1?style=flat-square&logo=mysql&logoColor=white)](docs/guias/acceso-a-datos.md)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)](docs/despliegue/docker.md)
+
+</div>
+
+## Tabla de contenidos
+
+- [Acerca del proyecto](#acerca-del-proyecto)
+- [Características](#características)
+- [Stack tecnológico](#stack-tecnológico)
+- [Arquitectura](#arquitectura)
+- [Inicio rápido](#inicio-rápido)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Uso](#uso)
+- [Despliegue](#despliegue)
+- [Documentación](#documentación)
+- [Contribuir](#contribuir)
+- [Licencia](#licencia)
+
+## Acerca del proyecto
+
+La plantilla resuelve el arranque de cualquier aplicación de negocio: autenticación, permisos, multi-tenancy,
+estructura organizativa, acceso a datos multi-motor, theming por marca, i18n, observabilidad, pruebas y despliegue.
+Cada nueva funcionalidad se agrega como un **módulo** independiente, sin editar el código existente.
+
+Principios: SOLID (en especial responsabilidad única y abierto/cerrado), módulos que solo se comunican por contratos,
+seguro por defecto (fail-closed), todo configurable y sin costo por lo que no se usa.
 
 ## Características
 
-- **Arquitectura modular por BuildingBlocks**: SharedKernel, Application, Infrastructure, Web. Cada módulo expone 4 proyectos (Domain, Application, Infrastructure, Contracts).
-- **CQRS + Mediator source-gen**: pipelines componibles (Logging → Validation → Authorization → Caching → Transaction).
-- **Multi-proveedor**: SqlServer, PostgreSQL, MySQL (Oracle fallback mientras Pomelo publica EF 10). Estrategia `IDatabaseProvider`.
-- **Tenancy configurable**: `Tenancy:Mode` admite `None`, `SharedDatabase`, `DatabasePerTenant`, `Hybrid`. Catalog de tenants con HybridCache. Organización opcional con `AccessibleUnitIds`.
-- **Settings en cascada**: System → Tenant → OrgUnit → User. Cada sección implementa `ISettingsSection`; sin código central al agregar.
-- **Theming con tokens CSS en OKLCH**: `ThemeProvider` aplica modo, preset, density, fontScale, primaryOverride y radius. `ThemeCustomizer` Sheet accesible. Single build sirve múltiples marcas.
-- **Multi-idioma** (es + en) con `react-i18next` y `IStringLocalizer`.
-- **Seguridad por defecto**: JWT liviano (`sub`/`tid`/`pv`), BCrypt (work 12), HybridCache para permisos (`perm:{tid}:{userId}:{pv}`), refresh cookie HttpOnly + CSRF double-submit, rate-limit distribuido con Redis.
-- **Accesibilidad**: Radix + jsx-a11y, contraste AA, contraste AA verificado en CI.
-
-## Stack
-
-| Capa | Tecnología |
+| Área | Capacidad |
 |---|---|
-| Backend | .NET 10 LTS, EF Core 10, Mediator (martinothamar), Mapster + Mapperly, FluentValidation |
-| Backend infra | Serilog, OpenTelemetry, HybridCache (Redis opcional), Health Checks, Aspire ServiceDefaults |
-| Frontend | React 19, TypeScript 5, Vite, Zustand, TanStack Query, axios, react-router |
-| Frontend UI | shadcn/ui + Radix + Tailwind v4 con tokens CSS en OKLCH |
-| Test | xUnit + NetArchTest + Testcontainers + Respawn (Fase 5); Vitest + MSW + Playwright (Fase 8) |
-| DB | SQL Server 2019+, PostgreSQL 15+, MySQL 8+ |
-| Auth | JWT HS256 + BCrypt + refresh cookies + CSRF double-submit |
+| Arquitectura | Monolito modular con Clean Architecture por módulo, CQRS con Mediator, reglas verificadas con pruebas de arquitectura |
+| CRUD genérico | Un recurso completo (listar, filtrar, ordenar, paginar, crear, actualizar, JSON Merge Patch, borrado lógico, restaurar) con un mapper, una política y un validador |
+| Datos | EF Core 10 en PostgreSQL, SQL Server y MySQL; Dapper, ADO.NET y procedimientos almacenados para rutas de alto rendimiento; migraciones por motor |
+| Multi-tenancy | `None`, `SharedDatabase`, `DatabasePerTenant` o `Hybrid` solo por configuración; resolución por dominio, subdominio o token |
+| Organización | Empresas, países, marcas y sucursales con filtrado automático de datos por unidad |
+| Seguridad | JWT corto + refresh token rotativo con detección de reuso, CSRF, lockout, historial de contraseñas, permisos en servidor con caché híbrida y endpoints fail-closed |
+| Configuración | Settings en cascada (sistema, tenant, unidad, usuario) y feature flags por tenant |
+| Frontend | React 19, módulos por manifiesto, tokens OKLCH, presets de marca, modo oscuro, densidad, personalizador de tema, i18n es/en |
+| Observabilidad | Serilog estructurado, OpenTelemetry (trazas, métricas, logs), health checks de liveness y readiness |
+| Pruebas | Unitarias, de arquitectura, funcionales con Testcontainers en los 3 motores y aislamiento entre tenants y unidades |
+| Despliegue | Docker, Linux con systemd + nginx, IIS, y worker de migraciones independiente |
 
-## Prerrequisitos
+## Stack tecnológico
 
-Lee [`docs/01-prerequisitos.md`](docs/01-prerequisitos.md) para la lista completa y los pasos de instalación por SO.
+| Capa | Tecnologías |
+|---|---|
+| Backend | .NET 10, ASP.NET Core Minimal APIs, Mediator, FluentValidation, Mapperly |
+| Datos | EF Core 10, Npgsql, SqlClient, MySql.EntityFrameworkCore, Dapper |
+| Infraestructura | HybridCache + Redis opcional, Serilog, OpenTelemetry, Scalar (OpenAPI) |
+| Frontend | React 19, Vite 7, TypeScript 5, React Router 7, TanStack Query y Table, React Hook Form, Zod 4, Zustand, Radix, Tailwind CSS 4, i18next |
+| Pruebas | xUnit v3, Shouldly, NSubstitute, NetArchTest, Testcontainers, Vitest, Testing Library, MSW |
+
+Detalle y licencias en [docs/08-tecnologias.md](docs/08-tecnologias.md).
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+  SPA[React SPA] -->|/api/v1| API[Project.Api]
+  API --> M1[Identity]
+  API --> M2[Tenancy]
+  API --> M3[Organization]
+  API --> M4[Catalog y tus módulos]
+  M1 & M2 --> PDB[(BD de plataforma)]
+  M3 & M4 --> TDB[(BD de tenant: compartida o dedicada)]
+  W[Project.MigrationService] --> PDB & TDB
+```
+
+Cada módulo tiene cuatro proyectos (`Domain`, `Application`, `Infrastructure`, `Contracts`) y solo se comunica con
+otros módulos por sus `Contracts`. Detalle en [docs/05-arquitectura.md](docs/05-arquitectura.md).
 
 ## Inicio rápido
 
-```bash
-# Backend
-git clone https://github.com/DannyGalvan/Plantilla_NET_React_TypeScript
-cd Plantilla_NET_React_TypeScript
-dotnet build Project.sln -c Release -warnaserror
+Requisitos: .NET SDK 10, Node 24 con pnpm (`corepack enable`) y Docker. Ver [requisitos por sistema operativo](docs/01-prerequisitos.md).
 
-# Frontend
-cd project.client && pnpm install && cd ..
+```bash
+git clone https://github.com/DannyGalvan/Plantilla_NET_React_TypeScript.git
+cd Plantilla_NET_React_TypeScript
 docker compose --profile postgres up -d
-dotnet run --project src/Host/Project.MigrationService   # migrate
-dotnet run --project src/Host/Project.Api                 # API en :5050
-cd project.client && pnpm dev                            # Vite en :5173
+./scripts/setup.sh --non-interactive
+dotnet run --project src/Host/Project.Api
 ```
 
-Usuario seed: `1234` · contraseña: `1234567` (configurable vía `Seed__AdminPassword`).
+```powershell
+git clone https://github.com/DannyGalvan/Plantilla_NET_React_TypeScript.git
+cd Plantilla_NET_React_TypeScript
+docker compose --profile postgres up -d
+./scripts/setup.ps1 -NonInteractive
+dotnet run --project src/Host/Project.Api
+```
+
+Abre `https://localhost:7180` e inicia sesión con `admin` y la contraseña que imprimió `setup` (se pide cambiarla).
+Otras formas de ejecución (solo Docker, nativo, base local) en [docs/02-inicio-rapido.md](docs/02-inicio-rapido.md).
 
 ## Estructura del repositorio
 
 ```
 src/
-  BuildingBlocks/   # Project.SharedKernel, Project.Application, Project.Infrastructure, Project.Web
-  Host/             # Project.Api, Project.ServiceDefaults, Project.MigrationService
-  Modules/          # Identity, Tenancy, Organization, Catalog, + los que agregues
-tests/
-  Project.ArchitectureTests   # reglas de dependencia, no-EF-on-modules, IMultiTenant invariant
-  Project.Application.UnitTests
-  Project.Server.Tests        # legacy
-docs/                          # architecture, adding-a-module, data-access, security, adr/
-project.client/                # frontend (shared/theme, shared/ui, shared/api, shared/auth, modules/)
-plans/                           # plan maestro + sub-planes
-scripts/                        # new-module.mjs, add-migration.sh, setup, doctor
+  BuildingBlocks/     SharedKernel, Application, Infrastructure, Web (plataforma reutilizable)
+  Modules/            Tenancy, Identity, Organization, Catalog (cada uno con 4 proyectos)
+  Migrations/         Migraciones EF Core por motor: SqlServer, PostgreSql, MySql
+  Host/               Project.Api, Project.MigrationService, Project.Composition, Project.ServiceDefaults
+  project.client/     SPA React (src/app, src/shared, src/modules)
+tests/                UnitTests, ArchitectureTests, Api.FunctionalTests
+deploy/               docker, linux, iis
+scripts/              setup, doctor, add-migration, new-module, check-docs
+docs/                 guías, despliegue y ADRs
 ```
+
+## Uso
+
+```bash
+node scripts/new-module.mjs Inventory Warehouse   # módulo full-stack con CRUD (backend + frontend)
+./scripts/add-migration.sh Inventory Initial       # migración en los 3 motores
+dotnet test Project.slnx                           # pruebas backend (requiere Docker)
+cd src/project.client && pnpm verify               # pruebas y calidad del frontend
+```
+
+Guías: [crear una aplicación](docs/06-crear-una-aplicacion.md) y [agregar un módulo](docs/07-agregar-un-modulo.md).
+
+## Despliegue
+
+| Destino | Guía |
+|---|---|
+| Docker / Docker Compose | [docs/despliegue/docker.md](docs/despliegue/docker.md) |
+| Linux (systemd + nginx) | [docs/despliegue/linux-systemd-nginx.md](docs/despliegue/linux-systemd-nginx.md) |
+| Windows Server (IIS) | [docs/despliegue/iis-windows-server.md](docs/despliegue/iis-windows-server.md) |
+| Migraciones en producción | [docs/despliegue/migraciones-en-produccion.md](docs/despliegue/migraciones-en-produccion.md) |
 
 ## Documentación
 
-- [`docs/architecture.md`](docs/architecture.md) — capas, reglas, multi-tenancy, settings, theming.
-- [`docs/adding-a-module.md`](docs/adding-a-module.md) — backend (4 proyectos) y frontend (manifest-driven).
-- [`docs/data-access.md`](docs/data-access.md) — EF/Dapper/SP/bulk, multi-provider, IgnoreQueryFilters prohibido fuera de Infrastructure.
-- [`docs/security.md`](docs/security.md) — JWT, refresh, lockout, BCrypt, fail-closed, ProblemDetails, CSP.
-- [`docs/troubleshooting.md`](docs/troubleshooting.md) — errores frecuentes por SO y por motor.
-- [`docs/faq.md`](docs/faq.md)
-- [`docs/glosario.md`](docs/glosario.md)
-- [`docs/adr/`](docs/adr/) — decisiones arquitectónicas (monolito modular, Mediator, Minimal APIs, Guid v7, shadcn/ui OKLCH, tenancy).
-- [`docs/despliegue/`](docs/despliegue/) — Docker, IIS, Linux systemd + nginx, Kubernetes, App Service.
-- [`docs/guias/`](docs/guias/) — acceso-a-datos, multitenancy, organización, seguridad, permisos-y-navegacion, theming-y-marca, i18n, testing, escalabilidad, observabilidad, background-jobs-y-eventos.
-
-## Roadmap
-
-Consulta [`plans/2026-10-10_refactor-plantilla-modular-empresarial.md`](plans/2026-10-10_refactor-plantilla-modular-empresarial.md) para el plan maestro y los criterios de salida por fase.
+| Quiero... | Documento |
+|---|---|
+| Entender qué resuelve la plantilla | [00-objetivo-y-alcance](docs/00-objetivo-y-alcance.md) |
+| Instalar lo necesario | [01-prerequisitos](docs/01-prerequisitos.md) |
+| Configurar un proyecto nuevo | [03-configuracion-inicial](docs/03-configuracion-inicial.md) |
+| Elegir el modo multi-tenant | [guias/multitenancy](docs/guias/multitenancy.md) |
+| Ver todo el índice | [docs/README.md](docs/README.md) |
 
 ## Contribuir
 
-[`agents.md`](agents.md) contiene las convenciones obligatorias: backend async/CT, frontend OKLCH tokens, manifest-driven modules, prohibido borrado físico (todo implementa `ISoftDeletable`), sin secretos en `localStorage`. Antes de abrir un PR, lee los ADRs.
+Lee [CONTRIBUTING.md](CONTRIBUTING.md), el [código de conducta](CODE_OF_CONDUCT.md) y la [política de seguridad](SECURITY.md).
 
 ## Licencia
 
-MIT — Copyright (c) 2026 Danny Galvan. Ver [`LICENSE`](LICENSE).
+Distribuido bajo la licencia MIT. Ver [LICENSE](LICENSE).

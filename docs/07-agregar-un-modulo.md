@@ -1,227 +1,103 @@
-# 07 · Agregar un módulo
+# Agregar un módulo
 
-> Backend y frontend, de punta a punta. Asume que ya tienes la app
-> corriendo (perfil `simple` o `erp`) y vas a agregar `Inventory` como
-> ejemplo. Adapta los nombres al módulo real.
+**Para qué sirve este documento:** crear un módulo de negocio de punta a punta (backend y frontend).
+**Tiempo estimado:** 15 minutos para el esqueleto.
 
-## 1. Scaffolding backend
-
-```bash
-mkdir -p src/Modules/Inventory/src/{Domain,Application,Infrastructure}
-mkdir -p src/Modules/Inventory.Contracts
-```
-
-Crea los 4 csproj con `dotnet new classlib`:
+## 1. Generar el esqueleto
 
 ```bash
-cd src/Modules/Inventory
-dotnet new classlib -n Project.Modules.Inventory.Domain --framework net10.0 -o src/Domain
-dotnet new classlib -n Project.Modules.Inventory.Application --framework net10.0 -o src/Application
-dotnet new classlib -n Project.Modules.Inventory.Infrastructure --framework net10.0 -o src/Infrastructure
-dotnet new classlib -n Project.Modules.Inventory.Contracts --framework net10.0 -o ../Project.Modules.Inventory.Contracts
+node scripts/new-module.mjs Inventory Warehouse            # agrega --org-scoped si los datos pertenecen a una unidad
+./scripts/add-migration.sh Inventory Initial
 ```
 
-## 2. Configurar referencias
-
-```xml
-<!-- Project.Modules.Inventory.Domain.csproj -->
-<ItemGroup>
-  <ProjectReference Include="..\..\..\BuildingBlocks\Project.SharedKernel\Project.SharedKernel.csproj" />
-</ItemGroup>
-
-<!-- Project.Modules.Inventory.Application.csproj -->
-<ItemGroup>
-  <ProjectReference Include="..\..\..\BuildingBlocks\Project.SharedKernel\Project.SharedKernel.csproj" />
-  <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
-  <ProjectReference Include="..\Project.Modules.Inventory.Domain\Project.Modules.Inventory.Domain.csproj" />
-  <ProjectReference Include="..\Project.Modules.Inventory.Contracts\Project.Modules.Inventory.Contracts.csproj" />
-</ItemGroup>
-
-<!-- Project.Modules.Inventory.Infrastructure.csproj -->
-<ItemGroup>
-  <ProjectReference Include="..\..\..\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
-  <ProjectReference Include="..\Project.Modules.Inventory.Application\Project.Modules.Inventory.Application.csproj" />
-  <ProjectReference Include="..\Project.Modules.Inventory.Domain\Project.Modules.Inventory.Domain.csproj" />
-</ItemGroup>
+```powershell
+node scripts/new-module.mjs Inventory Warehouse
+./scripts/add-migration.ps1 -Module Inventory -Name Initial
 ```
 
-## 3. Entidad
+El generador crea los cuatro proyectos, los agrega a `Project.slnx`, registra `new InventoryModule()` en
+`src/Host/Project.Composition/AppModules.cs`, agrega las factorías de diseño en los tres proyectos de migraciones y crea
+el módulo frontend `src/project.client/src/modules/inventory`. Al ejecutar la API ya existen `/api/v1/inventory/warehouses`
+(CRUD completo), sus permisos `inventory.warehouses.*`, la entrada de menú y la página con la tabla.
+
+## 2. Modelar el dominio
+
+En `Inventory.Domain` deriva de `AuditableAggregateRoot` (Guid v7, auditoría, borrado lógico, concurrencia) e implementa
+`IMultiTenant` siempre, e `IOrganizationScoped` si el dato pertenece a una empresa o marca. No asignes `TenantId` ni
+`OrganizationUnitId` desde la petición: lo hace el pipeline de guardado.
+
+## 3. Configuración EF
+
+Agrega un `IEntityTypeConfiguration<T>` en `Inventory.Infrastructure` con longitudes máximas para todo `string`
+indexado. El esquema (`inventory`) y los filtros globales se aplican solos.
+
+## 4. Permisos y menú
+
+Constantes en `Inventory.Contracts/InventoryPermissions.cs`; definición y navegación en el `IPermissionProvider` del
+módulo. El rol `Administrator` de cada tenant recibe los permisos nuevos en la siguiente ejecución del migrador.
+
+## 5. CRUD genérico o casos de uso propios
+
+**CRUD genérico:** DTOs, un mapper Mapperly que implemente `ICrudMapper`, una `QueryPolicy` (allowlist de filtros y
+orden) y validadores; luego `api.MapCrud<...>("inventory/warehouses", InventoryPermissions.Warehouses.Prefix)`.
+
+**Caso de uso propio:**
 
 ```csharp
-// src/Modules/Inventory/src/Domain/Product.cs
-namespace Project.Modules.Inventory.Domain;
+public sealed record TransferStockCommand(Guid From, Guid To, int Quantity) : ICommand<TransferResult>;
 
-public sealed class Product : AggregateRoot<Guid>, IMultiTenant, ISoftDeletable
+public sealed class TransferStockValidator : AbstractValidator<TransferStockCommand> { /* reglas */ }
+
+public sealed class TransferStockHandler(IRepository<Warehouse, Guid> warehouses) : ICommandHandler<TransferStockCommand, TransferResult>
 {
-    public required string Sku { get; set; }
-    public required string Name { get; set; }
-    public decimal Price { get; set; }
-    public int Stock { get; set; }
-    public Guid TenantId { get; set; }
-    public DateTimeOffset CreatedAt { get; set; }
-    public string? CreatedBy { get; set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
-    public bool IsDeleted { get; set; }
-    public DateTimeOffset? DeletedAt { get; set; }
-    public string? DeletedBy { get; set; }
-    public Guid ConcurrencyStamp { get; set; }
+    public async ValueTask<Result<TransferResult>> Handle(TransferStockCommand command, CancellationToken ct) { /* ... */ }
 }
+
+// Infrastructure/Presentation
+api.MapPost("inventory/transfers", async (TransferStockCommand c, ISender sender, CancellationToken ct) =>
+        (await sender.Send(c, ct)).ToHttp())
+    .RequirePermission("inventory.transfers.create");
 ```
 
-> `IMultiTenant` + `ISoftDeletable` son obligatorios: el filtro global y el
-> interceptor los respetan automáticamente.
+## 6. Consultas de alto rendimiento
 
-## 4. Permisos (en `Contracts/Permissions.cs`)
+Registra `services.AddSqlExecutor<InventoryDb, InventoryDbContext>()` y usa `ISqlExecutor<InventoryDb>` con
+`ScopedSql` para no saltarte el aislamiento (ejemplo completo en `Catalog`: `GetStockReportHandler`). Los
+procedimientos almacenados se crean con una migración por motor (ver [acceso a datos](guias/acceso-a-datos.md)).
 
-```csharp
-namespace Project.Modules.Inventory.Contracts;
+## 7. Settings y feature flags
 
-public static class InventoryPermissions
-{
-    public const string ProductsRead   = "inventory.products.read";
-    public const string ProductsCreate = "inventory.products.create";
-    public const string ProductsUpdate = "inventory.products.update";
-    public const string ProductsDelete = "inventory.products.delete";
-}
-```
+Declara `public sealed class InventorySettings : ISettingsSection` y regístrala con
+`services.AddSettingsSection<InventorySettings>()`; aparece sola en la pantalla de configuración. Oculta endpoints con
+`.RequireFeature("inventory.advanced")`.
 
-Regla: `{module}.{resource}.{action}` en minúsculas. Nunca derivados del
-nombre del controller.
+## 8. Eventos
 
-## 5. CRUD genérico (Application + Infrastructure)
+Emite eventos con `Raise(new StockLow(...))` dentro del agregado; se guardan en el outbox y se publican a los
+`IDomainEventHandler<StockLow>` de cualquier módulo (definiendo el evento en `Contracts` si otro módulo lo consume).
 
-```csharp
-// Application/Dtos.cs
-public sealed record ProductDto(Guid Id, string Sku, string Name, decimal Price, int Stock);
-public sealed record CreateProductDto(string Sku, string Name, decimal Price, int Stock);
-public sealed record UpdateProductDto(string? Name, decimal? Price, int? Stock, Guid? ConcurrencyStamp);
-```
+## 9. Pruebas
 
-```csharp
-// Infrastructure/Persistence/ProductConfiguration.cs
-public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
-{
-    public void Configure(EntityTypeBuilder<Product> b)
-    {
-        b.ToTable("Products", "inventory");
-        b.HasKey(x => x.Id);
-        b.Property(x => x.Sku).HasMaxLength(64).IsRequired();
-        b.Property(x => x.Name).HasMaxLength(256).IsRequired();
-        b.Property(x => x.Price).HasPrecision(18, 2);
-        b.Property(x => x.Stock);
-        b.Property(x => x.TenantId);
-        b.HasIndex(x => new { x.TenantId, x.Sku }).IsUnique();
-    }
-}
-```
+Las pruebas funcionales de aislamiento existentes sirven de modelo (`tests/Project.Api.FunctionalTests`). Agrega
+pruebas unitarias del dominio en `tests/Project.UnitTests`.
 
-```csharp
-// Infrastructure/InventoryDbContext.cs
-public sealed class InventoryDbContext(DbContextOptions<InventoryDbContext> options, ITenantContext tenant, IOrganizationContext org)
-    : ModuleDbContext(options, tenant, org) { }
+## 10. Frontend
 
-protected override void OnModelCreating(ModelBuilder b)
-{
-    base.OnModelCreating(b);
-    b.ApplyConfigurationsFromAssembly(typeof(ProductConfiguration).Assembly);
-}
-```
+Edita `src/project.client/src/modules/inventory`: esquema zod en `api.ts`, formularios con `FormField` y
+`applyServerErrors`, textos en `i18n.ts` (es y en). Las rutas declaran `handle.permission`.
 
-## 6. MapCrud en Infrastructure o en un módulo host
-
-```csharp
-// src/Modules/Inventory/InventoryModule.cs
-public sealed class InventoryModule : IModule
-{
-    public string Name => "Inventory";
-    public DataScope DataScope => DataScope.Tenant;
-
-    public void AddServices(IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddModuleDbContext<InventoryDbContext>("inventory", DataScope.Tenant);
-        services.AddScoped<ICrudService<Product, Guid, ProductDto, CreateProductDto, UpdateProductDto>,
-            CrudService<Product, Guid, ProductDto, CreateProductDto, UpdateProductDto>>();
-        services.AddValidatorsFromAssembly(typeof(InventoryModule).Assembly);
-    }
-
-    public void MapEndpoints(IEndpointRouteBuilder endpoints)
-    {
-        endpoints.MapCrud<Product, Guid, ProductDto, CreateProductDto, UpdateProductDto>(
-            "products", "inventory.products");
-    }
-}
-```
-
-## 7. Registrar en `Program.cs`
-
-```csharp
-builder.AddModules(
-    new LegacyModule(),
-    new TenancyModule(),
-    new OrganizationModule(),
-    new CatalogModule(),
-    new InventoryModule());
-```
-
-## 8. Migración por proveedor
+## 11. Verificar
 
 ```bash
-./scripts/add-migration.sh Inventory InitialCreate
+dotnet build Project.slnx && dotnet test Project.slnx
+cd src/project.client && pnpm verify
 ```
 
-Genera la migración en los 3 proyectos `Project.Migrations.{Provider}`.
+## Errores frecuentes
 
-## 9. Scaffolding frontend
-
-```bash
-node scripts/new-module.mjs inventory
-```
-
-Crea `src/modules/inventory/` con module.ts, api/, schemas/, pages/, i18n/.
-
-## 10. Scaffolding de tests
-
-```bash
-mkdir -p tests/Project.Modules.Inventory.UnitTests
-# agregar el proyecto a la sln y crear:
-# - tests de handler: fakes de IRepository, asserts sobre el Result<T>.
-# - tests de MapCrud: WebApplicationFactory + Testcontainers con el módulo
-#   registrado, asserts de permisos (RequireOperation/AllowAnonymous) y de
-#   paginación.
-```
-
-## 11. Tests de aislamiento (Fase 5)
-
-```bash
-mkdir -p tests/Project.IsolationTests
-# matrix TEST_DB_PROVIDERS=SqlServer,PostgreSql,MySql x TEST_TENANCY_MODES=None,SharedDatabase,DatabasePerTenant,Hybrid
-```
-
-`Project.IsolationTests` crea dos tenants y dos marcas dentro de uno;
-verifica que ningún endpoint CRUD ni query Dapper devuelve, cuenta,
-actualiza o borra filas del otro tenant ni de otra unidad no accesible.
-
-## 12. Verificar
-
-```bash
-dotnet build Project.sln --configuration Release -warnaserror
-dotnet test  Project.sln --no-build --configuration Release
-cd project.client && pnpm verify
-```
-
-## Errores frecuentes al crear un módulo
-
-- **Entity sin `IMultiTenant`** rompe el filtro global en
-  `SharedDatabase`/`Hybrid`. El architecture test lo detecta.
-- **Entity sin `ISoftDeletable`** permite el borrado físico. La
-  prohibición está en Fase 5; mientras tanto, asegúrate manualmente.
-- **`Permission` derivado del nombre del controller** cambia al renombrar
-  y rompe a los usuarios. Declara siempre constantes en
-  `Contracts/Permissions.cs`.
-- **`MapCrud` sin `Permission`** arranca el fail-closed en CI (cuando
-  Fase 5 lo enchufe). Por ahora, asegúrate de pasar el
-  `permissionPrefix`.
-- **`IRepository<T>.Remove(...)`** en lugar de un endpoint que marque
-  `IsDeleted=true`. El `SoftDeleteInterceptor` convierte los
-  `ISoftDeletable`, pero los no-`ISoftDeletable` se borran físicamente.
+| Síntoma | Causa |
+|---|---|
+| La API no arranca: "Endpoints without an explicit security declaration" | Falta `RequirePermission`, `RequireAuthenticatedUser` o `AllowAnonymous` |
+| 400 "Field 'x' cannot be filtered" | El campo no está en la `QueryPolicy` |
+| El menú no muestra el módulo | El usuario no tiene el permiso de lectura o falta la entrada en `GetNavigation` |
+| `has-pending-model-changes` falla en CI | Cambiaste el modelo sin generar la migración en los tres motores |

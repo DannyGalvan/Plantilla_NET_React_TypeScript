@@ -12,7 +12,7 @@
   concentran los contratos transversales.
 - **Consecuencias:**
   - Un solo binario desplegable. Escala horizontal replicando instancias.
-  - Tests de aislamiento por modo de tenancy en `Project.IsolationTests`.
+  - Pruebas de aislamiento por modo de tenancy en `tests/Project.Api.FunctionalTests`.
   - El monolito se descompone en servicios cuando un módulo lo necesite
     (vía contratos + outbox). El refactor es interno al módulo.
 - **Alternativas descartadas:** microservicios (overhead operativo no

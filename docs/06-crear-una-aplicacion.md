@@ -1,139 +1,73 @@
-# 06 · Crear una aplicación
+# Crear una aplicación a partir de la plantilla
 
-> Árbol de decisión + recetas por perfil. La guía paso a paso de "cómo
-> extender" está en [`docs/07-agregar-un-modulo.md`](07-agregar-un-modulo.md).
+**Para qué sirve este documento:** decidir la topología y arrancar una aplicación nueva con tres recetas.
+**Tiempo estimado:** 30 minutos.
 
 ## Árbol de decisión
 
-```
-¿Una empresa o varias?
-├── Una sola                    -> perfil = simple
-└── Varias
-    ├── ¿Aislar infraestructura por cliente?
-    │   ├── No, una BD basta     -> perfil = saas
-    │   └── Sí, bases dedicadas  -> perfil = saas-dedicated
-    └── ¿Necesitas jerarquía de unidades organizativas?
-        ├── No                    -> Tenancy:Mode = SharedDatabase
-        └── Sí                    -> Tenancy:Mode = SharedDatabase + OrganizationModule
-```
-
-## Recetas por perfil
-
-### Perfil `simple` — App de inventario de un solo cliente
-
-- Una sola empresa, una sola marca, una sola BD.
-- `Tenancy:Mode = None`. `OrganizationModule` **no** se registra.
-- Login: `1234` / `1234567`. Cambio forzado en el primer login.
-- Idioma: `es` por defecto. `en` solo si lo activas.
-
-```jsonc
-// src/Host/Project.Api/appsettings.json
-{
-  "Tenancy": { "Mode": "None" },
-  "Modules": { "Disabled": ["Organization"] }
-}
+```mermaid
+flowchart TD
+  A{¿Varios clientes independientes?} -->|No| B{¿Varias empresas, marcas o países?}
+  B -->|No| S[Perfil simple: Mode=None, sin Organization]
+  B -->|Sí| E[Perfil ERP: Mode=None, con Organization]
+  A -->|Sí| C{¿Algún cliente exige base propia?}
+  C -->|No| SA[Perfil SaaS: Mode=SharedDatabase]
+  C -->|Todos| D[Perfil dedicado: Mode=DatabasePerTenant]
+  C -->|Algunos| H[Perfil mixto: Mode=Hybrid]
 ```
 
-### Perfil `erp` — Multi-empresa en una sola BD
+## Pasos comunes
 
-- Varias empresas y marcas en una sola BD.
-- `Tenancy:Mode = None`. `OrganizationModule` registrado.
-- Cada empresa = `OrganizationUnitType = "Company"`. Cada marca = `"Brand"`.
+1. Clona o crea un repositorio desde la plantilla (`Use this template` en GitHub).
+2. Configura según el perfil (abajo) y ejecuta `./scripts/setup.sh` o `./scripts/setup.ps1`.
+3. Elimina el módulo de ejemplo `Catalog` cuando tengas el tuyo: quita su línea de `AppModules.cs`, sus proyectos de
+   `Project.slnx`, su referencia en `Project.Composition` y en los proyectos de migraciones (incluidas sus factorías y
+   carpetas `Catalog/`), y la carpeta `src/project.client/src/modules/catalog`.
 
-```jsonc
-{
-  "Tenancy": { "Mode": "None" },
-  "Modules": { "Disabled": [] }
-}
+## Receta A: inventario pequeño (perfil simple)
+
+```json
+{ "Tenancy": { "Mode": "None" }, "Modules": { "Disabled": ["Organization"] } }
 ```
 
-`Program.cs`:
-
-```csharp
-builder.AddModules(
-    new LegacyModule(),
-    new TenancyModule(),
-    new OrganizationModule(),
-    new CatalogModule());
+```bash
+node scripts/new-module.mjs Inventory Warehouse
+./scripts/add-migration.sh Inventory Initial
 ```
 
-### Perfil `saas` — Multi-cliente con BD compartida
+Agrega las entidades restantes (`Item`, `StockMovement`) siguiendo [07-agregar-un-modulo.md](07-agregar-un-modulo.md).
 
-- Muchos clientes, una sola BD.
-- `Tenancy:Mode = SharedDatabase`. `OrganizationModule` opcional (por
-  cliente).
-- Tenant se resuelve por host (`acme.app.local`, `globex.app.local`).
+## Receta B: CRM de un grupo empresarial (perfil ERP)
 
-```jsonc
-{
-  "Tenancy": {
-    "Mode": "SharedDatabase",
-    "Resolvers": ["Host", "Subdomain"],
-    "RootDomain": "app.local"
-  }
-}
+```json
+{ "Tenancy": { "Mode": "None" } }
 ```
 
-### Perfil `saas-dedicated` — Multi-cliente con bases dedicadas
+- Módulos `Customers`, `Leads`, `Opportunities` y `Activities` generados con `new-module`, con `--org-scoped` para que
+  cada registro pertenezca a una empresa o marca.
+- Comunicación entre módulos por contratos: `Leads` publica un evento de dominio `LeadConverted`; `Customers` lo maneja
+  con un `IDomainEventHandler<LeadConverted>` declarado en su `Application`. El evento se define en `Leads.Contracts`
+  para que `Customers` no dependa del interior de `Leads`.
+- Crea la jerarquía (empresa, país, marca) en *Organización* y asigna usuarios a sus unidades.
 
-- Cada cliente con su propia BD (motor elegible por cliente: SqlServer,
-  PostgreSQL, MySQL).
-- `Tenancy:Mode = Hybrid`. Catálogo mixto shared ↔ Dedicated.
-- Conexión vía `ISecretStore` (Key Vault, AWS Secrets Manager, env).
+## Receta C: SaaS (perfil SaaS)
 
-```jsonc
-{
-  "Tenancy": {
-    "Mode": "Hybrid",
-    "Resolvers": ["Host", "Subdomain", "Claim"]
-  }
-}
+```json
+{ "Tenancy": { "Mode": "SharedDatabase", "RootDomain": "miapp.com", "Resolvers": ["Host", "Subdomain", "Claim"] } }
 ```
 
-`move-tenant` (provision-tenant con `--to dedicated|shared`) migra la BD
-del tenant en bloque con `ITenantDataMover` y un lock distribuido por
-dialecto (`sp_getapplock` / `pg_advisory_lock` / `GET_LOCK`).
+1. Inicia sesión como `admin` (administrador de plataforma) y crea cada cliente en *Tenants* con su dominio
+   (`acme.miapp.com`) y luego *Aprovisionar*, que crea sus roles y datos iniciales.
+2. Crea los usuarios de cada cliente entrando por su dominio.
+3. Define la marca de cada cliente en *Configuración > Marca* (nivel Organización); el mismo build muestra marcas distintas por dominio.
+4. Para un cliente con base dedicada usa `Mode=Hybrid`, crea el tenant con aislamiento `Dedicated`, motor y una
+   referencia de secreto (`ConnectionSecretRef`); guarda la cadena real en `Secrets:<referencia>` (variable de entorno
+   `Secrets__<referencia>` o un almacén de secretos) y pulsa *Aprovisionar*.
 
-## Tres recetas completas
+## Quitar lo que no usas
 
-### (a) App de inventario (perfil `simple`)
-
-1. Sigue [`docs/02-inicio-rapido.md`](02-inicio-rapido.md) camino C.
-2. No instales `OrganizationModule`.
-3. Crea el módulo `Inventory` siguiendo
-   [`docs/07-agregar-un-modulo.md`](07-agregar-un-modulo.md). 1 módulo.
-
-### (b) CRM (perfil `erp`)
-
-1. Activa `OrganizationModule`.
-2. Crea los módulos `Customers`, `Leads`, `Opportunities`, `Activities`.
-3. La comunicación entre módulos va por `Contracts`. Ejemplo: el evento
-   `LeadConverted` en `Leads` dispara la creación de un `Customer` en
-   `Customers` vía outbox.
-4. RBAC por organización: cada usuario solo ve los leads de su unidad.
-
-### (c) SaaS (perfil `saas`)
-
-1. `Tenancy:Mode = SharedDatabase`.
-2. Crea el módulo `Tenancy` admin (en `src/Modules/Tenancy`).
-3. `OrganizationModule` opcional. Activar solo para clientes que lo pidan.
-4. La resolución de tenant es por host: `acme.app.local` → tenant `acme`,
-   `globex.app.local` → tenant `globex`.
-5. Cada tenant tiene su `BrandingSettings` y `LocalizationSettings`. El
-   frontend carga `/platform/config` y aplica tokens vía `ThemeProvider`.
-
-## Quitar lo que no se usa
-
-- Para no usar Tenancy: borrar el módulo `Tenancy` y poner
-  `Tenancy:Mode = None`.
-- Para no usar Organization: poner `OrganizationModule` en
-  `Modules:Disabled`.
-- Para no usar Catalog (módulo de ejemplo): quitarlo de `Program.cs`.
-
-## Cómo verificar el perfil
-
-- `GET /platform/config` debe devolver `tenancyMode` igual al perfil.
-- El log de arranque muestra `Tenancy: Resolvers in order = [...]`.
-- En `DatabasePerTenant` o `Hybrid`, el log muestra las conexiones
-  abiertas por tenant tras `dotnet run --project Project.MigrationService
-  -- migrate`.
+| Quiero quitar | Cómo |
+|---|---|
+| Empresas y marcas | `Modules:Disabled: ["Organization"]` (o quitar la línea de `AppModules`) |
+| Inglés | Quitar `en` de `supportedLanguages` en `src/shared/i18n/index.ts` y de `languages` en `/platform/config` |
+| Administración de tenants en la UI | Dejar `Features:platform.admin=false` |

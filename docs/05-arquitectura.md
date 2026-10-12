@@ -1,123 +1,94 @@
-# 05 · Arquitectura
+# Arquitectura
 
-> Cómo está estructurada la plantilla, qué patrones usa y por qué. La
-> descripción detallada de cada decisión vive en [`docs/adr/`](adr/).
+**Para qué sirve este documento:** entender cómo está organizado el código, por qué, y dónde extenderlo.
 
-## Diagrama de capas
+## Contexto
 
-```
-+--------------------------------------------------------+
-|  Host                                                    |
-|  Project.Api (worker)   Program.cs delgado, AddModules() |
-|  Project.ServiceDefaults       Serilog / OTel / Health  |
-|  Project.MigrationService      Worker de migraciones      |
-|  Project.AppHost               Aspire AppHost             |
-+--------------------------------------------------------+
-|  BuildingBlocks                                           |
-|  Project.SharedKernel   Domain primitives (Entity,       |
-|                          AggregateRoot, Result/Error,     |
-|                          IMultiTenant, ISoftDeletable)    |
-|  Project.Application    Mediator contracts, behaviours,   |
-|                          Pagination, IDatabaseProvider     |
-|  Project.Infrastructure EF/Dapper, IDbConnectionFactory, |
-|                          Tenancy, Outbox                   |
-|  Project.Web            IModule, ResultExtensions,         |
-|                          GlobalExceptionHandler, MapCrud   |
-+--------------------------------------------------------+
-|  Modules                                                  |
-|  Identity (Platform)             Tenancy (Platform)         |
-|  Organization (Tenant, opcional) Catalog (Tenant)         |
-|  + los que agregues con \`dotnet new module\` o           |
-|    \`scripts/new-module.mjs\`                              |
-+--------------------------------------------------------+
+```mermaid
+flowchart LR
+  U[Usuario] --> SPA[SPA React]
+  SPA -->|HTTPS /api/v1| API[Project.Api]
+  API --> PDB[(BD de plataforma)]
+  API --> TDB[(BD de tenant)]
+  API --> R[(Redis opcional)]
+  API --> O[Colector OTLP opcional]
+  MIG[Project.MigrationService] --> PDB
+  MIG --> TDB
 ```
 
-## Patrones
+## Capas y reglas de dependencia
 
-| Patrón | Dónde | Por qué |
+```mermaid
+flowchart TB
+  subgraph BuildingBlocks
+    SK[SharedKernel] --- APP[Application] --- INF[Infrastructure] --- WEB[Web]
+  end
+  subgraph Modulo X
+    D[Domain] --> SK
+    C[Contracts] --> SK
+    A[Application] --> D & C & APP
+    I[Infrastructure con Presentation] --> A & INF & WEB
+  end
+  COMP[Host/Project.Composition] --> I
+  API[Host/Project.Api] --> COMP
+```
+
+| Proyecto | Puede depender de | Contiene |
 |---|---|---|
-| CQRS | `ICommand` / `IQuery` en `Project.Application/Mediator` | Separación lectura/escritura, handlers `sealed` |
-| Repository + UoW | `IRepository<T,TId>` + `IUnitOfWork` en `Project.Application/Abstractions` | Sustitución de EF sin tocar dominio |
-| Specification | `ISpecification<T>` + `SpecificationEvaluator` | Filtros y orden componibles sobre IQueryable |
-| Strategy (provider) | `IDatabaseProvider` | Motor intercambiable (SqlServer/PostgreSql/MySql) |
-| Strategy (filtros) | `IFilterOperator` | Operadores extensibles sin tocar el parser |
-| Decorator / pipeline | `IPipelineBehavior` (Logging, Validation, Authorization, Caching, Transaction) | Cross-cutting en Mediator |
-| Outbox | `OutboxMessage` + `OutboxProcessor` | Eventos sincrónicos con handlers asíncronos |
-| Result | `Result<T>` + `Error` | Errores esperados como valores, no excepciones |
-| Options | `IOptions<T>` + `ValidateDataAnnotations().ValidateOnStart()` | Configuración tipada y validada al arrancar |
+| `Project.SharedKernel` | nada | `Entity`, `AggregateRoot`, `Result`, `Error`, marcadores (`IMultiTenant`, `ISoftDeletable`...) |
+| `Project.Application` | SharedKernel | Abstracciones (repositorio, unidad de trabajo, SQL, caché, tenancy, settings, permisos), CQRS, behaviors, CRUD genérico, parser de consultas |
+| `Project.Infrastructure` | Application | EF Core multi-motor, filtros globales, pipeline de guardado, Dapper, outbox, tenancy, migrador |
+| `Project.Web` | Application, Infrastructure | `IModule`, `MapCrud`, permisos, ProblemDetails, seguridad HTTP, OpenAPI |
+| `Modulo.Domain` | SharedKernel | Entidades y eventos del módulo |
+| `Modulo.Contracts` | SharedKernel | Permisos e interfaces públicas para otros módulos |
+| `Modulo.Application` | Domain, Contracts propios y de otros módulos, Project.Application | Casos de uso, DTOs, validadores, mapeos, políticas de consulta |
+| `Modulo.Infrastructure` | Application, Project.Infrastructure, Project.Web | DbContext, configuraciones EF, servicios, endpoints (`Presentation`), clase `XModule` |
 
-## Reglas de dependencia
+Estas reglas las verifica `tests/Project.ArchitectureTests` (por ejemplo, ningún `Application` referencia EF Core ni
+ASP.NET Core y ningún módulo referencia el interior de otro).
 
-Las reglas las enforza `Project.ArchitectureTests`:
+## Flujo de una petición
 
-- `Domain` solo depende de `SharedKernel`.
-- `Application` depende de `Domain` y `Project.Application`; nunca de EF.
-- `Infrastructure` depende de `Application`, `Project.Infrastructure`,
-  `Project.Web`.
-- Un módulo nunca referencia `Domain`/`Application`/`Infrastructure` de
-  otro módulo. Se comunican por `Contracts`.
-- Los handlers son `sealed`.
-- Los módulos de negocio no referencian `Microsoft.EntityFrameworkCore`
-  directamente (todo pasa por `Project.Infrastructure`).
-
-## Multi-tenancy (matriz §3.4)
-
-```
-Tenancy:Mode = None                 -> Tenant implícito "default"
-Tenancy:Mode = SharedDatabase       -> Filtro global por TenantId
-Tenancy:Mode = DatabasePerTenant    -> Conexión por tenant vía ISecretStore
-Tenancy:Mode = Hybrid              -> Catálogo decide shared/dedicated
-```
-
-`ModuleDbContext` aplica los filtros como un único `HasQueryFilter` por
-entidad. `TenantInterceptor` valida el `TenantId` en cada `Insert`/`Modify`.
-
-## Settings en cascada
-
-```
-new T()                          (defaults del record)
-  ↓
-appsettings.json (Settings:{Section})
-  ↓
-System       (Tabla SettingValue scope=System)
-  ↓
-Tenant       (scope=Tenant)
-  ↓
-OrganizationUnit (root → active)
-  ↓
-User         (scope=User)
+```mermaid
+sequenceDiagram
+  participant C as Cliente
+  participant M as Middleware
+  participant E as Endpoint
+  participant B as Behaviors
+  participant H as Handler
+  participant D as DbContext / Dapper
+  C->>M: HTTP con Bearer
+  M->>M: Seguridad, autenticación, resolución de tenant, rate limit, autorización
+  M->>E: RequirePermission ok
+  E->>B: Mediator.Send(command)
+  B->>B: Logging, validación (FluentValidation), autorización
+  B->>H: Handle
+  H->>D: Repositorio / ISqlExecutor (filtros de tenant y unidad automáticos)
+  D-->>H: Datos
+  H-->>E: Result<T>
+  E-->>C: 200 con DTO o ProblemDetails
 ```
 
-Cada capa es JSON-merge: el valor más específico gana por propiedad.
-Las secciones (`ISettingsSection`) se descubren por assembly scan; agregar
-una sección no edita código central.
+## Patrones usados
 
-## Theming
+| Patrón | Dónde |
+|---|---|
+| CQRS + Mediator | `Project.Application/Messaging`, handlers de cada módulo |
+| Pipeline / Decorator | `LoggingBehavior`, `ValidationBehavior`, `AuthorizationBehavior`; `ISaveChangesStep` en el guardado |
+| Repository + Unit of Work + Specification | `IRepository<T,TId>`, `IUnitOfWork`, `Specification<T>`, `EfRepository` |
+| Strategy | `IDatabaseProvider` (motores), `IFilterOperator` (operadores del filtro), `ITenantResolver` |
+| Result | `Result`, `Result<T>`, `Error` mapeados a ProblemDetails |
+| Outbox | `OutboxStep` guarda eventos en la misma transacción; `OutboxProcessor` los publica |
+| Options | Secciones de configuración validadas al iniciar (`ValidateOnStart`) |
+| Modular monolith | `IModule` + `AppModules` |
 
-Tokens CSS en OKLCH como única fuente de color. `ThemeProvider` aplica:
+## Decisiones
 
-- `mode`: `light` / `dark` / `system` (sigue `prefers-color-scheme`).
-- `preset`: `default` / `ocean` / `forest` / `sunset` / `corporate`.
-- `density`: `compact` / `comfortable` (cambia `--spacing`).
-- `fontScale`: `sm` / `md` / `lg` (cambia `font-size` raíz).
-- `primaryOverride`: color OKLCH libre, validado en servidor con contraste AA.
-- `radius`: valor libre, cambia `--radius`.
+Ver los [ADR](adr). Resumen: monolito modular (0001), Mediator con generador (0002), Minimal APIs con prefijo de versión
+(0003), Guid v7 (0004), shadcn/Radix con tokens OKLCH (0005), modos de tenancy (0006), permisos en servidor con caché
+(0007), Mapperly (0008), persistencia multi-motor (0009), estrategia de pruebas (0010).
 
-Persiste en `localStorage:brand:theme`. Se aplica via atributos
-`data-theme`, `data-density` y `.dark` en `<html>`.
+## Analizadores
 
-## Frontend
-
-- React 19, TypeScript 5, Vite 6, Zustand 5, TanStack Query 5, axios.
-- shadcn/ui + Radix + Tailwind v4 con tokens CSS en OKLCH.
-- Módulos via `ModuleManifest` (id, routes, nav, features, i18n). El
-  `app/module-registry.ts` los descubre con `import.meta.glob`.
-- `HttpClient` con refresh-on-401 en cola (single-flight).
-- Tokens, errores y secretos **nunca** en `localStorage`. Solo el
-  access token vive en memoria dentro del módulo `shared/auth`.
-
-## Diagramas
-
-Los diagramas Mermaid del flujo de un request y de la jerarquía de
-módulos viven en `docs/diagrams/` (cuando llegue Fase 10 slice 2) y se
-mantienen sincronizados con `graphify-out/graph.html`.
+`Directory.Build.props` activa `TreatWarningsAsErrors` y el nivel `latest-recommended` de los analizadores .NET. Las
+reglas desactivadas están en su lista `NoWarn`.

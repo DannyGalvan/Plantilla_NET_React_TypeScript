@@ -5,6 +5,7 @@
 // Example: pnpm new-module inventory warehouses
 //   -> src/modules/inventory/{module.ts,api.ts,i18n.ts,pages/WarehousesPage.tsx}
 //   -> route /inventory/warehouses protected by inventory.warehouses.read
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -122,6 +123,15 @@ const manifest: ModuleManifest = {
 export default manifest;
 `,
 );
+
+try {
+    execFileSync('pnpm', ['exec', 'prettier', '--write', dir], {
+        cwd: new URL('..', import.meta.url).pathname,
+        stdio: 'ignore',
+    });
+} catch {
+    console.warn('Prettier could not format the new files; run pnpm format.');
+}
 
 console.log(`OK: module '${moduleName}' created in ${dir}.`);
 console.log(
