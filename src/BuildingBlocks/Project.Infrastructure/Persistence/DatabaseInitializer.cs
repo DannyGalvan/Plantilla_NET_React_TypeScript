@@ -43,6 +43,7 @@ public sealed class DatabaseInitializer(
     ILogger<DatabaseInitializer> logger)
 {
     private const string LockName = "project-migrations";
+    private const int MaxCreateAttempts = 5;
 
     public async Task InitializeAsync(string? onlyTenantCode, CancellationToken ct)
     {
@@ -134,20 +135,19 @@ public sealed class DatabaseInitializer(
         var database = context.Database;
 
         var creator = database.GetService<IRelationalDatabaseCreator>();
-        if (!await creator.ExistsAsync(ct))
+        for (var attempt = 1; !await creator.ExistsAsync(ct); attempt++)
         {
             logger.LogInformation("Creating database for {Module} ({Target})", registration.Module, target);
             try
             {
                 await creator.CreateAsync(ct);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException && attempt < MaxCreateAttempts)
             {
-                // Another instance may have created it in the meantime.
-                if (!await creator.ExistsAsync(ct))
-                {
-                    throw;
-                }
+                // Another instance may have created it in the meantime, or the engine rejected a concurrent
+                // CREATE DATABASE (PostgreSQL: "source database template1 is being accessed by other users").
+                logger.LogWarning(ex, "Creating database for {Module} ({Target}) failed, attempt {Attempt}", registration.Module, target, attempt);
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), ct);
             }
         }
 
