@@ -1,0 +1,33 @@
+# /etc/systemd/system/project-api.service
+# Secrets live in /etc/project/api.env (chmod 600, owned by root). See docs/despliegue/linux-systemd-nginx.md.
+
+[Unit]
+Description=Project API (ASP.NET Core)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=project
+Group=project
+WorkingDirectory=/opt/project/api
+ExecStart=/usr/bin/dotnet /opt/project/api/Project.Api.dll
+EnvironmentFile=/etc/project/api.env
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5000
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+SyslogIdentifier=project-api
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/log/project
+
+[Install]
+WantedBy=multi-user.target

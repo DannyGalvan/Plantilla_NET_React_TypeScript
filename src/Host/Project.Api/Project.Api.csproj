@@ -19,14 +19,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Project.ServiceDefaults\Project.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Project.Composition\Project.Composition.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
-    <ProjectReference Include="..\..\Modules\Tenancy\Project.Modules.Tenancy.Infrastructure\Project.Modules.Tenancy.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Modules\Identity\Project.Modules.Identity.Infrastructure\Project.Modules.Identity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Modules\Organization\Project.Modules.Organization.Infrastructure\Project.Modules.Organization.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Modules\Catalog\Project.Modules.Catalog.Infrastructure\Project.Modules.Catalog.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Migrations\Project.Migrations.SqlServer\Project.Migrations.SqlServer.csproj" />
-    <ProjectReference Include="..\..\Migrations\Project.Migrations.PostgreSql\Project.Migrations.PostgreSql.csproj" />
-    <ProjectReference Include="..\..\Migrations\Project.Migrations.MySql\Project.Migrations.MySql.csproj" />
   </ItemGroup>
 
   <!--

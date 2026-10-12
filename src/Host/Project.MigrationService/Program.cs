@@ -3,11 +3,8 @@ using Project.Application.Tenancy;
 using Project.Infrastructure;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Tenancy;
-using Project.Modules.Catalog.Infrastructure;
-using Project.Modules.Identity.Infrastructure;
-using Project.Modules.Organization.Infrastructure;
 using Project.Modules.Tenancy.Application.Tenants;
-using Project.Modules.Tenancy.Infrastructure;
+using Project.Composition;
 using Project.ServiceDefaults;
 using Project.Web.Modules;
 using Project.Web.Security;
@@ -23,12 +20,7 @@ builder.AddServiceDefaults();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.SectionName));
 
-// Same module list as the API (the migration service must know every DbContext and seeder).
-builder.AddModules(
-    new TenancyModule(),
-    new IdentityModule(),
-    new OrganizationModule(),
-    new CatalogModule());
+builder.AddModules(AppModules.All());
 
 using var host = builder.Build();
 var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("MigrationService");

@@ -1,0 +1,63 @@
+# Production-like stack: PostgreSQL + Redis + migration worker + API (serving the SPA).
+#   cp deploy/docker/.env.example deploy/docker/.env   (and fill the secrets)
+#   docker compose -f deploy/docker/docker-compose.prod.yml --env-file deploy/docker/.env up -d --build
+# Open http://localhost:8080
+
+name: project
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-project}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:-project}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-project}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  migrations:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.migrations
+    environment: &app-env
+      Database__Provider: PostgreSql
+      Database__ConnectionStrings__Default: Host=db;Database=${DB_NAME:-project};Username=${DB_USER:-project};Password=${DB_PASSWORD}
+      Seed__AdminUserName: ${ADMIN_USER:-admin}
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@example.com}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      Cache__Redis__ConnectionString: redis:6379
+      Tenancy__Mode: ${TENANCY_MODE:-None}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    environment:
+      <<: *app-env
+      Identity__PublicUrl: ${PUBLIC_URL:-http://localhost:8080}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  db-data:

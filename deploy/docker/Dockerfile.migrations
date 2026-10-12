@@ -1,0 +1,17 @@
+# Migration worker: applies migrations, synchronizes permissions, seeds and exits.
+#   docker build -f deploy/docker/Dockerfile.migrations -t project-migrations .
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /repo
+COPY global.json Directory.Build.props Directory.Packages.props ./
+COPY src/ src/
+RUN dotnet restore src/Host/Project.MigrationService/Project.MigrationService.csproj
+RUN dotnet publish src/Host/Project.MigrationService/Project.MigrationService.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+ENV DOTNET_ENVIRONMENT=Production
+COPY --from=build /app .
+USER app
+ENTRYPOINT ["dotnet", "Project.MigrationService.dll"]
+CMD ["migrate"]

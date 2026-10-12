@@ -1,89 +1,50 @@
 #!/usr/bin/env bash
-# Diagnostic script. Reports OK, FALTA or ADVERTENCIA per requirement.
-# Used locally and by CI (scripts/quickstart-matrix). macOS/Linux.
+# Checks the local prerequisites. Prints OK, FALTA (missing, blocking) or ADVERTENCIA (optional).
+# macOS / Linux. Exit code 1 when something blocking is missing.
 
-ok() { printf "  \033[32mOK\033[0m  %s\n" "$1"; }
-falta() { printf "  \033[31mFALTA\033[0m  %s\n" "$1"; FALTA=1; }
-adv() { printf "  \033[33mADVERTENCIA\033[0m  %s\n" "$1"; }
+cd "$(dirname "$0")/.." || exit 1
+MISSING=0
 
-FALTA=0
+ok() { printf "  OK           %s\n" "$1"; }
+missing() { printf "  FALTA        %s\n" "$1"; MISSING=1; }
+warn() { printf "  ADVERTENCIA  %s\n" "$1"; }
 
-echo "=== .NET SDK ==="
 if command -v dotnet >/dev/null 2>&1; then
-  version=$(dotnet --version 2>/dev/null)
-  expected=$(grep -oE '"[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?' global.json | tr -d 'v' | head -n1)
-  if [[ "$version" == "$expected"* ]]; then
-    ok ".NET SDK $version"
-  else
-    adv ".NET SDK $version (global.json pide $expected)"
-  fi
+  sdk=$(dotnet --version 2>/dev/null)
+  [[ "$sdk" == 10.* ]] && ok ".NET SDK $sdk" || missing ".NET SDK 10 is required (found $sdk)"
 else
-  falta ".NET SDK no encontrado"
+  missing ".NET SDK 10 (https://dotnet.microsoft.com/download)"
 fi
 
-echo "=== Node ==="
 if command -v node >/dev/null 2>&1; then
-  version=$(node --version 2>/dev/null)
-  expected=$(cat .nvmrc 2>/dev/null | tr -d 'v')
-  if [[ "$version" == "v$expected" ]]; then
-    ok "Node $version"
-  else
-    adv "Node $version (.nvmrc pide $expected)"
-  fi
+  node_version=$(node --version | tr -d v)
+  major=${node_version%%.*}
+  (( major >= 24 )) && ok "Node $node_version" || missing "Node 24 or newer is required (found $node_version)"
 else
-  falta "Node no encontrado"
+  missing "Node 24 (https://nodejs.org or fnm/nvm)"
 fi
 
-echo "=== pnpm ==="
 if command -v pnpm >/dev/null 2>&1; then
   ok "pnpm $(pnpm --version)"
 else
-  falta "pnpm no encontrado (corepack enable)"
+  missing "pnpm (run: corepack enable)"
 fi
 
-echo "=== Docker ==="
-if command -v docker >/dev/null 2>&1; then
-  if docker info >/dev/null 2>&1; then
-    ok "Docker $(docker --version | head -n1)"
-  else
-    adv "Docker instalado pero el daemon no responde"
-  fi
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  ok "Docker $(docker --version | awk '{print $3}' | tr -d ,)"
 else
-  adv "Docker no encontrado (recomendado)"
+  warn "Docker is not running (needed for docker compose and the functional tests)"
 fi
 
-echo "=== dotnet-ef ==="
-if dotnet ef --version >/dev/null 2>&1; then
-  ok "dotnet-ef $(dotnet ef --version | head -n1)"
-else
-  adv "dotnet-ef no instalado (dotnet tool restore)"
-fi
-
-echo "=== Certificados de desarrollo ==="
 if dotnet dev-certs https --check >/dev/null 2>&1; then
-  ok "Certificado HTTPS de desarrollo válido"
+  ok "ASP.NET Core HTTPS development certificate"
 else
-  adv "Certificado HTTPS ausente (dotnet dev-certs https --trust)"
+  warn "HTTPS development certificate missing (run: dotnet dev-certs https --trust)"
 fi
 
-echo "=== Variables de entorno ==="
-if [[ -n "$Jwt__SigningKey" ]]; then
-  ok "Jwt__SigningKey presente"
-else
-  adv "Jwt__SigningKey no definido (user-secrets o env var)"
-fi
-
-if [[ -n "$ConnectionStrings__Default" ]]; then
-  ok "ConnectionStrings__Default presente"
-else
-  falta "ConnectionStrings__Default no definido"
-fi
-
-if [[ $FALTA -eq 1 ]]; then
-  echo
-  echo "Resultado: FALTA. Corrige los puntos marcados antes de continuar."
+if [[ $MISSING -eq 1 ]]; then
+  echo "Result: FALTA. Install the missing tools and run the check again."
   exit 1
 fi
-echo
-echo "Resultado: requisitos mínimos OK."
-exit 0
+
+echo "Result: OK."

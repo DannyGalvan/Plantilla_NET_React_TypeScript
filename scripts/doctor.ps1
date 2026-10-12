@@ -1,58 +1,36 @@
-# Diagnostic script (Windows). Reports OK, FALTA or ADVERTENCIA per
-# requirement. Mirrors scripts/doctor.sh.
+# Checks the local prerequisites (Windows / PowerShell 7). Mirrors scripts/doctor.sh.
+# Prints OK, FALTA (missing, blocking) or ADVERTENCIA (optional). Exit code 1 when something blocking is missing.
 
-$ErrorActionPreference = 'Stop'
+Set-Location (Join-Path $PSScriptRoot '..')
+$script:Missing = $false
 
-$Global:Falta = $false
+function Ok([string] $Text) { Write-Host "  OK           $Text" }
+function Missing([string] $Text) { Write-Host "  FALTA        $Text"; $script:Missing = $true }
+function Warn([string] $Text) { Write-Host "  ADVERTENCIA  $Text" }
 
-function Ok($title)    { Write-Host "  OK         $title" -ForegroundColor Green }
-function Falta($title) { Write-Host "  FALTA      $title" -ForegroundColor Red;   $Global:Falta = $true }
-function Adv($title)   { Write-Host "  ADVERTENCIA $title" -ForegroundColor Yellow }
-
-Write-Host "=== .NET SDK ==="
 if (Get-Command dotnet -ErrorAction SilentlyContinue) {
-    $version = (& dotnet --version) 2>$null
-    $expected = (Get-Content global.json | Select-String -Pattern '"[0-9]+\.[0-9]+\.[0-9]+' | Select-Object -First 1).Matches.Value
-    if ($version -like "$expected*") { Ok ".NET SDK $version" } else { Adv ".NET SDK $version (global.json pide $expected)" }
-} else { Falta ".NET SDK no encontrado" }
+    $sdk = (dotnet --version).Trim()
+    if ($sdk -like '10.*') { Ok ".NET SDK $sdk" } else { Missing ".NET SDK 10 is required (found $sdk)" }
+} else { Missing '.NET SDK 10 (winget install Microsoft.DotNet.SDK.10)' }
 
-Write-Host "=== Node ==="
 if (Get-Command node -ErrorAction SilentlyContinue) {
-    $version = (& node --version) 2>$null
-    $expected = (Get-Content .nvmrc).Trim().TrimStart('v')
-    if ($version -eq "v$expected") { Ok "Node $version" } else { Adv "Node $version (.nvmrc pide $expected)" }
-} else { Falta "Node no encontrado" }
+    $nodeVersion = (node --version).Trim().TrimStart('v')
+    if ([int]($nodeVersion.Split('.')[0]) -ge 24) { Ok "Node $nodeVersion" } else { Missing "Node 24 or newer is required (found $nodeVersion)" }
+} else { Missing 'Node 24 (winget install OpenJS.NodeJS.LTS)' }
 
-Write-Host "=== pnpm ==="
-if (Get-Command pnpm -ErrorAction SilentlyContinue) {
-    Ok "pnpm $((pnpm --version) 2>$null)"
-} else { Falta "pnpm no encontrado (corepack enable)" }
+if (Get-Command pnpm -ErrorAction SilentlyContinue) { Ok "pnpm $((pnpm --version).Trim())" } else { Missing 'pnpm (run: corepack enable)' }
 
-Write-Host "=== Docker ==="
-if (Get-Command docker -ErrorAction SilentlyContinue) {
-    if ($null -ne (docker info 2>$null)) { Ok "Docker $((docker --version) 2>$null | Select-Object -First 1)" }
-    else { Adv "Docker instalado pero el daemon no responde" }
-} else { Adv "Docker no encontrado (recomendado)" }
+if ((Get-Command docker -ErrorAction SilentlyContinue) -and (docker info 2>$null)) { Ok 'Docker' }
+else { Warn 'Docker is not running (needed for docker compose and the functional tests)' }
 
-Write-Host "=== dotnet-ef ==="
-if ($null -ne (dotnet ef --version 2>$null)) { Ok "dotnet-ef $(dotnet ef --version 2>$null | Select-Object -First 1)" }
-else { Adv "dotnet-ef no instalado (dotnet tool restore)" }
+dotnet dev-certs https --check *> $null
+if ($LASTEXITCODE -eq 0) { Ok 'ASP.NET Core HTTPS development certificate' }
+else { Warn 'HTTPS development certificate missing (run: dotnet dev-certs https --trust)' }
 
-Write-Host "=== Certificados de desarrollo ==="
-$cert = (& dotnet dev-certs https --check) 2>$null
-if ($LASTEXITCODE -eq 0) { Ok "Certificado HTTPS de desarrollo válido" }
-else { Adv "Certificado HTTPS ausente (dotnet dev-certs https --trust)" }
-
-Write-Host "=== Variables de entorno ==="
-if ($env:Jwt__SigningKey) { Ok "Jwt__SigningKey presente" } else { Adv "Jwt__SigningKey no definido (user-secrets o env var)" }
-if ($env:ConnectionStrings__Default) { Ok "ConnectionStrings__Default presente" }
-else { Falta "ConnectionStrings__Default no definido" }
-
-if ($Global:Falta) {
-    Write-Host ""
-    Write-Host "Resultado: FALTA. Corrige los puntos marcados antes de continuar."
+if ($script:Missing) {
+    Write-Host 'Result: FALTA. Install the missing tools and run the check again.'
     exit 1
 }
-Write-Host ""
-Write-Host "Resultado: requisitos mínimos OK."
+
+Write-Host 'Result: OK.'
 exit 0

@@ -44,6 +44,7 @@
   </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Project.Api/Project.Api.csproj" />
+    <Project Path="src/Host/Project.Composition/Project.Composition.csproj" />
     <Project Path="src/Host/Project.MigrationService/Project.MigrationService.csproj" />
     <Project Path="src/Host/Project.ServiceDefaults/Project.ServiceDefaults.csproj" />
   </Folder>
