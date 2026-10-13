@@ -15,6 +15,7 @@ import { useQueryScope } from '@/shared/api/query-keys';
 import { Can, usePermission } from '@/shared/auth/permissions';
 import { Attachments } from '@/shared/components/attachments';
 import { ConfirmDialog } from '@/shared/components/confirm-dialog';
+import { DataExchange } from '@/shared/components/data-exchange';
 import { HistoryPanel } from '@/shared/components/history-panel';
 import { DataTable, toListParams, useTableState } from '@/shared/components/data-table';
 import { applyServerErrors, fieldProps, FormField } from '@/shared/components/form';
@@ -67,11 +68,12 @@ export function ProductsPage() {
   });
   const categoryName = (id: string) => categories.data?.find((category) => category.id === id)?.name ?? '';
 
-  const list = useCrudList(
-    scope,
-    productsApi,
-    toListParams(state, (q) => `name:contains:${q}`, categoryFilter ? `categoryId:eq:${categoryFilter}` : undefined),
+  const listParams = toListParams(
+    state,
+    (q) => `name:contains:${q}`,
+    categoryFilter ? `categoryId:eq:${categoryFilter}` : undefined,
   );
+  const list = useCrudList(scope, productsApi, listParams);
   const { create, update, remove } = useCrudMutations(scope, productsApi);
   const form = useForm<ProductForm>({ resolver: zodResolver(formSchema) });
   const errors = form.formState.errors;
@@ -183,17 +185,25 @@ export function ProductsPage() {
         title={t('products.title')}
         description={t('products.description')}
         actions={
-          <Can permission="catalog.products.create">
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setOpen(true);
-              }}
-            >
-              <PlusIcon />
-              {t('products.new')}
-            </Button>
-          </Can>
+          <>
+            <DataExchange
+              resource="/catalog/products"
+              params={listParams}
+              permission="catalog.products"
+              onImported={() => void list.refetch()}
+            />
+            <Can permission="catalog.products.create">
+              <Button
+                onClick={() => {
+                  setEditing(null);
+                  setOpen(true);
+                }}
+              >
+                <PlusIcon />
+                {t('products.new')}
+              </Button>
+            </Can>
+          </>
         }
       />
       <DataTable

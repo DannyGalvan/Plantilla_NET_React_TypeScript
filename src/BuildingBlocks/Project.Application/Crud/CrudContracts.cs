@@ -36,7 +36,7 @@ public enum CrudScope
 }
 
 /// <summary>Generic CRUD use cases used by <c>MapCrud</c>. One instance per resource.</summary>
-public interface ICrudService<TId, TDto, in TCreate, in TUpdate>
+public interface ICrudService<TId, TDto, TCreate, in TUpdate>
     where TId : notnull
 {
     Task<Result<PagedResult<TDto>>> ListAsync(PageRequest request, CrudScope scope, CancellationToken ct);
@@ -53,6 +53,22 @@ public interface ICrudService<TId, TDto, in TCreate, in TUpdate>
     Task<Result> DeleteAsync(TId id, CrudScope scope, CancellationToken ct);
 
     Task<Result> RestoreAsync(TId id, CrudScope scope, CancellationToken ct);
+
+    /// <summary>
+    /// Creates many rows at once, all or nothing: every row is validated first and nothing is saved when one fails
+    /// (the report lists the errors per row). With <paramref name="dryRun"/> it only validates.
+    /// </summary>
+    Task<Result<ImportReport>> ImportAsync(IReadOnlyList<ImportRow<TCreate>> rows, bool dryRun, CancellationToken ct);
+}
+
+/// <summary>A parsed row of an import file; <see cref="Errors"/> holds conversion problems found while reading it.</summary>
+public sealed record ImportRow<T>(int Number, T? Value, IReadOnlyList<string> Errors);
+
+public sealed record ImportRowError(int Row, IReadOnlyList<string> Errors);
+
+public sealed record ImportReport(int Rows, int Created, bool DryRun, IReadOnlyList<ImportRowError> Errors)
+{
+    public bool Succeeded => Errors.Count == 0;
 }
 
 public sealed class CrudOptions

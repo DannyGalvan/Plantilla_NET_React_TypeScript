@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 using Project.Application;
 using Project.Application.Crud;
 using Project.Web.Http;
@@ -21,8 +22,14 @@ public enum CrudOperations
     Patch = 16,
     Delete = 32,
     Restore = 64,
+
+    /// <summary><c>GET /export?format=csv|xlsx</c> with the filter and sort of the list (permission <c>.read</c>).</summary>
+    Export = 128,
+
+    /// <summary><c>POST /import</c> of a CSV or XLSX file, all or nothing (permission <c>.create</c>).</summary>
+    Import = 256,
     Read = List | Get,
-    All = List | Get | Create | Update | Patch | Delete | Restore,
+    All = List | Get | Create | Update | Patch | Delete | Restore | Export | Import,
 }
 
 /// <summary>Configures what <see cref="MapCrudExtensions.MapCrud{TId,TDto,TCreate,TUpdate}"/> exposes.</summary>
@@ -35,6 +42,14 @@ public sealed class CrudEndpointOptions
 
     /// <summary>Hidden (404) when this feature is disabled for the tenant.</summary>
     public string? Feature { get; set; }
+}
+
+/// <summary>Limits of the generic import and export.</summary>
+public static class DataExchangeLimits
+{
+    public const int MaxExportRows = 50_000;
+    public const int MaxImportRows = 5_000;
+    public const long MaxImportBytes = 10 * 1024 * 1024;
 }
 
 public static class MapCrudExtensions
@@ -70,7 +85,8 @@ public static class MapCrudExtensions
         if (options.OwnedEndpoints)
         {
             var owned = api.MapGroup($"me/{resource}").WithTags($"me-{tag}");
-            MapOperations<TId, TDto, TCreate, TUpdate>(owned, $"me/{resource}", $"Own{tag}", null, options.Operations & ~CrudOperations.Restore, CrudScope.Owned);
+            MapOperations<TId, TDto, TCreate, TUpdate>(
+                owned, $"me/{resource}", $"Own{tag}", null, options.Operations & ~(CrudOperations.Restore | CrudOperations.Export | CrudOperations.Import), CrudScope.Owned);
         }
 
         return group;
@@ -104,6 +120,74 @@ public static class MapCrudExtensions
                 })
                 .WithName($"List{operationName}")
                 .Produces<PagedResult<TDto>>(), "read");
+        }
+
+        if (operations.HasFlag(CrudOperations.Export))
+        {
+            Secure(group.MapGet("/export", async (
+                    [AsParameters] ExportQuery query,
+                    ICrudService<TId, TDto, TCreate, TUpdate> service,
+                    IOptions<CrudOptions> crud,
+                    CancellationToken ct) =>
+                {
+                    if (TabularFormats.FromName(query.Format) is not { } format)
+                    {
+                        return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "The format must be csv or xlsx.");
+                    }
+
+                    var rows = new List<object?[]>();
+                    var size = crud.Value.MaxPageSize;
+                    for (var page = 1; rows.Count < DataExchangeLimits.MaxExportRows; page++)
+                    {
+                        var result = await service.ListAsync(new PageRequest(page, size, query.Sort, query.Filter, IncludeTotal: false), scope, ct);
+                        if (result.IsFailure)
+                        {
+                            return result.ToHttp();
+                        }
+
+                        rows.AddRange(result.Value.Items.Select(ExportColumns<TDto>.Values));
+                        if (result.Value.Items.Count < size)
+                        {
+                            break;
+                        }
+                    }
+
+                    var content = TabularWriter.Write(format, ExportColumns<TDto>.Headers, rows.Take(DataExchangeLimits.MaxExportRows));
+                    return Results.File(content, TabularFormats.ContentType(format), $"{name}-{DateTime.UtcNow:yyyyMMdd-HHmm}.{TabularFormats.Extension(format)}");
+                })
+                .WithName($"Export{operationName}")
+                .Produces(StatusCodes.Status200OK, contentType: "text/csv"), "read");
+        }
+
+        if (operations.HasFlag(CrudOperations.Import))
+        {
+            Secure(group.MapPost("/import", async (IFormFile file, bool? dryRun, ICrudService<TId, TDto, TCreate, TUpdate> service, CancellationToken ct) =>
+                {
+                    if (TabularFormats.FromFileName(file.FileName) is not { } format)
+                    {
+                        return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Upload a .csv or .xlsx file.");
+                    }
+
+                    await using var stream = file.OpenReadStream();
+                    var (headers, rows) = TabularReader.Read(stream, format, DataExchangeLimits.MaxImportRows);
+                    if (rows.Count > DataExchangeLimits.MaxImportRows)
+                    {
+                        return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: $"Import at most {DataExchangeLimits.MaxImportRows} rows per file.");
+                    }
+
+                    var result = await service.ImportAsync(ImportBinder.Bind<TCreate>(headers, rows), dryRun ?? false, ct);
+                    if (result.IsFailure)
+                    {
+                        return result.ToHttp();
+                    }
+
+                    return result.Value.Succeeded ? Results.Ok(result.Value) : Results.UnprocessableEntity(result.Value);
+                })
+                .DisableAntiforgery()
+                .WithMetadata(new RequestSizeLimitAttribute(DataExchangeLimits.MaxImportBytes))
+                .WithName($"Import{operationName}")
+                .Produces<ImportReport>()
+                .Produces<ImportReport>(StatusCodes.Status422UnprocessableEntity), "create");
         }
 
         if (operations.HasFlag(CrudOperations.Get))
@@ -161,4 +245,7 @@ public static class MapCrudExtensions
 
     /// <summary>Query string of list endpoints.</summary>
     public sealed record ListQuery(int? Page, int? PageSize, string? Sort, string? Filter, bool? IncludeTotal);
+
+    /// <summary>Query string of export endpoints.</summary>
+    public sealed record ExportQuery(string? Format, string? Sort, string? Filter);
 }

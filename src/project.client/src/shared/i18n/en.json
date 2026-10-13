@@ -128,5 +128,19 @@
       "deleted": "Deleted",
       "restored": "Restored"
     }
+  },
+  "dataExchange": {
+    "export": "Export",
+    "import": "Import",
+    "formats": {
+      "csv": "CSV",
+      "xlsx": "Excel (.xlsx)"
+    },
+    "hint": "{{file}} is validated completely before saving: if a row has errors nothing is imported.",
+    "validate": "Validate",
+    "valid": "{{count}} valid rows. You can import them.",
+    "invalid": "{{count}} rows with errors. Fix them and try again.",
+    "imported": "{{count}} records imported.",
+    "row": "Row {{row}}"
   }
 }
