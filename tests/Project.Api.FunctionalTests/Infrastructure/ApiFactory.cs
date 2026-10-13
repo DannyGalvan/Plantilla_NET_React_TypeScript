@@ -80,6 +80,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("Jwt:SigningKey", "functional-tests-signing-key-0123456789abcdef");
         builder.UseSetting("Seed:AdminPassword", AdminPassword);
         builder.UseSetting("Seed:SampleData", "false");
+        builder.UseSetting("Modules:Enabled:0", "Catalog");
         builder.UseSetting("RateLimiting:Enabled", "false");
         builder.UseSetting("Outbox:PollingIntervalSeconds", "1");
         builder.UseSetting("Tenancy:Mode", tenancyMode);

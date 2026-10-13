@@ -2,12 +2,14 @@ import { RequireGuest } from '@/shared/auth/guards';
 import type { ModuleManifest } from '@/shared/modules/manifest';
 
 import { identityResources } from './i18n';
+import { UsersKpi } from './widgets';
 import { ChangePasswordPage, ForgotPasswordPage, LoginPage, ResetPasswordPage } from './pages/AuthPages';
 
 const manifest: ModuleManifest = {
   id: 'identity',
   backendModule: 'identity',
   i18n: identityResources,
+  widgets: [{ id: 'identity.users', component: UsersKpi, order: 900 }],
   publicRoutes: [
     {
       path: '/login',

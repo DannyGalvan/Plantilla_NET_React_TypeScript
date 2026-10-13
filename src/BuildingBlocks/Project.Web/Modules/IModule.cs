@@ -18,6 +18,11 @@ public interface IModule
 
     DataScope DataScope { get; }
 
+    /// <summary>
+    /// False for sample or opt-in modules: they load only when listed in <c>Modules:Enabled</c>.
+    /// </summary>
+    bool EnabledByDefault => true;
+
     void AddServices(IServiceCollection services, IConfiguration configuration);
 
     /// <summary>Maps the module endpoints. <paramref name="api"/> is already prefixed with <c>/api/v1</c>.</summary>
@@ -37,13 +42,16 @@ public static class ModuleLoader
     public const string ApiPrefix = "/api/v1";
 
     /// <summary>
-    /// Registers the modules. A module listed in <c>Modules:Disabled</c> is skipped entirely (services and endpoints).
+    /// Registers the modules. A module listed in <c>Modules:Disabled</c> is skipped entirely (services and endpoints);
+    /// an opt-in module (<see cref="IModule.EnabledByDefault"/> false) loads only when listed in <c>Modules:Enabled</c>.
     /// </summary>
     public static IHostApplicationBuilder AddModules(this IHostApplicationBuilder builder, params IModule[] modules)
     {
         var disabled = builder.Configuration.GetSection("Modules:Disabled").Get<string[]>() ?? [];
+        var optIn = builder.Configuration.GetSection("Modules:Enabled").Get<string[]>() ?? [];
         var enabled = modules
             .Where(m => !disabled.Contains(m.Name, StringComparer.OrdinalIgnoreCase))
+            .Where(m => m.EnabledByDefault || optIn.Contains(m.Name, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
         var duplicated = enabled.GroupBy(m => m.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);

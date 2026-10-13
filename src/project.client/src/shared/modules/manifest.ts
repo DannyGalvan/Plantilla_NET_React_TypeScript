@@ -1,3 +1,4 @@
+import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
 
 import type { ModuleResources } from '@/shared/i18n';
@@ -19,6 +20,19 @@ export interface ModuleManifest {
   i18n?: ModuleResources;
   /** Feature flag that hides the whole module when disabled for the tenant. */
   feature?: string;
+  /** Cards the module contributes to the home dashboard (the dashboard knows no module). */
+  widgets?: DashboardWidget[];
+}
+
+/** A card on the home dashboard, rendered only when the user holds `permission`. */
+export interface DashboardWidget {
+  id: string;
+  component: ComponentType;
+  permission?: string;
+  /** Lower first. */
+  order?: number;
+  /** `kpi` cards share a row; `wide` cards take the full width. */
+  size?: 'kpi' | 'wide';
 }
 
 /** Route metadata read by the router guards and the breadcrumbs. */

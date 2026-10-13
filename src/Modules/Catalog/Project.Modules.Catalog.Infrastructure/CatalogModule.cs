@@ -97,13 +97,16 @@ internal sealed class CatalogSampleSeeder(IConfiguration configuration) : IDataS
 
 /// <summary>
 /// Sample business module: two CRUD resources with zero handlers (generic engine), a Dapper report and a stored
-/// procedure. Copy it as the starting point of a new module.
+/// procedure. Opt-in: it loads only with <c>Modules:Enabled: ["Catalog"]</c> (on in Development). Use it as a reference
+/// or remove it with <c>node scripts/remove-module.mjs Catalog</c>.
 /// </summary>
 public sealed class CatalogModule : IModule
 {
     public string Name => "Catalog";
 
     public DataScope DataScope => DataScope.Tenant;
+
+    public bool EnabledByDefault => false;
 
     public void AddServices(IServiceCollection services, IConfiguration configuration)
     {

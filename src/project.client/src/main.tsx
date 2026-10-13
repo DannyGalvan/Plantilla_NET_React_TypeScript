@@ -11,6 +11,7 @@ import { httpHooks } from '@/shared/api/http-client';
 import { restoreSession } from '@/shared/auth/session';
 import { initI18n } from '@/shared/i18n';
 import { setFormatSettings } from '@/shared/lib/format';
+import { setActiveModules } from '@/shared/modules/active-modules';
 import { loadPlatformConfig, type PlatformConfig } from '@/shared/platform/platform-config';
 
 function applyBranding(config: PlatformConfig) {
@@ -38,7 +39,9 @@ async function bootstrap() {
   }
 
   const queryClient = createQueryClient();
-  const router = createAppRouter(activeModules(config));
+  const modules = activeModules(config);
+  setActiveModules(modules);
+  const router = createAppRouter(modules);
   httpHooks.onSessionExpired = () => {
     queryClient.clear();
     void router.navigate('/login');

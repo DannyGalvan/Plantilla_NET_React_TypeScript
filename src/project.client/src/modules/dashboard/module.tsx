@@ -7,7 +7,6 @@ const manifest: ModuleManifest = {
   i18n: {
     es: {
       welcome: 'Hola, {{name}}',
-      lowStock: 'Productos con bajo stock',
       gettingStarted: 'Primeros pasos',
       hint1:
         'Usa el selector de la barra superior para cambiar de organización o de unidad; los datos se filtran automáticamente.',
@@ -16,7 +15,6 @@ const manifest: ModuleManifest = {
     },
     en: {
       welcome: 'Hello, {{name}}',
-      lowStock: 'Low stock products',
       gettingStarted: 'Getting started',
       hint1: 'Use the selector in the top bar to switch organization or unit; data is filtered automatically.',
       hint2:
