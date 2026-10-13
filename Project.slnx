@@ -79,6 +79,12 @@
     <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Domain/Project.Modules.Webhooks.Domain.csproj" />
     <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Infrastructure/Project.Modules.Webhooks.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Configuration/">
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Application/Project.Modules.Configuration.Application.csproj" />
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Contracts/Project.Modules.Configuration.Contracts.csproj" />
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Domain/Project.Modules.Configuration.Domain.csproj" />
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Infrastructure/Project.Modules.Configuration.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

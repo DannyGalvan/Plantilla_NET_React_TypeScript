@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Project.Application;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
 using Project.Application.Jobs;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
@@ -27,8 +28,10 @@ public sealed class JobsOptions
 {
     public const string SectionName = "Jobs";
 
+    [RequiresRestart]
     public bool Enabled { get; set; } = true;
 
+    [RequiresRestart]
     public int PollingIntervalSeconds { get; set; } = 30;
 
     /// <summary>Longest run of a job; also the lease, after which another instance may take it over.</summary>
@@ -79,7 +82,7 @@ public sealed class DueJobsExecutor(
     IEnumerable<RecurringJobDefinition> definitions,
     JobSchedule schedule,
     IServiceProvider services,
-    IOptions<JobsOptions> options,
+    IOptionsMonitor<JobsOptions> options,
     TimeProvider clock,
     ILogger<DueJobsExecutor> logger)
 {
@@ -100,7 +103,7 @@ public sealed class DueJobsExecutor(
 
         foreach (var state in due)
         {
-            var lease = TimeSpan.FromMinutes(Math.Max(1, options.Value.LeaseMinutes));
+            var lease = TimeSpan.FromMinutes(Math.Max(1, options.CurrentValue.LeaseMinutes));
             var lockId = Guid.NewGuid();
             var claimed = await db.States
                 .Where(s => s.Id == state.Id && s.NextRunAt <= now && (s.LockedUntil == null || s.LockedUntil < now))
@@ -224,6 +227,7 @@ public sealed class JobsModule : IModule
         services.AddRepositoriesFor<JobsDbContext>();
         services.AddModuleConventions(typeof(JobsPermissionProvider).Assembly);
         services.AddOptions<JobsOptions>().Bind(configuration.GetSection(JobsOptions.SectionName));
+        services.AddConfigurableSection<JobsOptions>(JobsOptions.SectionName, "jobs", "Agenda de tareas programadas.");
         services.AddScoped<JobSchedule>();
         services.AddScoped<DueJobsExecutor>();
         services.AddHostedService<JobScheduler>();

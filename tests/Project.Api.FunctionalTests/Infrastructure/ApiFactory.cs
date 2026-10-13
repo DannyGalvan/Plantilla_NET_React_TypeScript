@@ -71,6 +71,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
 
     public const string AdminPassword = "Admin.Test-2026!";
 
+    /// <summary>Master key of the test runs (32 random bytes in base64, like <c>openssl rand -base64 32</c>).</summary>
+    public const string MasterKey = "q1Yw3n7P0fHk2bJ8sZr5Xv9Lm4Tc6Ud1Ea0Wg3Qi8No=";
+
     private readonly string _database = $"project_test_{Guid.NewGuid():N}"[..28];
 
     /// <summary>Errors logged by the server, to explain a failed assertion (the console output is not captured).</summary>
@@ -95,7 +98,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("Database:ConnectionStrings:Default", server.ConnectionString(_database));
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.UseSetting("Database:MaxRetryCount", "0");
-        builder.UseSetting("Jwt:SigningKey", "functional-tests-signing-key-0123456789abcdef");
+        // No JWT key: it is generated on the first start and stored encrypted with the master key (like production).
+        builder.UseSetting("Configuration:MasterKey", MasterKey);
+        builder.UseSetting("Configuration:ReloadSeconds", "1");
         builder.UseSetting("Seed:AdminPassword", AdminPassword);
         builder.UseSetting("Seed:SampleData", "false");
         builder.UseSetting("Modules:Enabled:0", "Catalog");

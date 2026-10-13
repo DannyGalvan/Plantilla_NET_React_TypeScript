@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Project.Application;
 using Project.Application.Abstractions;
 using Project.Application.Auditing;
+using Project.Application.Configuration;
 using Project.Application.Jobs;
 using Project.Application.Tenancy;
 using Project.Application.Webhooks;
@@ -48,7 +49,7 @@ public sealed class AuditOptions
 }
 
 /// <summary>Deletes history older than <c>Audit:RetentionDays</c>.</summary>
-public sealed class AuditRetentionJob(AuditDbContext db, IOptions<AuditOptions> options, TimeProvider clock) : IRecurringJob
+public sealed class AuditRetentionJob(AuditDbContext db, IOptionsSnapshot<AuditOptions> options, TimeProvider clock) : IRecurringJob
 {
     public const string Name = "audit.retention";
 
@@ -91,7 +92,7 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEn
 /// Captures property changes of every <see cref="IAuditable"/> entity of every module before saving and writes them
 /// to that module's outbox, in the same transaction. Registered only when the Audit module is loaded.
 /// </summary>
-public sealed class ChangeHistoryStep(ICurrentUser user, TimeProvider clock, IOptions<AuditOptions> options) : ISaveChangesStep
+public sealed class ChangeHistoryStep(ICurrentUser user, TimeProvider clock, IOptionsSnapshot<AuditOptions> options) : ISaveChangesStep
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly string[] SensitiveWords = ["password", "secret", "token", "credential", "hash"];
@@ -238,6 +239,7 @@ public sealed class AuditModule : IModule
         services.AddRepositoriesFor<AuditDbContext>();
         services.AddModuleConventions(typeof(AuditPermissionProvider).Assembly);
         services.AddOptions<AuditOptions>().Bind(configuration.GetSection(AuditOptions.SectionName));
+        services.AddConfigurableSection<AuditOptions>(AuditOptions.SectionName, "audit", "Historial de cambios: activación, exclusiones y retención.");
         services.TryAddEnumerable(ServiceDescriptor.Scoped<ISaveChangesStep, ChangeHistoryStep>());
         services.AddWebhookEvent<EntityChangedEvent>("records.changed", "A record of any module was created, updated, deleted or restored.");
         services.AddRecurringJob<AuditRetentionJob>(AuditRetentionJob.Name, "0 4 * * *", description: "Deletes history older than the retention period.");

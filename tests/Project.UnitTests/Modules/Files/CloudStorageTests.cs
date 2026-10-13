@@ -16,7 +16,7 @@ public sealed class CloudStorageTests
 {
     private static readonly StoredObject Small = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "report.pdf", "application/pdf", 5, DateTimeOffset.UtcNow);
 
-    private static IOptions<FilesOptions> Options(bool allowCustom = false) => Microsoft.Extensions.Options.Options.Create(new FilesOptions
+    private static TestOptionsMonitor<FilesOptions> Options(bool allowCustom = false) => new(new FilesOptions
     {
         AllowCustomEndpoints = allowCustom,
         OAuth = new OAuthOptions

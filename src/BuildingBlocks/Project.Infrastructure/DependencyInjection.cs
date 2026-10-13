@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Project.Application;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
 using Project.Application.Files;
 using Project.Application.Notifications;
 using Project.Application.Organization;
@@ -12,6 +14,7 @@ using Project.Application.Sequences;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
 using Project.Application.Workflows;
+using Project.Infrastructure.Configuration;
 using Project.Infrastructure.Outbox;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
@@ -35,7 +38,7 @@ public static class DependencyInjection
         services.AddOptions<MigrationOptions>().Bind(configuration.GetSection(MigrationOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<TenancyOptions>().Bind(configuration.GetSection(TenancyOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
         services.AddOptions<OutboxOptions>().Bind(configuration.GetSection(OutboxOptions.SectionName));
-        services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName)).ValidateDataAnnotations();
+        services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName));
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddHttpContextAccessor();
@@ -97,14 +100,22 @@ public static class DependencyInjection
         services.AddDataProtection().SetApplicationName("Project");
         services.TryAddSingleton<ISecretProtector, DataProtectionSecretProtector>();
 
-        if (string.IsNullOrWhiteSpace(configuration["Email:Host"]))
+        // Runtime configuration stored in the platform database (see AddDatabaseConfiguration).
+        services.TryAddSingleton<ISecretCipher, MasterKeySecretCipher>();
+        services.TryAddSingleton<IConfigurationInspector, ConfigurationInspector>();
+        if (MasterKeyCipher.KeyFrom(configuration) is { } masterKey)
         {
-            services.TryAddSingleton<IEmailSender, LoggingEmailSender>();
+            // The key ring lives in the database: encrypt it with the master key so a backup alone reveals nothing.
+            services.Configure<KeyManagementOptions>(o => o.XmlEncryptor = new MasterKeyXmlEncryptor(masterKey));
         }
-        else
-        {
-            services.TryAddSingleton<IEmailSender, SmtpEmailSender>();
-        }
+
+        services.TryAddSingleton<IEmailSender, SmtpEmailSender>();
+
+        // Sections every application has, editable at runtime in the configuration page.
+        services.AddConfigurableSection<EmailOptions>(EmailOptions.SectionName, "platform", "Servidor SMTP para correos y notificaciones.");
+        services.AddConfigurableSection<OutboxOptions>(OutboxOptions.SectionName, "platform", "Despacho de eventos en segundo plano.");
+        services.AddConfigurableSection<FeatureDefaults>("Features", "platform", "Valores por defecto de los feature flags (cada tenant puede cambiarlos).");
+        services.AddConfigurableSection<SecretValues>("Secrets", "platform", "Secretos referenciados por nombre, por ejemplo la cadena de conexión de un tenant dedicado.");
 
         return services;
     }

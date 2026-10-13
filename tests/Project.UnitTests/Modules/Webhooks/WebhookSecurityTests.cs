@@ -27,14 +27,14 @@ public sealed class WebhookSecurityTests
     [Fact]
     public void Url_policy_requires_https_and_public_literal_hosts()
     {
-        var policy = new WebhookUrlPolicy(Options.Create(new WebhooksOptions()));
+        var policy = new WebhookUrlPolicy(new TestOptionsMonitor<WebhooksOptions>(new WebhooksOptions()));
         policy.Validate("https://hooks.example.com/in").ShouldBeNull();
         policy.Validate("http://hooks.example.com/in").ShouldNotBeNull();
         policy.Validate("https://localhost/in").ShouldNotBeNull();
         policy.Validate("https://[::1]/in").ShouldNotBeNull();
         policy.Validate("ftp://hooks.example.com").ShouldNotBeNull();
 
-        var development = new WebhookUrlPolicy(Options.Create(new WebhooksOptions { AllowPrivateNetworks = true }));
+        var development = new WebhookUrlPolicy(new TestOptionsMonitor<WebhooksOptions>(new WebhooksOptions { AllowPrivateNetworks = true }));
         development.Validate("http://localhost:5005/in").ShouldBeNull();
     }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Services;
@@ -18,8 +19,10 @@ public sealed class OutboxOptions
 {
     public const string SectionName = "Outbox";
 
+    [RequiresRestart]
     public bool Enabled { get; set; } = true;
 
+    [RequiresRestart]
     public int PollingIntervalSeconds { get; set; } = 5;
 
     public int BatchSize { get; set; } = 20;
@@ -83,7 +86,7 @@ public sealed class OutboxDispatcher(
 /// </summary>
 public sealed class OutboxProcessor<TContext>(
     IServiceScopeFactory scopeFactory,
-    IOptions<OutboxOptions> options,
+    IOptionsMonitor<OutboxOptions> options,
     IOptions<TenancyOptions> tenancy,
     TimeProvider clock,
     ILogger<OutboxProcessor<TContext>> logger) : IOutboxProcessor
@@ -120,10 +123,10 @@ public sealed class OutboxProcessor<TContext>(
         var context = services.GetRequiredService<TContext>();
         var now = clock.GetUtcNow();
         var lockId = Guid.NewGuid();
-        var batch = options.Value.BatchSize;
+        var batch = options.CurrentValue.BatchSize;
 
         var candidates = await context.OutboxMessages
-            .Where(m => m.ProcessedAt == null && m.Attempts < options.Value.MaxAttempts && (m.LockedUntil == null || m.LockedUntil < now))
+            .Where(m => m.ProcessedAt == null && m.Attempts < options.CurrentValue.MaxAttempts && (m.LockedUntil == null || m.LockedUntil < now))
             .OrderBy(m => m.OccurredAt)
             .Select(m => m.Id)
             .Take(batch)

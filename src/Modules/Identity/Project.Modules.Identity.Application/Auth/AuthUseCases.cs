@@ -270,7 +270,7 @@ public sealed class ForgotPasswordHandler(
     IRepository<PasswordResetToken, Guid> resetTokens,
     ISecureTokenGenerator generator,
     IEmailSender email,
-    IOptions<IdentityOptions> options,
+    IOptionsSnapshot<IdentityOptions> options,
     TimeProvider clock) : ICommandHandler<ForgotPasswordCommand>
 {
     public async ValueTask<Result> Handle(ForgotPasswordCommand command, CancellationToken cancellationToken)

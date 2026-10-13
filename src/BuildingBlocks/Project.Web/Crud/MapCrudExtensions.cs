@@ -127,7 +127,7 @@ public static class MapCrudExtensions
             Secure(group.MapGet("/export", async (
                     [AsParameters] ExportQuery query,
                     ICrudService<TId, TDto, TCreate, TUpdate> service,
-                    IOptions<CrudOptions> crud,
+                    IOptionsSnapshot<CrudOptions> crud,
                     CancellationToken ct) =>
                 {
                     if (TabularFormats.FromName(query.Format) is not { } format)

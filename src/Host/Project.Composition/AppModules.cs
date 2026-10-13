@@ -9,6 +9,7 @@ using Project.Modules.Jobs.Infrastructure;
 using Project.Modules.Sequences.Infrastructure;
 using Project.Modules.Workflows.Infrastructure;
 using Project.Modules.Webhooks.Infrastructure;
+using Project.Modules.Configuration.Infrastructure;
 using Project.Web.Modules;
 
 namespace Project.Composition;
@@ -33,5 +34,6 @@ public static class AppModules
         new SequencesModule(),
         new WorkflowsModule(),
         new WebhooksModule(),
+        new ConfigurationModule(),
     ];
 }

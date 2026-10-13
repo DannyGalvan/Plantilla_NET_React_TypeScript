@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
 using Project.Application.Files;
 using Project.Application.Notifications;
 using Project.Application.Organization;
@@ -202,3 +203,10 @@ public sealed class EventContext : IEventContext
 {
     public Guid? MessageId { get; set; }
 }
+
+/// <summary><c>Features</c> section: default value of each feature flag (map of name to on/off).</summary>
+public sealed class FeatureDefaults : Dictionary<string, bool>;
+
+/// <summary><c>Secrets</c> section: values referenced by name from <see cref="ISecretStore"/> (map, encrypted).</summary>
+[Secret]
+public sealed class SecretValues : Dictionary<string, string>;

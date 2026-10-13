@@ -50,7 +50,7 @@ public sealed class LocalFileStorage(IHostEnvironment environment) : IFileStorag
 }
 
 /// <summary>Amazon S3 and compatible services (MinIO, Cloudflare R2, Wasabi when custom endpoints are allowed).</summary>
-public sealed class S3FileStorage(IOptions<FilesOptions> options) : IFileStorage
+public sealed class S3FileStorage(IOptionsMonitor<FilesOptions> options) : IFileStorage
 {
     public string Provider => StorageProviders.S3;
 
@@ -70,7 +70,7 @@ public sealed class S3FileStorage(IOptions<FilesOptions> options) : IFileStorage
 
         if (settings.TryGetValue("serviceUrl", out var url) && !string.IsNullOrWhiteSpace(url))
         {
-            return options.Value.AllowCustomEndpoints && Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http"
+            return options.CurrentValue.AllowCustomEndpoints && Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http"
                 ? null
                 : "Custom endpoints are not allowed on this platform.";
         }
@@ -129,7 +129,7 @@ public sealed class S3FileStorage(IOptions<FilesOptions> options) : IFileStorage
 }
 
 /// <summary>Azure Blob Storage (or Azurite when custom endpoints are allowed).</summary>
-public sealed class AzureBlobFileStorage(IOptions<FilesOptions> options) : IFileStorage
+public sealed class AzureBlobFileStorage(IOptionsMonitor<FilesOptions> options) : IFileStorage
 {
     public string Provider => StorageProviders.AzureBlob;
 
@@ -150,7 +150,7 @@ public sealed class AzureBlobFileStorage(IOptions<FilesOptions> options) : IFile
         try
         {
             var host = new BlobServiceClient(connectionString).Uri.Host;
-            return options.Value.AllowCustomEndpoints || host.EndsWith(".blob.core.windows.net", StringComparison.OrdinalIgnoreCase)
+            return options.CurrentValue.AllowCustomEndpoints || host.EndsWith(".blob.core.windows.net", StringComparison.OrdinalIgnoreCase)
                 ? null
                 : "Custom endpoints are not allowed on this platform.";
         }

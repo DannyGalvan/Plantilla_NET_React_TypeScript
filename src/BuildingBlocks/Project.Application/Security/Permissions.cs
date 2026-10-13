@@ -2,13 +2,16 @@ namespace Project.Application.Security;
 
 /// <summary>
 /// Permission declared by a module. Keys follow <c>{module}.{resource}.{action}</c> in lower case and are
-/// constants in the module Contracts; they are never derived from class or method names.
+/// constants in the module Contracts; they are never derived from class or method names. A
+/// <see cref="PlatformOnly"/> permission (tenant catalog, global configuration) belongs to the platform administrator
+/// and cannot be granted to tenant roles.
 /// </summary>
 public sealed record PermissionDefinition(
     string Key,
     string Module,
     string DisplayKey,
-    string? Group = null);
+    string? Group = null,
+    bool PlatformOnly = false);
 
 /// <summary>Navigation entry declared by a module, filtered by permission on the server.</summary>
 public sealed record NavigationDefinition(

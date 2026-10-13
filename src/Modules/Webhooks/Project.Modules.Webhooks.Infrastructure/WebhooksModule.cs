@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Project.Application;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
 using Project.Application.Security;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
@@ -33,8 +34,10 @@ public sealed class WebhooksOptions
 {
     public const string SectionName = "Webhooks";
 
+    [RequiresRestart]
     public bool Enabled { get; set; } = true;
 
+    [RequiresRestart]
     public int PollingIntervalSeconds { get; set; } = 5;
 
     public int TimeoutSeconds { get; set; } = 10;
@@ -89,7 +92,7 @@ internal sealed class WebhookDeliveryConfiguration : IEntityTypeConfiguration<We
 }
 
 /// <summary>Only absolute https URLs (http when private networks are allowed), without credentials or private literal hosts.</summary>
-public sealed class WebhookUrlPolicy(IOptions<WebhooksOptions> options) : IWebhookUrlPolicy
+public sealed class WebhookUrlPolicy(IOptionsMonitor<WebhooksOptions> options) : IWebhookUrlPolicy
 {
     public string? Validate(string url)
     {
@@ -98,7 +101,7 @@ public sealed class WebhookUrlPolicy(IOptions<WebhooksOptions> options) : IWebho
             return "The URL must be absolute and use https.";
         }
 
-        if (!options.Value.AllowPrivateNetworks)
+        if (!options.CurrentValue.AllowPrivateNetworks)
         {
             if (uri.Scheme != "https")
             {
@@ -145,15 +148,15 @@ public static class SafeNetwork
         return !(address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || address.IsIPv6Multicast || address.IsIPv6UniqueLocal);
     }
 
-    /// <summary>Connects only to public addresses unless <paramref name="allowPrivate"/>.</summary>
-    public static SocketsHttpHandler Handler(bool allowPrivate) => new()
+    /// <summary>Connects only to public addresses unless <paramref name="allowPrivate"/> (read on every connection).</summary>
+    public static SocketsHttpHandler Handler(Func<bool> allowPrivate) => new()
     {
         AllowAutoRedirect = false,
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
         ConnectCallback = async (context, ct) =>
         {
             var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, ct);
-            var allowed = allowPrivate ? addresses : addresses.Where(IsPublic).ToArray();
+            var allowed = allowPrivate() ? addresses : addresses.Where(IsPublic).ToArray();
             if (allowed.Length == 0)
             {
                 throw new HttpRequestException($"The host {context.DnsEndPoint.Host} resolves to a private network.");
@@ -178,7 +181,7 @@ public static class SafeNetwork
 /// Posts a delivery signed like Stripe: <c>X-Webhook-Signature: t={unix},v1={hex}</c> where v1 is
 /// HMAC-SHA256(secret, "{t}.{body}"). Receivers recompute it and reject old timestamps (replay).
 /// </summary>
-public sealed class WebhookSender(IHttpClientFactory http, ISecretProtector protector, IOptions<WebhooksOptions> options, TimeProvider clock)
+public sealed class WebhookSender(IHttpClientFactory http, ISecretProtector protector, IOptionsMonitor<WebhooksOptions> options, TimeProvider clock)
 {
     public const string HttpClientName = "webhooks";
 
@@ -201,7 +204,7 @@ public sealed class WebhookSender(IHttpClientFactory http, ISecretProtector prot
         request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Project-Webhooks", "1.0"));
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, options.Value.TimeoutSeconds)));
+        timeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, options.CurrentValue.TimeoutSeconds)));
         try
         {
             using var response = await http.CreateClient(HttpClientName).SendAsync(request, timeout.Token);
@@ -314,13 +317,18 @@ public sealed class WebhooksModule : IModule
         services.AddRepositoriesFor<WebhooksDbContext>();
         services.AddModuleConventions(typeof(WebhooksPermissionProvider).Assembly);
         services.AddOptions<WebhooksOptions>().Bind(configuration.GetSection(WebhooksOptions.SectionName));
+        services.AddConfigurableSection<WebhooksOptions>(WebhooksOptions.SectionName, "webhooks", "Entrega de webhooks: tiempo de espera y redes permitidas.");
         services.AddScoped<IDomainEventObserver, WebhookEventObserver>();
         services.AddSingleton<IWebhookUrlPolicy, WebhookUrlPolicy>();
         services.AddSingleton<WebhookSender>();
         services.AddScoped<DueDeliveriesExecutor>();
         services.AddHostedService<WebhookDeliveryWorker>();
         services.AddHttpClient(WebhookSender.HttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(sp => SafeNetwork.Handler(sp.GetRequiredService<IOptions<WebhooksOptions>>().Value.AllowPrivateNetworks));
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var options = sp.GetRequiredService<IOptionsMonitor<WebhooksOptions>>();
+                return SafeNetwork.Handler(() => options.CurrentValue.AllowPrivateNetworks);
+            });
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)

@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Configuration\Project.Modules.Configuration.Infrastructure\Project.Modules.Configuration.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Webhooks\Project.Modules.Webhooks.Infrastructure\Project.Modules.Webhooks.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Workflows\Project.Modules.Workflows.Infrastructure\Project.Modules.Workflows.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Sequences\Project.Modules.Sequences.Infrastructure\Project.Modules.Sequences.Infrastructure.csproj" />

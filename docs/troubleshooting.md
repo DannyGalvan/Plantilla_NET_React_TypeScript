@@ -5,7 +5,10 @@
 | Síntoma | Solución |
 |---|---|
 | El navegador rechaza `https://localhost:7180` o `5173` | `dotnet dev-certs https --clean` y `dotnet dev-certs https --trust`. En Linux confía el certificado exportado manualmente o usa `VITE_HTTPS=false` |
-| `Jwt:SigningKey is required` al iniciar | Ejecuta `scripts/setup` o `dotnet user-secrets set "Jwt:SigningKey" ...` |
+| `Jwt:SigningKey is not configured` al iniciar sesión | Falta `Configuration:MasterKey`: configúrala (`scripts/setup` o `Configuration__MasterKey`) y ejecuta las migraciones para que se genere la llave |
+| *Configuración de plataforma* avisa que no hay llave maestra | Igual que arriba; sin master key no se pueden guardar secretos |
+| Un secreto guardado dejó de funcionar tras cambiar de servidor | La `Configuration:MasterKey` es distinta: usa la original o vuelve a escribir los secretos |
+| Un valor cambiado en la pantalla no se aplica | Una variable de entorno lo sobrescribe (la pantalla lo indica) o el campo requiere reiniciar |
 | `Seed:AdminPassword is required` | Fuera de Development la contraseña inicial es obligatoria |
 | No conecta a la base | Verifica `docker compose ps`, el perfil levantado y `Database:Provider` coincidente con la cadena |
 | Puerto ocupado (7180, 5173, 5432, 1433, 3306) | Detén el proceso (`lsof -i :7180` / `Get-NetTCPConnection -LocalPort 7180`) o cambia el puerto en `launchSettings.json` |
@@ -44,6 +47,6 @@
 
 | Síntoma | Solución |
 |---|---|
-| Las sesiones se pierden al cambiar de instancia | Usa la misma `Jwt:SigningKey` en todas y Redis compartido |
+| Las sesiones se pierden al cambiar de instancia | Todas las instancias deben usar la misma base de plataforma (la llave JWT vive ahí) y Redis compartido |
 | La cookie de refresh no se envía | La SPA está en otro sitio (`SameSite=Strict`); sírvela desde la API o un subdominio del mismo sitio |
 | `tenant.mismatch` (403) | El token es de otro tenant que el dominio usado; inicia sesión en el dominio correcto |

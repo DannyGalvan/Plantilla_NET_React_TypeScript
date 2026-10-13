@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Use cases of the Configuration module.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Riok.Mapperly" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.Modules.Configuration.Domain\Project.Modules.Configuration.Domain.csproj" />
+    <ProjectReference Include="..\Project.Modules.Configuration.Contracts\Project.Modules.Configuration.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

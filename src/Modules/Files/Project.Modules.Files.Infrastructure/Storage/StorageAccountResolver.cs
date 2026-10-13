@@ -11,7 +11,7 @@ namespace Project.Modules.Files.Infrastructure.Storage;
 public sealed class StorageAccountResolver(
     IRepository<StorageConnection, Guid> connections,
     ISecretProtector protector,
-    IOptions<FilesOptions> options) : IStorageAccountResolver
+    IOptionsSnapshot<FilesOptions> options) : IStorageAccountResolver
 {
     private const string CredentialsPurpose = "files.storage-credentials";
 

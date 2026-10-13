@@ -44,7 +44,11 @@ PROJECT=src/Host/Project.Api
 dotnet user-secrets set "Database:Provider" "$PROVIDER" --project "$PROJECT" >/dev/null
 dotnet user-secrets set "Database:ConnectionStrings:Default" "$CONNECTION" --project "$PROJECT" >/dev/null
 dotnet user-secrets set "Tenancy:Mode" "$MODE" --project "$PROJECT" >/dev/null
-dotnet user-secrets set "Jwt:SigningKey" "$(random 64)" --project "$PROJECT" >/dev/null
+# The master key encrypts the secrets stored in the database: generated once, never replaced (a new key would make
+# the stored secrets unreadable). Everything else is configured at runtime in the configuration page.
+if ! dotnet user-secrets list --project "$PROJECT" 2>/dev/null | grep -q "^Configuration:MasterKey"; then
+  dotnet user-secrets set "Configuration:MasterKey" "$(openssl rand -base64 32 2>/dev/null || random 44)" --project "$PROJECT" >/dev/null
+fi
 dotnet user-secrets set "Seed:AdminPassword" "$ADMIN_PASSWORD" --project "$PROJECT" >/dev/null
 echo "OK user-secrets written (shared by Project.Api and Project.MigrationService)."
 

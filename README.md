@@ -67,6 +67,7 @@ seguro por defecto (fail-closed), todo configurable y sin costo por lo que no se
 | Procesos | Notificaciones in-app y email con plantillas por tenant, flujos de aprobación por permiso, rol o monto, tareas programadas por tenant |
 | Datos de negocio | Historial de cambios automático, numeración de documentos por tenant y unidad, `Money`, importar y exportar CSV o Excel |
 | Integración | Webhooks firmados con HMAC, reintentos y protección SSRF; outbox con entrega idempotente |
+| Operación | Configuración de la plataforma en la base de datos, editable en tiempo de ejecución sin volver a desplegar; secretos cifrados con una master key |
 | Frontend | React 19, módulos por manifiesto, tokens OKLCH, presets de marca, modo oscuro, densidad, personalizador de tema, i18n es/en |
 | Observabilidad | Serilog estructurado, OpenTelemetry (trazas, métricas, logs), health checks de liveness y readiness |
 | Pruebas | Unitarias, de arquitectura, funcionales con Testcontainers en los 3 motores y aislamiento entre tenants y unidades |

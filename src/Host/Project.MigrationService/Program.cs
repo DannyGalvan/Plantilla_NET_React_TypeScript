@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Project.Application.Tenancy;
 using Project.Infrastructure;
+using Project.Infrastructure.Configuration;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Tenancy;
 using Project.Modules.Tenancy.Application.Tenants;
@@ -17,6 +18,7 @@ using Project.Web.Security;
 
 var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory });
 builder.AddServiceDefaults();
+builder.Configuration.AddDatabaseConfiguration();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.SectionName));
 

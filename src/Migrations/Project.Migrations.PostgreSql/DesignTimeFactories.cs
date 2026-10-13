@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Configuration.Infrastructure;
 using Project.Modules.Webhooks.Infrastructure;
 using Project.Modules.Workflows.Infrastructure;
 using Project.Modules.Sequences.Infrastructure;
@@ -70,4 +71,9 @@ public sealed class WorkflowsDbContextFactory : IDesignTimeDbContextFactory<Work
 public sealed class WebhooksDbContextFactory : IDesignTimeDbContextFactory<WebhooksDbContext>
 {
     public WebhooksDbContext CreateDbContext(string[] args) => DesignTime.Create<WebhooksDbContext>(new PostgreSqlProvider(), "Webhooks");
+}
+
+public sealed class ConfigurationDbContextFactory : IDesignTimeDbContextFactory<ConfigurationDbContext>
+{
+    public ConfigurationDbContext CreateDbContext(string[] args) => DesignTime.Create<ConfigurationDbContext>(new PostgreSqlProvider(), "Configuration");
 }

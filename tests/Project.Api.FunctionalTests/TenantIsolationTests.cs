@@ -117,4 +117,25 @@ public sealed class TenantIsolationTests(SharedModeApi api) : IClassFixture<Shar
         listed["items"]!.AsArray().ShouldBeEmpty();
         (await acme.GetAsync($"/api/v1/files/{file.Id()}/content", Ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task Tenant_administrators_cannot_change_the_platform_configuration()
+    {
+        var acme = await api.SignInAsync(host: _acme);
+        var roles = await (await acme.GetAsync("/api/v1/identity/roles?filter=name:eq:Administrator", Ct)).ReadJsonAsync();
+        var created = await acme.PostAsJsonAsync("/api/v1/identity/users", new
+        {
+            userName = $"cfg{Guid.NewGuid():N}"[..12],
+            email = $"cfg{Guid.NewGuid():N}@example.com",
+            password = "Secure.Pass-2026",
+            roleIds = new[] { roles["items"]![0]!.AsObject().Id() },
+            mustChangePassword = false,
+        }, Ct);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created, await created.Content.ReadAsStringAsync(Ct));
+        var tenantAdmin = await api.SignInAsync((await created.ReadJsonAsync())["userName"]!.GetValue<string>(), "Secure.Pass-2026", _acme);
+
+        (await tenantAdmin.GetAsync("/api/v1/configuration", Ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await tenantAdmin.PutAsJsonAsync("/api/v1/configuration/Email", new { values = new Dictionary<string, object?> { ["Email:Host"] = "evil" } }, Ct))
+            .StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
 }

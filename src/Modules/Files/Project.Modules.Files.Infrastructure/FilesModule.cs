@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Project.Application;
+using Project.Application.Configuration;
 using Project.Application.Files;
 using Project.Application.Jobs;
 using Project.Application.Settings;
@@ -153,6 +154,7 @@ public sealed class FilesModule : IModule
         services.AddModuleConventions(typeof(FilesPermissionProvider).Assembly);
         services.AddSettingsSection<FileSettings>();
         services.AddOptions<FilesOptions>().Bind(configuration.GetSection(FilesOptions.SectionName));
+        services.AddConfigurableSection<FilesOptions>(FilesOptions.SectionName, "files", "Almacenamiento de la plataforma y clientes OAuth de Google Drive y OneDrive.");
 
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<FileAuthorization>();
@@ -234,7 +236,7 @@ public sealed class FilesModule : IModule
             .RequirePermission(Contracts.FilesPermissions.Storage.Manage)
             .WithName("DeleteStorageConnection");
 
-        storage.MapPost("/oauth/{provider}/start", async (string provider, StartOAuthRequest request, IOptions<FilesOptions> options, HttpContext http, ISender sender, CancellationToken ct) =>
+        storage.MapPost("/oauth/{provider}/start", async (string provider, StartOAuthRequest request, IOptionsSnapshot<FilesOptions> options, HttpContext http, ISender sender, CancellationToken ct) =>
             {
                 var command = new StartOAuthCommand(provider, request.Name, request.IsDefault, RedirectUri(options.Value, http), ReturnUrl(http));
                 var result = await sender.Send(command, ct);

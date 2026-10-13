@@ -35,7 +35,8 @@ services:
       Seed__AdminUserName: ${ADMIN_USER:-admin}
       Seed__AdminEmail: ${ADMIN_EMAIL:-admin@example.com}
       Seed__AdminPassword: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
-      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      # Encrypts the secrets stored in the database (JWT key, SMTP, OAuth...). Never change it once in use.
+      Configuration__MasterKey: ${MASTER_KEY:?Set MASTER_KEY in .env}
       Cache__Redis__ConnectionString: redis:6379
       Tenancy__Mode: ${TENANCY_MODE:-None}
     depends_on:
@@ -49,7 +50,6 @@ services:
       dockerfile: deploy/docker/Dockerfile
     environment:
       <<: *app-env
-      Identity__PublicUrl: ${PUBLIC_URL:-http://localhost:8080}
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:

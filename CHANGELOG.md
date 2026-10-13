@@ -23,12 +23,21 @@ Plantilla agnóstica de dominio: capacidades transversales para cualquier tipo d
 - Widgets del inicio y elementos de la barra superior aportados por los manifiestos de cada módulo.
 - Llaves de Data Protection compartidas en la base de plataforma.
 - `ITenantJobRunner.RunForTenantAsync`, `IDomainEventObserver` e `IEventContext` (consumidores idempotentes).
+- Módulo `Configuration`: configuración de la plataforma en la base de datos, editable en *Configuración de
+  plataforma* y aplicada sin volver a desplegar. Incluye SMTP, OAuth, JWT, límites, webhooks, auditoría, feature flags
+  y secretos referenciados.
+  - Los secretos se cifran con `Configuration:MasterKey`, igual que el anillo de Data Protection.
+  - La llave JWT se genera en el primer arranque.
+  - Cada módulo publica sus secciones con `AddConfigurableSection`, y la pantalla se genera desde la clase de opciones.
 
 ### Cambiado
 
 - `Catalog` es un ejemplo opcional: solo se carga con `Modules:Enabled: ["Catalog"]` (activo en Development).
 - Un único despachador de outbox por instancia en lugar de uno por módulo, para no agotar las conexiones de la base.
 - Los HttpClient ya no reintentan métodos no idempotentes (POST, PUT, PATCH, DELETE).
+- `appsettings.json` solo contiene el bootstrap: motor, conexión, modo de tenancy y módulos. `Jwt:SigningKey` ya no se
+  configura a mano; `Configuration:MasterKey` es el único secreto de arranque además de la conexión.
+- Permisos de plataforma declarados con `PermissionDefinition.PlatformOnly` en lugar de una lista fija.
 - Las pruebas de arquitectura y la verificación de migraciones de CI descubren los módulos automáticamente.
 
 ## [2.0.0] - 2026-10-11

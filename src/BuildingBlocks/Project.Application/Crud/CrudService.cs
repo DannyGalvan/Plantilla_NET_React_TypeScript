@@ -23,7 +23,7 @@ public sealed class CrudService<TEntity, TId, TDto, TCreate, TUpdate>(
     ICurrentUser currentUser,
     IEnumerable<IValidator<TCreate>> createValidators,
     IEnumerable<IValidator<TUpdate>> updateValidators,
-    IOptions<CrudOptions> options)
+    IOptionsSnapshot<CrudOptions> options)
     : ICrudService<TId, TDto, TCreate, TUpdate>
     where TEntity : AggregateRoot<TId>
     where TId : notnull

@@ -92,14 +92,14 @@ public abstract class CloudDriveStorage(IHttpClientFactory httpFactory, IMemoryC
 /// Google Drive through the REST API. Two ways to connect: OAuth consent of a user (refresh token, scope
 /// <c>drive.file</c>: the app only sees the files it created) or a service account with access to a shared drive.
 /// </summary>
-public sealed class GoogleDriveStorage(IHttpClientFactory httpFactory, IMemoryCache cache, TimeProvider clock, IOptions<FilesOptions> options)
+public sealed class GoogleDriveStorage(IHttpClientFactory httpFactory, IMemoryCache cache, TimeProvider clock, IOptionsMonitor<FilesOptions> options)
     : CloudDriveStorage(httpFactory, cache, clock), IFileStorage, IOAuthStorageProvider
 {
     private const string TokenUrl = "https://oauth2.googleapis.com/token";
     private const string Api = "https://www.googleapis.com";
     private const string FileScope = "https://www.googleapis.com/auth/drive.file";
 
-    private OAuthClientOptions Client => options.Value.OAuth.Google;
+    private OAuthClientOptions Client => options.CurrentValue.OAuth.Google;
 
     public string Provider => StorageProviders.GoogleDrive;
 
@@ -232,7 +232,7 @@ public sealed class GoogleDriveStorage(IHttpClientFactory httpFactory, IMemoryCa
 /// (refresh token, rotated on every refresh and stored again) or with an app registration (client credentials) and
 /// a <c>driveId</c>. Files above 4 MB use an upload session in 10 MB chunks.
 /// </summary>
-public sealed class OneDriveStorage(IHttpClientFactory httpFactory, IMemoryCache cache, TimeProvider clock, IOptions<FilesOptions> options)
+public sealed class OneDriveStorage(IHttpClientFactory httpFactory, IMemoryCache cache, TimeProvider clock, IOptionsMonitor<FilesOptions> options)
     : CloudDriveStorage(httpFactory, cache, clock), IFileStorage, IOAuthStorageProvider
 {
     private const string Graph = "https://graph.microsoft.com/v1.0";
@@ -240,7 +240,7 @@ public sealed class OneDriveStorage(IHttpClientFactory httpFactory, IMemoryCache
     private const long SimpleUploadLimit = 4 * 1024 * 1024;
     private const int ChunkSize = 10 * 1024 * 1024; // Multiple of 320 KiB, as Graph requires.
 
-    private OAuthClientOptions Client => options.Value.OAuth.Microsoft;
+    private OAuthClientOptions Client => options.CurrentValue.OAuth.Microsoft;
 
     public string Provider => StorageProviders.OneDrive;
 

@@ -1,3 +1,5 @@
+using Project.Application.Configuration;
+
 namespace Project.Modules.Files.Infrastructure.Storage;
 
 /// <summary>Platform configuration of the Files module (section <c>Files</c>).</summary>
@@ -15,6 +17,7 @@ public sealed class FilesOptions
     public bool AllowCustomEndpoints { get; set; }
 
     /// <summary>Largest request accepted by the upload endpoint, in MB (the per-tenant limit is the <c>files</c> setting).</summary>
+    [RequiresRestart]
     public int MaxRequestSizeMb { get; set; } = 100;
 
     public OAuthOptions OAuth { get; set; } = new();
@@ -27,7 +30,8 @@ public sealed class DefaultStorageOptions
     /// <summary>Non-secret settings, for example <c>rootPath</c>, <c>bucket</c> or <c>container</c>.</summary>
     public Dictionary<string, string> Settings { get; set; } = [];
 
-    /// <summary>Keys of the platform account. Keep them in user-secrets or environment variables.</summary>
+    /// <summary>Keys of the platform account (encrypted in the database).</summary>
+    [Secret]
     public Dictionary<string, string> Credentials { get; set; } = [];
 }
 
@@ -49,6 +53,7 @@ public sealed class OAuthClientOptions
 {
     public string? ClientId { get; set; }
 
+    [Secret]
     public string? ClientSecret { get; set; }
 
     /// <summary>Microsoft only: <c>common</c> (personal and work accounts), <c>organizations</c> or a tenant id.</summary>

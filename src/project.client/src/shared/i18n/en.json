@@ -45,7 +45,8 @@
     "sequences": "Numbering",
     "approvals": "Approvals",
     "workflows": "Approval flows",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "platformConfiguration": "Platform configuration"
   },
   "theme": {
     "customize": "Customize appearance",

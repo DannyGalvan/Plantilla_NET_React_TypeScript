@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Project.Application;
+using Project.Application.Configuration;
 using Project.Application.Jobs;
 using Project.Application.Notifications;
 using Project.Application.Tenancy;
@@ -72,7 +73,7 @@ public sealed class NotificationsOptions
 }
 
 /// <summary>Deletes read notifications older than <c>Notifications:RetentionDays</c>.</summary>
-public sealed class NotificationsCleanupJob(NotificationsDbContext db, IOptions<NotificationsOptions> options, TimeProvider clock) : IRecurringJob
+public sealed class NotificationsCleanupJob(NotificationsDbContext db, IOptionsSnapshot<NotificationsOptions> options, TimeProvider clock) : IRecurringJob
 {
     public const string Name = "notifications.cleanup";
 
@@ -107,6 +108,7 @@ public sealed class NotificationsModule : IModule
         services.AddScoped<INotificationSender, NotificationSender>();
         services.AddNotificationTemplate(NotificationTemplates.TestTemplate);
         services.AddOptions<NotificationsOptions>().Bind(configuration.GetSection(NotificationsOptions.SectionName));
+        services.AddConfigurableSection<NotificationsOptions>(NotificationsOptions.SectionName, "notifications", "Retención de notificaciones leídas.");
         services.AddRecurringJob<NotificationsCleanupJob>(NotificationsCleanupJob.Name, "15 4 * * *", description: "Deletes old read notifications.");
     }
 
