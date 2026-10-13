@@ -39,7 +39,8 @@
     "profile": "My profile",
     "files": "Files",
     "storage": "Storage",
-    "notificationTemplates": "Notification templates"
+    "notificationTemplates": "Notification templates",
+    "audit": "Audit"
   },
   "theme": {
     "customize": "Customize appearance",
@@ -113,5 +114,15 @@
     "uploading": "Uploading...",
     "download": "Download",
     "empty": "No attachments."
+  },
+  "history": {
+    "title": "Change history",
+    "empty": "No changes recorded.",
+    "operations": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "restored": "Restored"
+    }
   }
 }

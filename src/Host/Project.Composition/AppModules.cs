@@ -4,6 +4,7 @@ using Project.Modules.Organization.Infrastructure;
 using Project.Modules.Tenancy.Infrastructure;
 using Project.Modules.Files.Infrastructure;
 using Project.Modules.Notifications.Infrastructure;
+using Project.Modules.Audit.Infrastructure;
 using Project.Web.Modules;
 
 namespace Project.Composition;
@@ -23,5 +24,6 @@ public static class AppModules
         new CatalogModule(),
         new FilesModule(),
         new NotificationsModule(),
+        new AuditModule(),
     ];
 }

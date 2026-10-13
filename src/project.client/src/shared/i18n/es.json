@@ -39,7 +39,8 @@
     "profile": "Mi perfil",
     "files": "Archivos",
     "storage": "Almacenamiento",
-    "notificationTemplates": "Plantillas de notificación"
+    "notificationTemplates": "Plantillas de notificación",
+    "audit": "Auditoría"
   },
   "theme": {
     "customize": "Personalizar apariencia",
@@ -113,5 +114,15 @@
     "uploading": "Subiendo...",
     "download": "Descargar",
     "empty": "Sin archivos adjuntos."
+  },
+  "history": {
+    "title": "Historial de cambios",
+    "empty": "Sin cambios registrados.",
+    "operations": {
+      "created": "Creado",
+      "updated": "Modificado",
+      "deleted": "Eliminado",
+      "restored": "Restaurado"
+    }
   }
 }

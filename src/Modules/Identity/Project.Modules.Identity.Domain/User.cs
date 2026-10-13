@@ -13,10 +13,12 @@ public sealed class User : AuditableAggregateRoot
 
     public string UserName { get; private set; } = string.Empty;
 
+    [AuditIgnore]
     public string NormalizedUserName { get; private set; } = string.Empty;
 
     public string Email { get; private set; } = string.Empty;
 
+    [AuditIgnore]
     public string NormalizedEmail { get; private set; } = string.Empty;
 
     public string? DisplayName { get; private set; }
@@ -24,19 +26,24 @@ public sealed class User : AuditableAggregateRoot
     public string PasswordHash { get; private set; } = string.Empty;
 
     /// <summary>Changes on every credential change; used to invalidate outstanding sessions.</summary>
+    [AuditIgnore]
     public string SecurityStamp { get; private set; } = Guid.NewGuid().ToString("N");
 
     /// <summary>Incremented when the user's effective permissions change; travels in the <c>pv</c> claim.</summary>
+    [AuditIgnore]
     public long PermissionsVersion { get; private set; } = 1;
 
+    [AuditIgnore]
     public int AccessFailedCount { get; private set; }
 
+    [AuditIgnore]
     public DateTimeOffset? LockoutEnd { get; private set; }
 
     public bool MustChangePassword { get; private set; }
 
     public bool IsActive { get; private set; } = true;
 
+    [AuditIgnore]
     public DateTimeOffset? LastLoginAt { get; private set; }
 
     public DateTimeOffset? PasswordChangedAt { get; private set; }
