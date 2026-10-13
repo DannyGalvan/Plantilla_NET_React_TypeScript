@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DotNet.Testcontainers.Containers;
@@ -71,8 +72,8 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
 
     public const string AdminPassword = "Admin.Test-2026!";
 
-    /// <summary>Master key of the test runs (32 random bytes in base64, like <c>openssl rand -base64 32</c>).</summary>
-    public const string MasterKey = "q1Yw3n7P0fHk2bJ8sZr5Xv9Lm4Tc6Ud1Ea0Wg3Qi8No=";
+    /// <summary>Master key of the test run: 32 random bytes in base64, like <c>openssl rand -base64 32</c>.</summary>
+    public static readonly string MasterKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
     private readonly string _database = $"project_test_{Guid.NewGuid():N}"[..28];
 
