@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Use cases of the Files module.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Riok.Mapperly" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.Modules.Files.Domain\Project.Modules.Files.Domain.csproj" />
+    <ProjectReference Include="..\Project.Modules.Files.Contracts\Project.Modules.Files.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

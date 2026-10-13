@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Project.Application;
 using Project.Application.Abstractions;
+using Project.Application.Files;
 using Project.Application.Organization;
+using Project.Application.Security;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Outbox;
@@ -80,6 +83,11 @@ public static class DependencyInjection
         services.TryAddScoped<ISettingsProvider, ConfigurationSettingsProvider>();
         services.TryAddScoped<IFeatureFlags, ConfigurationFeatureFlags>();
         services.TryAddScoped<IEventBus, InProcessEventBus>();
+        services.TryAddScoped<IFileService, NoOpFileService>();
+
+        // Data Protection keys are shared by every instance (the Tenancy module persists them in the platform database).
+        services.AddDataProtection().SetApplicationName("Project");
+        services.TryAddSingleton<ISecretProtector, DataProtectionSecretProtector>();
 
         if (string.IsNullOrWhiteSpace(configuration["Email:Host"]))
         {

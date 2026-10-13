@@ -36,13 +36,19 @@
     "unitTypes": "Unit types",
     "tenants": "Tenants",
     "settings": "Settings",
-    "profile": "My profile"
+    "profile": "My profile",
+    "files": "Files",
+    "storage": "Storage"
   },
   "theme": {
     "customize": "Customize appearance",
     "description": "Changes apply instantly and are saved in this browser.",
     "mode": "Mode",
-    "modes": { "light": "Light", "dark": "Dark", "system": "System" },
+    "modes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "preset": "Palette",
     "presets": {
       "default": "Indigo",
@@ -55,11 +61,17 @@
     "useBrandColor": "Use the brand color",
     "radius": "Corners",
     "density": "Density",
-    "densities": { "comfortable": "Comfortable", "compact": "Compact" },
+    "densities": {
+      "comfortable": "Comfortable",
+      "compact": "Compact"
+    },
     "language": "Language",
     "reset": "Reset"
   },
-  "languages": { "es": "Español", "en": "English" },
+  "languages": {
+    "es": "Español",
+    "en": "English"
+  },
   "context": {
     "tenant": "Organization",
     "unit": "Unit",
@@ -93,5 +105,12 @@
     "code": "Code",
     "status": "Status",
     "createdAt": "Created"
+  },
+  "attachments": {
+    "title": "Attachments",
+    "add": "Attach",
+    "uploading": "Uploading...",
+    "download": "Download",
+    "empty": "No attachments."
   }
 }

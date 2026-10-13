@@ -1,13 +1,18 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Project.Application.Abstractions;
+using Project.Application.Files;
 using Project.Application.Organization;
+using Project.Application.Security;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Tenancy;
+using Project.SharedKernel;
 
 namespace Project.Infrastructure.Services;
 
@@ -130,4 +135,39 @@ public sealed class LoggingEmailSender(ILogger<LoggingEmailSender> logger) : IEm
         logger.LogInformation("Email to {To}: {Subject}\n{Body}", to, subject, htmlBody);
         return Task.CompletedTask;
     }
+}
+
+/// <summary>Secrets encrypted with ASP.NET Core Data Protection (one protector per purpose).</summary>
+public sealed class DataProtectionSecretProtector(IDataProtectionProvider provider) : ISecretProtector
+{
+    private const string Root = "Project.Secrets";
+
+    public string Protect(string purpose, string plaintext) => provider.CreateProtector(Root, purpose).Protect(plaintext);
+
+    public string? Unprotect(string purpose, string protectedValue)
+    {
+        try
+        {
+            return provider.CreateProtector(Root, purpose).Unprotect(protectedValue);
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
+    }
+}
+
+/// <summary>Used when the Files module is not registered.</summary>
+public sealed class NoOpFileService : IFileService
+{
+    private static readonly Error Disabled = Error.Failure("files.disabled", "File storage is not enabled in this application.");
+
+    public Task<Result<FileDescriptor>> UploadAsync(FileUpload upload, CancellationToken ct) => Task.FromResult<Result<FileDescriptor>>(Disabled);
+
+    public Task<Result<FileContent>> OpenAsync(Guid id, CancellationToken ct) => Task.FromResult<Result<FileContent>>(Disabled);
+
+    public Task<Result> DeleteAsync(Guid id, CancellationToken ct) => Task.FromResult<Result>(Disabled);
+
+    public Task<IReadOnlyList<FileDescriptor>> ListAsync(string entityType, string entityId, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<FileDescriptor>>([]);
 }

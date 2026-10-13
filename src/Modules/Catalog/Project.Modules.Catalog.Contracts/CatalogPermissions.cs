@@ -9,6 +9,7 @@ public static class CatalogPermissions
     {
         public const string Prefix = "catalog.products";
         public const string Read = Prefix + ".read";
+        public const string Update = Prefix + ".update";
     }
 
     public static class Categories
@@ -24,4 +25,10 @@ public static class CatalogPermissions
 
     /// <summary>Generic CRUD actions appended to a prefix by <c>MapCrud</c>.</summary>
     public static readonly string[] CrudActions = ["read", "create", "update", "delete", "restore"];
+}
+
+/// <summary>Entity types that accept attachments (Files module).</summary>
+public static class CatalogAttachments
+{
+    public const string Product = "catalog.product";
 }

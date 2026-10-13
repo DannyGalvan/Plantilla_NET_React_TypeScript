@@ -2,6 +2,7 @@ using Project.Modules.Catalog.Infrastructure;
 using Project.Modules.Identity.Infrastructure;
 using Project.Modules.Organization.Infrastructure;
 using Project.Modules.Tenancy.Infrastructure;
+using Project.Modules.Files.Infrastructure;
 using Project.Web.Modules;
 
 namespace Project.Composition;
@@ -19,5 +20,6 @@ public static class AppModules
         new IdentityModule(),
         new OrganizationModule(),
         new CatalogModule(),
+        new FilesModule(),
     ];
 }

@@ -103,4 +103,18 @@ public sealed class TenantIsolationTests(SharedModeApi api) : IClassFixture<Shar
         var login = await client.PostAsJsonAsync("/api/v1/identity/auth/login", new { userName = "admin", password = ApiFactory.AdminPassword }, Ct);
         login.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task Files_of_one_tenant_are_invisible_to_the_other()
+    {
+        var acme = await api.SignInAsync(host: _acme);
+        var globex = await api.SignInAsync(host: _globex);
+        var file = await (await FilesTests.UploadAsync(acme, "acme.txt", "acme only")).ReadJsonAsync();
+
+        (await globex.GetAsync($"/api/v1/files/{file.Id()}/content", Ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await globex.DeleteAsync($"/api/v1/files/{file.Id()}", Ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        var listed = await (await globex.GetAsync("/api/v1/files?search=acme", Ct)).ReadJsonAsync();
+        listed["items"]!.AsArray().ShouldBeEmpty();
+        (await acme.GetAsync($"/api/v1/files/{file.Id()}/content", Ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
 }

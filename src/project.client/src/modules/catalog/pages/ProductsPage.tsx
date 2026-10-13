@@ -13,6 +13,7 @@ import { useCrudList, useCrudMutations } from '@/shared/api/crud-api';
 import { ApiError } from '@/shared/api/problem-details';
 import { useQueryScope } from '@/shared/api/query-keys';
 import { Can, usePermission } from '@/shared/auth/permissions';
+import { Attachments } from '@/shared/components/attachments';
 import { ConfirmDialog } from '@/shared/components/confirm-dialog';
 import { DataTable, toListParams, useTableState } from '@/shared/components/data-table';
 import { applyServerErrors, fieldProps, FormField } from '@/shared/components/form';
@@ -293,6 +294,7 @@ export function ProductsPage() {
               />
               {t('common:common.active')}
             </Label>
+            {editing && <Attachments entityType="catalog.product" entityId={editing.id} canWrite={canUpdate} />}
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>
                 {t('common:actions.cancel')}

@@ -36,13 +36,19 @@
     "unitTypes": "Tipos de unidad",
     "tenants": "Tenants",
     "settings": "Configuración",
-    "profile": "Mi perfil"
+    "profile": "Mi perfil",
+    "files": "Archivos",
+    "storage": "Almacenamiento"
   },
   "theme": {
     "customize": "Personalizar apariencia",
     "description": "Los cambios se aplican al instante y se guardan en este navegador.",
     "mode": "Modo",
-    "modes": { "light": "Claro", "dark": "Oscuro", "system": "Sistema" },
+    "modes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    },
     "preset": "Paleta",
     "presets": {
       "default": "Índigo",
@@ -55,11 +61,17 @@
     "useBrandColor": "Usar el de la marca",
     "radius": "Bordes",
     "density": "Densidad",
-    "densities": { "comfortable": "Cómoda", "compact": "Compacta" },
+    "densities": {
+      "comfortable": "Cómoda",
+      "compact": "Compacta"
+    },
     "language": "Idioma",
     "reset": "Restablecer"
   },
-  "languages": { "es": "Español", "en": "English" },
+  "languages": {
+    "es": "Español",
+    "en": "English"
+  },
   "context": {
     "tenant": "Organización",
     "unit": "Unidad",
@@ -93,5 +105,12 @@
     "code": "Código",
     "status": "Estado",
     "createdAt": "Creado"
+  },
+  "attachments": {
+    "title": "Adjuntos",
+    "add": "Adjuntar",
+    "uploading": "Subiendo...",
+    "download": "Descargar",
+    "empty": "Sin archivos adjuntos."
   }
 }

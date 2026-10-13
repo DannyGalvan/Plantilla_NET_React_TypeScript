@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Files\Project.Modules.Files.Infrastructure\Project.Modules.Files.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Tenancy\Project.Modules.Tenancy.Infrastructure\Project.Modules.Tenancy.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Project.Modules.Identity.Infrastructure\Project.Modules.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Organization\Project.Modules.Organization.Infrastructure\Project.Modules.Organization.Infrastructure.csproj" />

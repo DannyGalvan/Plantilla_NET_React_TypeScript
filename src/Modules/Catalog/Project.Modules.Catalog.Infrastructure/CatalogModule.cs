@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Project.Application;
+using Project.Application.Files;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
 using Project.Modules.Catalog.Application;
@@ -115,6 +116,9 @@ public sealed class CatalogModule : IModule
         services.AddSqlExecutor<CatalogDb, CatalogDbContext>();
         services.AddModuleConventions(typeof(CatalogPermissionProvider).Assembly);
         services.AddScoped<IDataSeeder, CatalogSampleSeeder>();
+
+        // Products accept attachments (photos, data sheets) with the permissions of the product itself.
+        services.AddAttachmentTarget<Product>(CatalogAttachments.Product, CatalogPermissions.Products.Read, CatalogPermissions.Products.Update);
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)

@@ -57,10 +57,8 @@ for (const provider of ['SqlServer', 'PostgreSql', 'MySql']) {
   edit(`${project}/DesignTimeFactories.cs`, (s) =>
     s
       .replace(new RegExp(`using Project\\.Modules\\.${Module}\\.Infrastructure[^;]*;\\r?\\n`, 'g'), '')
-      .replace(
-        new RegExp(`\\r?\\npublic sealed class ${escape(Module)}DbContextFactory[\\s\\S]*?\\n}\\r?\\n`),
-        '\n',
-      ),
+      .replace(new RegExp(`\\r?\\npublic sealed class ${escape(Module)}DbContextFactory[\\s\\S]*?\\n}\\r?\\n`), '')
+      .replace(/\s*$/, '\n'),
   );
 }
 

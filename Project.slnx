@@ -37,6 +37,12 @@
     <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Domain/Project.Modules.Catalog.Domain.csproj" />
     <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Infrastructure/Project.Modules.Catalog.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Files/">
+    <Project Path="src/Modules/Files/Project.Modules.Files.Application/Project.Modules.Files.Application.csproj" />
+    <Project Path="src/Modules/Files/Project.Modules.Files.Contracts/Project.Modules.Files.Contracts.csproj" />
+    <Project Path="src/Modules/Files/Project.Modules.Files.Domain/Project.Modules.Files.Domain.csproj" />
+    <Project Path="src/Modules/Files/Project.Modules.Files.Infrastructure/Project.Modules.Files.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

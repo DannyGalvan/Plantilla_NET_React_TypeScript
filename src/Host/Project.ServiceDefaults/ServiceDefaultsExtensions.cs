@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -73,7 +74,9 @@ public static class ServiceDefaultsExtensions
         }
 
         builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
-        builder.Services.ConfigureHttpClientDefaults(http => http.AddStandardResilienceHandler());
+        // Retries only for idempotent methods: a retried POST/PUT duplicates uploads, payments or webhook deliveries
+        // (and a streamed body cannot be sent twice). Callers that need retries on writes handle them explicitly.
+        builder.Services.ConfigureHttpClientDefaults(http => http.AddStandardResilienceHandler(o => o.Retry.DisableForUnsafeHttpMethods()));
         return builder;
     }
 

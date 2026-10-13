@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Infrastructure and endpoints of the Files module.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="Azure.Storage.Blobs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+    <ProjectReference Include="..\Project.Modules.Files.Application\Project.Modules.Files.Application.csproj" />
+  </ItemGroup>
+
+</Project>

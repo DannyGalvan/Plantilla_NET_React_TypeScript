@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,7 @@ public sealed class TenancyModule : IModule
     public void AddServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddModuleDbContext<TenancyDbContext>(Name, DataScope);
+        services.AddDataProtection().PersistKeysToDbContext<TenancyDbContext>();
         services.AddRepositoriesFor<TenancyDbContext>();
         services.AddModuleConventions(typeof(TenancyPermissionProvider).Assembly, typeof(TenancyModule).Assembly);
 

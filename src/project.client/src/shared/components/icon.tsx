@@ -2,6 +2,8 @@ import {
   BarChart3Icon,
   Building2Icon,
   CircleIcon,
+  FolderOpenIcon,
+  HardDriveIcon,
   HomeIcon,
   LayersIcon,
   NetworkIcon,
@@ -20,6 +22,8 @@ import {
 const icons: Record<string, LucideIcon> = {
   'bar-chart-3': BarChart3Icon,
   'building-2': Building2Icon,
+  'folder-open': FolderOpenIcon,
+  'hard-drive': HardDriveIcon,
   home: HomeIcon,
   layers: LayersIcon,
   network: NetworkIcon,

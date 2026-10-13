@@ -103,4 +103,10 @@ public interface ISecretStore
 public interface ITenantJobRunner
 {
     Task ForEachTenantAsync(Func<IServiceProvider, TenantInfo, CancellationToken, Task> work, CancellationToken ct);
+
+    /// <summary>
+    /// Runs <paramref name="work"/> in a new scope bound to one tenant (OAuth callbacks, scheduled jobs, deliveries).
+    /// Returns false when the tenant does not exist or is not active.
+    /// </summary>
+    Task<bool> RunForTenantAsync(Guid tenantId, Func<IServiceProvider, TenantInfo, CancellationToken, Task> work, CancellationToken ct);
 }

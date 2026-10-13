@@ -81,6 +81,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("Seed:AdminPassword", AdminPassword);
         builder.UseSetting("Seed:SampleData", "false");
         builder.UseSetting("Modules:Enabled:0", "Catalog");
+        builder.UseSetting("Files:Default:Settings:rootPath", Path.Combine(Path.GetTempPath(), "project-tests", _database));
         builder.UseSetting("RateLimiting:Enabled", "false");
         builder.UseSetting("Outbox:PollingIntervalSeconds", "1");
         builder.UseSetting("Tenancy:Mode", tenancyMode);

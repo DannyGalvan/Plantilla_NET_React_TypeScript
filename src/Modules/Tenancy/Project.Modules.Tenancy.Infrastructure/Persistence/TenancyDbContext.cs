@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Project.Infrastructure.Persistence;
@@ -5,9 +6,12 @@ using Project.Modules.Tenancy.Domain;
 
 namespace Project.Modules.Tenancy.Infrastructure.Persistence;
 
-/// <summary>Platform database: tenant catalog, domains, features and settings overrides.</summary>
+/// <summary>
+/// Platform database: tenant catalog, domains, features, settings overrides and the Data Protection key ring shared
+/// by every instance (encrypted OAuth tokens and secrets stay readable after a restart or behind a load balancer).
+/// </summary>
 public sealed class TenancyDbContext(DbContextOptions<TenancyDbContext> options, ModuleDbContextDependencies dependencies)
-    : ModuleDbContext(options, dependencies)
+    : ModuleDbContext(options, dependencies), IDataProtectionKeyContext
 {
     public const string ModuleSchema = "tenancy";
 
@@ -16,6 +20,18 @@ public sealed class TenancyDbContext(DbContextOptions<TenancyDbContext> options,
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
     public DbSet<SettingValue> SettingValues => Set<SettingValue>();
+
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+}
+
+internal sealed class DataProtectionKeyConfiguration : IEntityTypeConfiguration<DataProtectionKey>
+{
+    public void Configure(EntityTypeBuilder<DataProtectionKey> builder)
+    {
+        builder.ToTable("DataProtectionKeys");
+        builder.HasKey(k => k.Id);
+        builder.Property(k => k.FriendlyName).HasMaxLength(256);
+    }
 }
 
 internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>

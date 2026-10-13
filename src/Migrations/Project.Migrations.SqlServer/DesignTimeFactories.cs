@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Files.Infrastructure;
 using Project.Modules.Catalog.Infrastructure;
 using Project.Modules.Identity.Infrastructure.Persistence;
 using Project.Modules.Organization.Infrastructure.Persistence;
@@ -28,4 +29,9 @@ public sealed class OrganizationDbContextFactory : IDesignTimeDbContextFactory<O
 public sealed class CatalogDbContextFactory : IDesignTimeDbContextFactory<CatalogDbContext>
 {
     public CatalogDbContext CreateDbContext(string[] args) => DesignTime.Create<CatalogDbContext>(new SqlServerProvider(), "Catalog");
+}
+
+public sealed class FilesDbContextFactory : IDesignTimeDbContextFactory<FilesDbContext>
+{
+    public FilesDbContext CreateDbContext(string[] args) => DesignTime.Create<FilesDbContext>(new SqlServerProvider(), "Files");
 }
