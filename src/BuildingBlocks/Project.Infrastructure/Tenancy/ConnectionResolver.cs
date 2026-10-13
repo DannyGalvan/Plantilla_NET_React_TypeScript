@@ -27,12 +27,17 @@ public sealed class TenantConnectionResolver(
     ISecretStore secrets,
     DedicatedConnectionCache cache) : ITenantConnectionResolver
 {
+    // The connection prepared for this scope. The process-wide cache can be invalidated at any time (tenant changes),
+    // so a scope never depends on the cache entry surviving between PrepareAsync and Resolve.
+    private (Guid TenantId, string Connection)? _prepared;
+
     public (IDatabaseProvider Provider, string ConnectionString) Resolve(string module, DataScope scope)
     {
         if (scope == DataScope.Tenant && tenant.UsesDedicatedDatabase)
         {
             var info = tenant.Tenant!;
-            if (!cache.TryGet(info.Id, out var dedicated))
+            var dedicated = _prepared is { } prepared && prepared.TenantId == info.Id ? prepared.Connection : null;
+            if (dedicated is null && !cache.TryGet(info.Id, out dedicated))
             {
                 throw new InvalidOperationException(
                     $"The connection of tenant '{info.Code}' was not prepared. Call PrepareAsync after resolving the tenant.");
@@ -63,8 +68,14 @@ public sealed class TenantConnectionResolver(
         var dedicated = tenancy.Value.Mode is TenancyMode.DatabasePerTenant or TenancyMode.Hybrid
             && info.Isolation == TenantIsolation.Dedicated;
 
-        if (!dedicated || cache.TryGet(info.Id, out _))
+        if (!dedicated)
         {
+            return;
+        }
+
+        if (cache.TryGet(info.Id, out var cached))
+        {
+            _prepared = (info.Id, cached);
             return;
         }
 
@@ -76,6 +87,7 @@ public sealed class TenantConnectionResolver(
         var connection = await secrets.GetAsync(info.ConnectionSecretRef, ct)
             ?? throw new InvalidOperationException($"Secret '{info.ConnectionSecretRef}' of tenant '{info.Code}' was not found.");
         cache.Set(info.Id, connection);
+        _prepared = (info.Id, connection);
     }
 }
 
