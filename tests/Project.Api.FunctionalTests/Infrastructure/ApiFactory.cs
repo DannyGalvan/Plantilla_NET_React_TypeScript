@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -84,6 +85,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
     /// <summary>Approval outcomes received by the (test) owning module.</summary>
     public ConcurrentQueue<ApprovalCompletedEvent> Approvals { get; } = new();
 
+    /// <summary>Webhook calls made by the server (no network involved).</summary>
+    public WebhookReceiver WebhookCalls { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -99,6 +103,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("RateLimiting:Enabled", "false");
         builder.UseSetting("Outbox:PollingIntervalSeconds", "1");
         builder.UseSetting("Jobs:PollingIntervalSeconds", "1");
+        builder.UseSetting("Webhooks:PollingIntervalSeconds", "1");
         builder.UseSetting("Tenancy:Mode", tenancyMode);
         builder.UseSetting($"Secrets:{DedicatedSecret}", server.ConnectionString(_database + "_d"));
         builder.UseSetting("Features:platform.admin", "true");
@@ -110,6 +115,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
             services.AddRecurringJob<RecordingJob>(RecordingJob.Name, "0 0 1 1 *", description: "Test job (yearly).");
             services.AddSequence(new SequenceDefinition("tests.invoice", "T-{yyyy}-{0000}", SequenceReset.Yearly));
             services.AddSingleton(Approvals);
+            services.AddHttpClient("webhooks").ConfigurePrimaryHttpMessageHandler(() => new WebhookReceiver.Forwarder(WebhookCalls));
             services.AddScoped<IDomainEventHandler<ApprovalCompletedEvent>, RecordingApprovalHandler>();
             services.AddWorkflow(new WorkflowTemplate("tests.purchase", "tests", "Purchase",
             [
@@ -163,6 +169,42 @@ public sealed class RecordingJob(RecordingJob.Log log, ITenantContext tenant) : 
     public sealed class Log
     {
         public ConcurrentQueue<Guid> Tenants { get; } = new();
+    }
+}
+
+/// <summary>Stands in for the endpoints of the tenants: records every webhook call and answers with <see cref="Status"/>.</summary>
+public sealed class WebhookReceiver
+{
+    public ConcurrentQueue<(string Url, IReadOnlyDictionary<string, string> Headers, string Body)> Calls { get; } = new();
+
+    public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+
+    public async Task<(string Url, IReadOnlyDictionary<string, string> Headers, string Body)> WaitForAsync(
+        Func<(string Url, IReadOnlyDictionary<string, string> Headers, string Body), bool> match,
+        CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 75; attempt++)
+        {
+            if (Calls.FirstOrDefault(match) is { Url: not null } found)
+            {
+                return found;
+            }
+
+            await Task.Delay(200, ct);
+        }
+
+        throw new TimeoutException("The expected webhook was not delivered.");
+    }
+
+    /// <summary>New handler per HttpClient handler rotation; the receiver itself is never disposed.</summary>
+    public sealed class Forwarder(WebhookReceiver receiver) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var headers = request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value), StringComparer.OrdinalIgnoreCase);
+            receiver.Calls.Enqueue((request.RequestUri!.ToString(), headers, await request.Content!.ReadAsStringAsync(cancellationToken)));
+            return new HttpResponseMessage(receiver.Status);
+        }
     }
 }
 

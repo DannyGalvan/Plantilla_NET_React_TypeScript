@@ -86,6 +86,8 @@ public static class DependencyInjection
         services.TryAddScoped<ISettingsProvider, ConfigurationSettingsProvider>();
         services.TryAddScoped<IFeatureFlags, ConfigurationFeatureFlags>();
         services.TryAddScoped<IEventBus, InProcessEventBus>();
+        services.TryAddScoped<EventContext>();
+        services.TryAddScoped<IEventContext>(sp => sp.GetRequiredService<EventContext>());
         services.TryAddScoped<IFileService, NoOpFileService>();
         services.TryAddScoped<INotificationSender, NoOpNotificationSender>();
         services.TryAddScoped<ISequenceGenerator, NoOpSequenceGenerator>();

@@ -26,10 +26,10 @@ public sealed class AuditEntry : AggregateRoot<Guid>, IMultiTenant
 
     public DateTimeOffset OccurredAt { get; private set; }
 
-    public static AuditEntry Create(string entityType, string entityId, string operation, string changes, string? userId, string? userName, DateTimeOffset occurredAt) =>
+    public static AuditEntry Create(Guid? id, string entityType, string entityId, string operation, string changes, string? userId, string? userName, DateTimeOffset occurredAt) =>
         new()
         {
-            Id = NewId.Next(),
+            Id = id ?? NewId.Next(),
             EntityType = entityType,
             EntityId = entityId,
             Operation = operation,

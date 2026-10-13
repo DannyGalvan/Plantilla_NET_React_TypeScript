@@ -10,14 +10,24 @@ using Project.SharedKernel;
 
 namespace Project.Modules.Audit.Application;
 
-/// <summary>Stores the changes written to the outboxes of the other modules (tenant set by the outbox).</summary>
-public sealed class EntityChangedHandler(IRepository<AuditEntry, Guid> entries) : IDomainEventHandler<EntityChangedEvent>
+/// <summary>
+/// Stores the changes written to the outboxes of the other modules (tenant set by the outbox). Idempotent: the entry
+/// id comes from the outbox message, so a retried message never records the change twice.
+/// </summary>
+public sealed class EntityChangedHandler(IRepository<AuditEntry, Guid> entries, IEventContext context) : IDomainEventHandler<EntityChangedEvent>
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     public async Task HandleAsync(EntityChangedEvent domainEvent, CancellationToken ct)
     {
+        var id = context.IdFor("audit");
+        if (id is { } existing && await entries.AnyAsync(new Specification<AuditEntry>().Where(e => e.Id == existing), ct))
+        {
+            return;
+        }
+
         entries.Add(AuditEntry.Create(
+            id,
             domainEvent.EntityType,
             domainEvent.EntityId,
             domainEvent.Operation,

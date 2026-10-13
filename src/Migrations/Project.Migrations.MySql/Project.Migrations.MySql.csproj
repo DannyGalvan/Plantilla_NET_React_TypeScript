@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Webhooks\Project.Modules.Webhooks.Infrastructure\Project.Modules.Webhooks.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Workflows\Project.Modules.Workflows.Infrastructure\Project.Modules.Workflows.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Sequences\Project.Modules.Sequences.Infrastructure\Project.Modules.Sequences.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Jobs\Project.Modules.Jobs.Infrastructure\Project.Modules.Jobs.Infrastructure.csproj" />

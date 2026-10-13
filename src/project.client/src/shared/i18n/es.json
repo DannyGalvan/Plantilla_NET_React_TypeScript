@@ -44,7 +44,8 @@
     "jobs": "Tareas programadas",
     "sequences": "Numeración",
     "approvals": "Aprobaciones",
-    "workflows": "Flujos de aprobación"
+    "workflows": "Flujos de aprobación",
+    "webhooks": "Webhooks"
   },
   "theme": {
     "customize": "Personalizar apariencia",

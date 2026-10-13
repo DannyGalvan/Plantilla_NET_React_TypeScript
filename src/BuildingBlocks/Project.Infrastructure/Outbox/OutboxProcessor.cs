@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Project.Application.Abstractions;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
+using Project.Infrastructure.Services;
 using Project.Infrastructure.Tenancy;
 using Project.SharedKernel.Domain;
 
@@ -160,6 +161,7 @@ public sealed class OutboxProcessor<TContext>(
 
             // Each message runs in its own scope with the tenant it was written under.
             await using var scope = scopeFactory.CreateAsyncScope();
+            scope.ServiceProvider.GetRequiredService<EventContext>().MessageId = message.Id;
             var setter = scope.ServiceProvider.GetRequiredService<ITenantSetter>();
             var info = await scope.ServiceProvider.GetRequiredService<ITenantStore>().FindByIdAsync(message.TenantId, ct) ?? tenant;
             if (info is not null)
@@ -181,7 +183,10 @@ public sealed class OutboxProcessor<TContext>(
     }
 }
 
-/// <summary>In-process event bus: resolves every <see cref="IDomainEventHandler{TEvent}"/> of the event type.</summary>
+/// <summary>
+/// In-process event bus: resolves every <see cref="IDomainEventHandler{TEvent}"/> of the event type, then every
+/// <see cref="IDomainEventObserver"/>.
+/// </summary>
 public sealed class InProcessEventBus(IServiceProvider services) : IEventBus
 {
     private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, IDomainEvent, CancellationToken, Task>> Dispatchers = new();
@@ -203,6 +208,11 @@ public sealed class InProcessEventBus(IServiceProvider services) : IEventBus
         foreach (var handler in services.GetServices<IDomainEventHandler<TEvent>>())
         {
             await handler.HandleAsync((TEvent)domainEvent, ct);
+        }
+
+        foreach (var observer in services.GetServices<IDomainEventObserver>())
+        {
+            await observer.OnEventAsync(domainEvent, ct);
         }
     }
 }

@@ -44,7 +44,8 @@
     "jobs": "Scheduled jobs",
     "sequences": "Numbering",
     "approvals": "Approvals",
-    "workflows": "Approval flows"
+    "workflows": "Approval flows",
+    "webhooks": "Webhooks"
   },
   "theme": {
     "customize": "Customize appearance",

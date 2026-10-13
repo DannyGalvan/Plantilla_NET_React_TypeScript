@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Webhooks.Infrastructure;
 using Project.Modules.Workflows.Infrastructure;
 using Project.Modules.Sequences.Infrastructure;
 using Project.Modules.Jobs.Infrastructure;
@@ -64,4 +65,9 @@ public sealed class SequencesDbContextFactory : IDesignTimeDbContextFactory<Sequ
 public sealed class WorkflowsDbContextFactory : IDesignTimeDbContextFactory<WorkflowsDbContext>
 {
     public WorkflowsDbContext CreateDbContext(string[] args) => DesignTime.Create<WorkflowsDbContext>(new SqlServerProvider(), "Workflows");
+}
+
+public sealed class WebhooksDbContextFactory : IDesignTimeDbContextFactory<WebhooksDbContext>
+{
+    public WebhooksDbContext CreateDbContext(string[] args) => DesignTime.Create<WebhooksDbContext>(new SqlServerProvider(), "Webhooks");
 }

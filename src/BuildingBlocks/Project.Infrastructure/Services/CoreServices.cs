@@ -196,3 +196,9 @@ public sealed class NoOpApprovalService : IApprovalService
 
     public Task<ApprovalStatus?> GetStatusAsync(string entityType, string entityId, CancellationToken ct) => Task.FromResult<ApprovalStatus?>(null);
 }
+
+/// <summary>Scoped holder of the outbox message being dispatched (set by the outbox processor).</summary>
+public sealed class EventContext : IEventContext
+{
+    public Guid? MessageId { get; set; }
+}

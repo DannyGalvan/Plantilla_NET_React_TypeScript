@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Project.Application;
 using Project.Application.Notifications;
 using Project.Application.Tenancy;
+using Project.Application.Webhooks;
 using Project.Application.Workflows;
 using Project.Infrastructure.Persistence;
 using Project.Modules.Workflows.Application;
@@ -105,6 +106,7 @@ public sealed class WorkflowsModule : IModule
         services.AddScoped<IApprovalService, ApprovalService>();
         services.AddNotificationTemplate(WorkflowTemplates.PendingTemplate);
         services.AddNotificationTemplate(WorkflowTemplates.CompletedTemplate);
+        services.AddWebhookEvent<ApprovalCompletedEvent>("workflows.approval.completed", "An approval request was approved, rejected or cancelled.");
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)

@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Modules\Files\Project.Modules.Files.Infrastructure\Project.Modules.Files.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Notifications\Project.Modules.Notifications.Infrastructure\Project.Modules.Notifications.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Sequences\Project.Modules.Sequences.Infrastructure\Project.Modules.Sequences.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Webhooks\Project.Modules.Webhooks.Infrastructure\Project.Modules.Webhooks.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Catalog\Project.Modules.Catalog.Infrastructure\Project.Modules.Catalog.Infrastructure.csproj" />
   </ItemGroup>
 

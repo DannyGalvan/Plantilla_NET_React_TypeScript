@@ -73,6 +73,12 @@
     <Project Path="src/Modules/Workflows/Project.Modules.Workflows.Domain/Project.Modules.Workflows.Domain.csproj" />
     <Project Path="src/Modules/Workflows/Project.Modules.Workflows.Infrastructure/Project.Modules.Workflows.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Webhooks/">
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Application/Project.Modules.Webhooks.Application.csproj" />
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Contracts/Project.Modules.Webhooks.Contracts.csproj" />
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Domain/Project.Modules.Webhooks.Domain.csproj" />
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Infrastructure/Project.Modules.Webhooks.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

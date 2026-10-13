@@ -19,6 +19,7 @@ import {
   TagsIcon,
   UserIcon,
   UsersIcon,
+  WebhookIcon,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -45,6 +46,7 @@ const icons: Record<string, LucideIcon> = {
   tags: TagsIcon,
   user: UserIcon,
   users: UsersIcon,
+  webhook: WebhookIcon,
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

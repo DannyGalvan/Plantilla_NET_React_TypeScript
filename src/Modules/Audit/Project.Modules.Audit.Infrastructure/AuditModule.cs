@@ -18,6 +18,7 @@ using Project.Application.Abstractions;
 using Project.Application.Auditing;
 using Project.Application.Jobs;
 using Project.Application.Tenancy;
+using Project.Application.Webhooks;
 using Project.Infrastructure.Outbox;
 using Project.Infrastructure.Persistence;
 using Project.Modules.Audit.Application;
@@ -238,6 +239,7 @@ public sealed class AuditModule : IModule
         services.AddModuleConventions(typeof(AuditPermissionProvider).Assembly);
         services.AddOptions<AuditOptions>().Bind(configuration.GetSection(AuditOptions.SectionName));
         services.TryAddEnumerable(ServiceDescriptor.Scoped<ISaveChangesStep, ChangeHistoryStep>());
+        services.AddWebhookEvent<EntityChangedEvent>("records.changed", "A record of any module was created, updated, deleted or restored.");
         services.AddRecurringJob<AuditRetentionJob>(AuditRetentionJob.Name, "0 4 * * *", description: "Deletes history older than the retention period.");
     }
 
