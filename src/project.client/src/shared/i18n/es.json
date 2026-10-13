@@ -144,5 +144,13 @@
     "invalid": "{{count}} filas con errores. Corrígelas y vuelve a intentar.",
     "imported": "{{count}} registros importados.",
     "row": "Fila {{row}}"
+  },
+  "shell": {
+    "navigation": "Navegación principal",
+    "openMenu": "Abrir menú",
+    "show": "Mostrar menú lateral",
+    "hide": "Ocultar menú lateral",
+    "collapse": "Contraer",
+    "expand": "Expandir"
   }
 }

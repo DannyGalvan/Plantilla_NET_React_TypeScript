@@ -38,6 +38,8 @@ Plantilla agnóstica de dominio: capacidades transversales para cualquier tipo d
 - `appsettings.json` solo contiene el bootstrap: motor, conexión, modo de tenancy y módulos. `Jwt:SigningKey` ya no se
   configura a mano; `Configuration:MasterKey` es el único secreto de arranque además de la conexión.
 - Permisos de plataforma declarados con `PermissionDefinition.PlatformOnly` en lugar de una lista fija.
+- Menú lateral expandible, contraíble a una barra de iconos (`Ctrl+B` o `Cmd+B`) u oculto. La preferencia se recuerda
+  en el navegador, y el menú tiene su propio scroll, independiente del de la página.
 - Las pruebas de arquitectura y la verificación de migraciones de CI descubren los módulos automáticamente.
 
 ## [2.0.0] - 2026-10-11

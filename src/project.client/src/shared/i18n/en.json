@@ -144,5 +144,13 @@
     "invalid": "{{count}} rows with errors. Fix them and try again.",
     "imported": "{{count}} records imported.",
     "row": "Row {{row}}"
+  },
+  "shell": {
+    "navigation": "Main navigation",
+    "openMenu": "Open menu",
+    "show": "Show sidebar",
+    "hide": "Hide sidebar",
+    "collapse": "Collapse",
+    "expand": "Expand"
   }
 }
