@@ -44,7 +44,10 @@ multi-tenant con los mismos patrones, la misma seguridad y despliegue en cualqui
 
 La plantilla resuelve el arranque de cualquier aplicación de negocio: autenticación, permisos, multi-tenancy,
 estructura organizativa, acceso a datos multi-motor, theming por marca, i18n, observabilidad, pruebas y despliegue.
-Cada nueva funcionalidad se agrega como un **módulo** independiente, sin editar el código existente.
+No impone un dominio. Trae las capacidades que casi toda aplicación necesita (archivos, notificaciones, historial,
+tareas programadas, numeración, aprobaciones, importar/exportar y webhooks), así que sirve igual para un CRM, un ERP,
+nómina, RRHH, una bolsa de empleo, un e-commerce, delivery o finanzas. Cada funcionalidad se agrega como un **módulo**
+independiente, sin editar el código existente.
 
 Principios: SOLID (en especial responsabilidad única y abierto/cerrado), módulos que solo se comunican por contratos,
 seguro por defecto (fail-closed), todo configurable y sin costo por lo que no se usa.
@@ -60,6 +63,10 @@ seguro por defecto (fail-closed), todo configurable y sin costo por lo que no se
 | Organización | Empresas, países, marcas y sucursales con filtrado automático de datos por unidad |
 | Seguridad | JWT corto + refresh token rotativo con detección de reuso, CSRF, lockout, historial de contraseñas, permisos en servidor con caché híbrida y endpoints fail-closed |
 | Configuración | Settings en cascada (sistema, tenant, unidad, usuario) y feature flags por tenant |
+| Archivos | Adjuntos con los permisos del registro; almacenamiento por tenant en disco, S3, Azure Blob, Google Drive u OneDrive |
+| Procesos | Notificaciones in-app y email con plantillas por tenant, flujos de aprobación por permiso, rol o monto, tareas programadas por tenant |
+| Datos de negocio | Historial de cambios automático, numeración de documentos por tenant y unidad, `Money`, importar y exportar CSV o Excel |
+| Integración | Webhooks firmados con HMAC, reintentos y protección SSRF; outbox con entrega idempotente |
 | Frontend | React 19, módulos por manifiesto, tokens OKLCH, presets de marca, modo oscuro, densidad, personalizador de tema, i18n es/en |
 | Observabilidad | Serilog estructurado, OpenTelemetry (trazas, métricas, logs), health checks de liveness y readiness |
 | Pruebas | Unitarias, de arquitectura, funcionales con Testcontainers en los 3 motores y aislamiento entre tenants y unidades |
@@ -85,9 +92,10 @@ flowchart LR
   API --> M1[Identity]
   API --> M2[Tenancy]
   API --> M3[Organization]
-  API --> M4[Catalog y tus módulos]
+  API --> M4[Tus módulos de negocio]
+  API --> M5[Files, Notifications, Audit, Jobs, Sequences, Workflows, Webhooks]
   M1 & M2 --> PDB[(BD de plataforma)]
-  M3 & M4 --> TDB[(BD de tenant: compartida o dedicada)]
+  M3 & M4 & M5 --> TDB[(BD de tenant: compartida o dedicada)]
   W[Project.MigrationService] --> PDB & TDB
 ```
 
@@ -122,13 +130,14 @@ Otras formas de ejecución (solo Docker, nativo, base local) en [docs/02-inicio-
 ```
 src/
   BuildingBlocks/     SharedKernel, Application, Infrastructure, Web (plataforma reutilizable)
-  Modules/            Tenancy, Identity, Organization, Catalog (cada uno con 4 proyectos)
+  Modules/            Plataforma (Tenancy, Identity, Organization), capacidades (Files, Notifications, Audit, Jobs,
+                      Sequences, Workflows, Webhooks) y el ejemplo opcional Catalog; cada uno con 4 proyectos
   Migrations/         Migraciones EF Core por motor: SqlServer, PostgreSql, MySql
   Host/               Project.Api, Project.MigrationService, Project.Composition, Project.ServiceDefaults
   project.client/     SPA React (src/app, src/shared, src/modules)
 tests/                UnitTests, ArchitectureTests, Api.FunctionalTests
 deploy/               docker, linux, iis
-scripts/              setup, doctor, add-migration, new-module, check-docs
+scripts/              setup, doctor, add-migration, new-module, remove-module, check-docs
 docs/                 guías, despliegue y ADRs
 ```
 
@@ -136,12 +145,14 @@ docs/                 guías, despliegue y ADRs
 
 ```bash
 node scripts/new-module.mjs Inventory Warehouse   # módulo full-stack con CRUD (backend + frontend)
+node scripts/remove-module.mjs Catalog            # quita el ejemplo cuando tengas tus módulos
 ./scripts/add-migration.sh Inventory Initial       # migración en los 3 motores
 dotnet test Project.slnx                           # pruebas backend (requiere Docker)
 cd src/project.client && pnpm verify               # pruebas y calidad del frontend
 ```
 
-Guías: [crear una aplicación](docs/06-crear-una-aplicacion.md) y [agregar un módulo](docs/07-agregar-un-modulo.md).
+Guías: [crear una aplicación](docs/06-crear-una-aplicacion.md), [agregar un módulo](docs/07-agregar-un-modulo.md) y
+[capacidades transversales](docs/guias/capacidades-transversales.md).
 
 ## Despliegue
 

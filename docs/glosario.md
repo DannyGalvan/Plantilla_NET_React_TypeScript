@@ -20,3 +20,11 @@
 | ProblemDetails | Formato estándar de errores HTTP (RFC 9457) |
 | Refresh token rotativo | Token de larga duración que se reemplaza en cada uso; reutilizar uno viejo revoca la sesión |
 | Token de diseño | Variable CSS semántica (`--primary`) que define el aspecto de la UI |
+| Adjunto | Archivo ligado a un registro (`entityType` + `entityId`) que hereda sus permisos y su alcance |
+| Conexión de almacenamiento | Cuenta de Google Drive, OneDrive, S3 o Azure Blob conectada por un tenant |
+| Plantilla de notificación | Texto por idioma con `{{placeholders}}` declarado por un módulo y editable por el tenant |
+| Tarea programada | `IRecurringJob` con cron que corre por tenant en su zona horaria |
+| Secuencia | Numeración de documentos con formato (`FAC-{yyyy}-{0000}`) por tenant y unidad |
+| Flujo de aprobación | Pasos con aprobador por permiso, rol o usuario; publica `ApprovalCompletedEvent` al terminar |
+| Evento público | Evento declarado con `AddWebhookEvent` que los tenants reciben por webhook |
+| Idempotencia | Procesar dos veces el mismo mensaje no cambia el resultado; ver `IEventContext` |

@@ -29,7 +29,10 @@ plantilla entrega esa base terminada y probada para que el equipo dedique su tie
 
 ## Qué incluye
 
-- Plataforma backend reutilizable (BuildingBlocks), cuatro módulos (Tenancy, Identity, Organization, Catalog de ejemplo).
+- Plataforma backend reutilizable (BuildingBlocks) y módulos de plataforma (Tenancy, Identity, Organization).
+- Capacidades transversales para cualquier dominio: archivos (Drive, OneDrive, S3, Azure), notificaciones, historial de
+  cambios, tareas programadas, numeración, `Money`, aprobaciones, importar/exportar y webhooks.
+- Un módulo de ejemplo opcional (`Catalog`), activo solo en Development.
 - SPA React con módulos equivalentes, sistema de diseño por tokens y personalización por marca y usuario.
 - Migraciones para PostgreSQL, SQL Server y MySQL, worker de migraciones y aprovisionamiento de bases dedicadas.
 - Pruebas unitarias, de arquitectura y funcionales contra los tres motores, y CI listo.
