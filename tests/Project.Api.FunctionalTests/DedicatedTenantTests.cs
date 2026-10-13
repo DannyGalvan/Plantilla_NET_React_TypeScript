@@ -27,7 +27,7 @@ public sealed class DedicatedTenantTests(HybridModeApi api) : IClassFixture<Hybr
             .StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         var provisionResponse = await platform.PostAsync($"/api/v1/tenancy/tenants/{tenant.Id()}/provision", null, Ct);
-        provisionResponse.StatusCode.ShouldBe(HttpStatusCode.OK, await provisionResponse.Content.ReadAsStringAsync(Ct));
+        provisionResponse.StatusCode.ShouldBe(HttpStatusCode.OK, $"{await provisionResponse.Content.ReadAsStringAsync(Ct)}{Environment.NewLine}{api.ServerErrors}");
         var provisioned = await provisionResponse.ReadJsonAsync();
         provisioned["status"]!.GetValue<string>().ShouldBe("Active");
 

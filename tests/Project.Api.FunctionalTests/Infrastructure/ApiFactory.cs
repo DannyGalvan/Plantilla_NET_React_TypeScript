@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -5,6 +6,10 @@ using System.Text.Json.Nodes;
 using DotNet.Testcontainers.Containers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
+using Serilog.Events;
 using Testcontainers.MsSql;
 using Testcontainers.MySql;
 using Testcontainers.PostgreSql;
@@ -62,6 +67,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
 
     private readonly string _database = $"project_test_{Guid.NewGuid():N}"[..28];
 
+    /// <summary>Errors logged by the server, to explain a failed assertion (the console output is not captured).</summary>
+    public ServerErrorLog ServerErrors { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -77,6 +85,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("Tenancy:Mode", tenancyMode);
         builder.UseSetting($"Secrets:{DedicatedSecret}", server.ConnectionString(_database + "_d"));
         builder.UseSetting("Features:platform.admin", "true");
+        builder.ConfigureTestServices(services => services.AddSingleton<ILogEventSink>(ServerErrors));
 
         for (var i = 0; i < resolvers.Length; i++)
         {
@@ -108,6 +117,22 @@ public sealed class NoneModeApi(DatabaseServer server) : ApiFactory(server, "Non
 public sealed class SharedModeApi(DatabaseServer server) : ApiFactory(server, "SharedDatabase", ["Host", "Claim"]);
 
 public sealed class HybridModeApi(DatabaseServer server) : ApiFactory(server, "Hybrid", ["Host", "Claim"]);
+
+/// <summary>Serilog sink that keeps the errors logged by the server under test.</summary>
+public sealed class ServerErrorLog : ILogEventSink
+{
+    private readonly ConcurrentQueue<string> _errors = new();
+
+    public void Emit(LogEvent logEvent)
+    {
+        if (logEvent.Level >= LogEventLevel.Error)
+        {
+            _errors.Enqueue($"{logEvent.RenderMessage()}{Environment.NewLine}{logEvent.Exception}");
+        }
+    }
+
+    public override string ToString() => string.Join(Environment.NewLine, _errors);
+}
 
 public static class HttpExtensions
 {

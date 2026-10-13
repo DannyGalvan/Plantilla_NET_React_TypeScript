@@ -52,7 +52,9 @@ public static class ServiceDefaultsExtensions
                     o.ResourceAttributes = new Dictionary<string, object> { ["service.name"] = serviceName };
                 });
             }
-        });
+        },
+        // Each host keeps its own logger instead of replacing the static Log.Logger (several hosts can share a process, e.g. in tests).
+        preserveStaticLogger: true);
 
         var telemetry = builder.Services.AddOpenTelemetry()
             .ConfigureResource(r => r.AddService(serviceName))
