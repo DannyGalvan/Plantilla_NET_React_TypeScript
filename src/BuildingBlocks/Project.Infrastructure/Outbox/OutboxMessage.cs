@@ -5,7 +5,7 @@ namespace Project.Infrastructure.Outbox;
 
 /// <summary>
 /// Domain event stored in the same transaction as the aggregate change and dispatched later by
-/// <see cref="OutboxProcessor{TContext}"/>. Each module has its own table in its schema.
+/// <see cref="OutboxDispatcher"/>. Each module has its own table in its schema.
 /// </summary>
 public sealed class OutboxMessage
 {

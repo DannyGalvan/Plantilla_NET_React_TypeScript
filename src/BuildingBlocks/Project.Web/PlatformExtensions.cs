@@ -59,7 +59,8 @@ public static class PlatformExtensions
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddAuthorization();
         services.AddHostedService<EndpointSecurityValidator>();
-        services.AddHostedService<MigrateOnStartupService>();
+        // First hosted service: in development the schema exists before Data Protection, the outbox or the jobs touch it.
+        services.Insert(0, ServiceDescriptor.Singleton<IHostedService, MigrateOnStartupService>());
         services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
         services.AddCors(o => o.AddDefaultPolicy(policy =>

@@ -26,22 +26,26 @@ public sealed class OutboxOptions
     public int MaxAttempts { get; set; } = 10;
 }
 
-/// <summary>
-/// Dispatches the outbox of one module. Rows are claimed with a lease (<c>LockId</c> + <c>LockedUntil</c>), so
-/// several API instances can run the processor without double delivery. In database-per-tenant mode it walks
-/// every tenant database; each message is dispatched with the tenant context it was written under.
-/// </summary>
-public sealed class OutboxProcessor<TContext>(
-    IServiceScopeFactory scopeFactory,
-    IOptions<OutboxOptions> options,
-    IOptions<TenancyOptions> tenancy,
-    TimeProvider clock,
-    ILogger<OutboxProcessor<TContext>> logger) : BackgroundService
-    where TContext : ModuleDbContext
+/// <summary>Processes the outbox of one module DbContext.</summary>
+public interface IOutboxProcessor
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly ConcurrentDictionary<string, Type?> TypeCache = new();
+    Type ContextType { get; }
 
+    /// <summary>Dispatches the pending messages once (every tenant database when they are dedicated).</summary>
+    Task ProcessAllAsync(CancellationToken ct);
+}
+
+/// <summary>
+/// One background loop per instance that drains the outbox of every module in turn. Sequential on purpose: one
+/// database connection at a time instead of one poller per module, which keeps connection pools small when the
+/// application has many modules and many tenant databases.
+/// </summary>
+public sealed class OutboxDispatcher(
+    IEnumerable<IOutboxProcessor> processors,
+    IOptions<OutboxOptions> options,
+    TimeProvider clock,
+    ILogger<OutboxDispatcher> logger) : BackgroundService
+{
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.Value.Enabled)
@@ -52,20 +56,42 @@ public sealed class OutboxProcessor<TContext>(
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(1, options.Value.PollingIntervalSeconds)), clock);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            try
+            foreach (var processor in processors)
             {
-                await ProcessAllAsync(stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Outbox of {Context} failed; retrying on the next tick", typeof(TContext).Name);
+                try
+                {
+                    await processor.ProcessAllAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Outbox of {Context} failed; retrying on the next tick", processor.ContextType.Name);
+                }
             }
         }
     }
+}
+
+/// <summary>
+/// Dispatches the outbox of one module. Rows are claimed with a lease (<c>LockId</c> + <c>LockedUntil</c>), so
+/// several API instances can run the dispatcher without double delivery. In database-per-tenant mode it walks
+/// every tenant database; each message is dispatched with the tenant context it was written under.
+/// </summary>
+public sealed class OutboxProcessor<TContext>(
+    IServiceScopeFactory scopeFactory,
+    IOptions<OutboxOptions> options,
+    IOptions<TenancyOptions> tenancy,
+    TimeProvider clock,
+    ILogger<OutboxProcessor<TContext>> logger) : IOutboxProcessor
+    where TContext : ModuleDbContext
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly ConcurrentDictionary<string, Type?> TypeCache = new();
+
+    public Type ContextType => typeof(TContext);
 
     /// <summary>Processes pending messages once. Public for tests and for on-demand flushing.</summary>
     public async Task ProcessAllAsync(CancellationToken ct)
