@@ -228,6 +228,14 @@ public sealed class SingleTenantTests(NoneModeApi api) : IClassFixture<NoneModeA
         visible["items"]!.AsArray().Select(p => p!["sku"]!.GetValue<string>()).ShouldBe(["ISO-A"]);
         (await brandUser.GetAsync($"/api/v1/catalog/products/{productB.Id()}", Ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
+        // Raw SQL (Dapper and the stored procedure) is filtered by unit too.
+        var report = await brandUser.GetAsync("/api/v1/catalog/reports/stock", Ct);
+        report.StatusCode.ShouldBe(HttpStatusCode.OK, await report.Content.ReadAsStringAsync(Ct));
+        var isoRow = (await report.ReadArrayAsync()).Single(r => r!["categoryName"]!.GetValue<string>() == "Iso")!;
+        isoRow["products"]!.GetValue<long>().ShouldBe(1);
+        var lowStock = await (await brandUser.GetAsync("/api/v1/catalog/reports/low-stock?threshold=5", Ct)).ReadArrayAsync();
+        lowStock.Select(r => r!["sku"]!.GetValue<string>()).Where(sku => sku.StartsWith("ISO", StringComparison.Ordinal)).ShouldBe(["ISO-A"]);
+
         var switchToB = await brandUser.PostAsJsonAsync("/api/v1/identity/auth/switch-context",
             new { tenantId = "00000000-0000-0000-0000-000000000001", organizationUnitId = brandB.Id() }, Ct);
         switchToB.StatusCode.ShouldBe(HttpStatusCode.Forbidden);

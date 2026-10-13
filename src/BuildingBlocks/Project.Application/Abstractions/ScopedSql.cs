@@ -31,9 +31,9 @@ public sealed class ScopedSql
     /// <summary><c>alias.TenantId = @TenantId</c>. Always applied: in dedicated databases it is a no-op filter.</summary>
     public string Tenant(string alias) => $"{alias}.{_dialect.QuoteIdentifier("TenantId")} = @TenantId";
 
-    /// <summary><c>alias.OrganizationUnitId IN @UnitIds</c>, or <c>1 = 1</c> when the caller is not restricted.</summary>
+    /// <summary><c>alias.OrganizationUnitId IN @UnitIds</c> (per dialect), or <c>1 = 1</c> when the caller is not restricted.</summary>
     public string Units(string alias) =>
-        IsUnitFiltered ? $"{alias}.{_dialect.QuoteIdentifier("OrganizationUnitId")} IN @UnitIds" : "1 = 1";
+        IsUnitFiltered ? _dialect.InList($"{alias}.{_dialect.QuoteIdentifier("OrganizationUnitId")}", "UnitIds") : "1 = 1";
 
     /// <summary><c>alias.IsDeleted = FALSE</c>.</summary>
     public string NotDeleted(string alias) => $"{alias}.{_dialect.QuoteIdentifier("IsDeleted")} = {_dialect.Boolean(false)}";

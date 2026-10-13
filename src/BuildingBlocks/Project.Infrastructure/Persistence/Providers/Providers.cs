@@ -103,6 +103,9 @@ public sealed class PostgreSqlProvider : IDatabaseProvider
 
         public string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
 
+        // Npgsql binds arrays natively, so Dapper does not expand the list: IN @p would become IN $1.
+        public string InList(string column, string parameter) => $"{column} = ANY(@{parameter})";
+
         public string Table(string schema, string table) => $"{QuoteIdentifier(schema)}.{QuoteIdentifier(table)}";
 
         public string Boolean(bool value) => value ? "TRUE" : "FALSE";

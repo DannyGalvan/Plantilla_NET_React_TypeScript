@@ -206,4 +206,10 @@ public interface ISqlDialect
 
     /// <summary>Builds the command used to invoke a stored procedure or function.</summary>
     (string CommandText, CommandType CommandType) Procedure(string schema, string name, IReadOnlyList<string> parameterNames);
+
+    /// <summary>
+    /// <c>column IN @parameter</c> for a list parameter. Dapper expands the list, except on engines that bind arrays
+    /// natively (PostgreSQL), which need <c>column = ANY(@parameter)</c>.
+    /// </summary>
+    string InList(string column, string parameter) => $"{column} IN @{parameter}";
 }
