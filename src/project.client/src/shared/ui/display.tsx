@@ -106,12 +106,21 @@ export function AvatarFallback({ className, ...props }: ComponentProps<typeof Av
 
 export const TooltipProvider = TooltipPrimitive.Provider;
 
-export function Tooltip({ content, children }: { content: string; children: React.ReactNode }) {
+export function Tooltip({
+  content,
+  side,
+  children,
+}: {
+  content: string;
+  side?: ComponentProps<typeof TooltipPrimitive.Content>['side'];
+  children: React.ReactNode;
+}) {
   return (
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
+          side={side}
           sideOffset={4}
           className="z-50 animate-in rounded-md bg-foreground px-3 py-1.5 text-xs text-background fade-in-0 zoom-in-95"
         >

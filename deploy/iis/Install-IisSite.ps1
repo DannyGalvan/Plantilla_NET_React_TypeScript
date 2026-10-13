@@ -45,4 +45,4 @@ icacls $SitePath /grant "${identity}:(OI)(CI)RX" | Out-Null
 icacls (Join-Path $SitePath 'logs') /grant "${identity}:(OI)(CI)M" | Out-Null
 
 Write-Host "OK: site '$SiteName' ready at $SitePath. Configure secrets as environment variables of the app pool:"
-Write-Host "  appcmd set config -section:system.applicationHost/applicationPools /+`"[name='$SiteName'].environmentVariables.[name='Jwt__SigningKey',value='...']`" /commit:apphost"
+Write-Host "  appcmd set config -section:system.applicationHost/applicationPools /+`"[name='$SiteName'].environmentVariables.[name='Configuration__MasterKey',value='...']`" /commit:apphost"

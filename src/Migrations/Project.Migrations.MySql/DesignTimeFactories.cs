@@ -1,6 +1,14 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Configuration.Infrastructure;
+using Project.Modules.Webhooks.Infrastructure;
+using Project.Modules.Workflows.Infrastructure;
+using Project.Modules.Sequences.Infrastructure;
+using Project.Modules.Jobs.Infrastructure;
+using Project.Modules.Audit.Infrastructure;
+using Project.Modules.Notifications.Infrastructure;
+using Project.Modules.Files.Infrastructure;
 using Project.Modules.Catalog.Infrastructure;
 using Project.Modules.Identity.Infrastructure.Persistence;
 using Project.Modules.Organization.Infrastructure.Persistence;
@@ -28,4 +36,44 @@ public sealed class OrganizationDbContextFactory : IDesignTimeDbContextFactory<O
 public sealed class CatalogDbContextFactory : IDesignTimeDbContextFactory<CatalogDbContext>
 {
     public CatalogDbContext CreateDbContext(string[] args) => DesignTime.Create<CatalogDbContext>(new MySqlProvider(), "Catalog");
+}
+
+public sealed class FilesDbContextFactory : IDesignTimeDbContextFactory<FilesDbContext>
+{
+    public FilesDbContext CreateDbContext(string[] args) => DesignTime.Create<FilesDbContext>(new MySqlProvider(), "Files");
+}
+
+public sealed class NotificationsDbContextFactory : IDesignTimeDbContextFactory<NotificationsDbContext>
+{
+    public NotificationsDbContext CreateDbContext(string[] args) => DesignTime.Create<NotificationsDbContext>(new MySqlProvider(), "Notifications");
+}
+
+public sealed class AuditDbContextFactory : IDesignTimeDbContextFactory<AuditDbContext>
+{
+    public AuditDbContext CreateDbContext(string[] args) => DesignTime.Create<AuditDbContext>(new MySqlProvider(), "Audit");
+}
+
+public sealed class JobsDbContextFactory : IDesignTimeDbContextFactory<JobsDbContext>
+{
+    public JobsDbContext CreateDbContext(string[] args) => DesignTime.Create<JobsDbContext>(new MySqlProvider(), "Jobs");
+}
+
+public sealed class SequencesDbContextFactory : IDesignTimeDbContextFactory<SequencesDbContext>
+{
+    public SequencesDbContext CreateDbContext(string[] args) => DesignTime.Create<SequencesDbContext>(new MySqlProvider(), "Sequences");
+}
+
+public sealed class WorkflowsDbContextFactory : IDesignTimeDbContextFactory<WorkflowsDbContext>
+{
+    public WorkflowsDbContext CreateDbContext(string[] args) => DesignTime.Create<WorkflowsDbContext>(new MySqlProvider(), "Workflows");
+}
+
+public sealed class WebhooksDbContextFactory : IDesignTimeDbContextFactory<WebhooksDbContext>
+{
+    public WebhooksDbContext CreateDbContext(string[] args) => DesignTime.Create<WebhooksDbContext>(new MySqlProvider(), "Webhooks");
+}
+
+public sealed class ConfigurationDbContextFactory : IDesignTimeDbContextFactory<ConfigurationDbContext>
+{
+    public ConfigurationDbContext CreateDbContext(string[] args) => DesignTime.Create<ConfigurationDbContext>(new MySqlProvider(), "Configuration");
 }

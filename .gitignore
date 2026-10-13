@@ -41,3 +41,6 @@ src/project.client/yarn.lock
 CLAUDE.md
 .DS_Store
 *.log
+
+# Local file storage of the Files module (Files:Default:Settings:rootPath)
+App_Data/

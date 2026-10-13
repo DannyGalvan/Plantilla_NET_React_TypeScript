@@ -2,6 +2,14 @@ using Project.Modules.Catalog.Infrastructure;
 using Project.Modules.Identity.Infrastructure;
 using Project.Modules.Organization.Infrastructure;
 using Project.Modules.Tenancy.Infrastructure;
+using Project.Modules.Files.Infrastructure;
+using Project.Modules.Notifications.Infrastructure;
+using Project.Modules.Audit.Infrastructure;
+using Project.Modules.Jobs.Infrastructure;
+using Project.Modules.Sequences.Infrastructure;
+using Project.Modules.Workflows.Infrastructure;
+using Project.Modules.Webhooks.Infrastructure;
+using Project.Modules.Configuration.Infrastructure;
 using Project.Web.Modules;
 
 namespace Project.Composition;
@@ -19,5 +27,13 @@ public static class AppModules
         new IdentityModule(),
         new OrganizationModule(),
         new CatalogModule(),
+        new FilesModule(),
+        new NotificationsModule(),
+        new AuditModule(),
+        new JobsModule(),
+        new SequencesModule(),
+        new WorkflowsModule(),
+        new WebhooksModule(),
+        new ConfigurationModule(),
     ];
 }

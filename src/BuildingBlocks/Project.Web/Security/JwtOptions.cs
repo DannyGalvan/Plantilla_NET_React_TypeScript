@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Project.Application.Configuration;
 
 namespace Project.Web.Security;
 
 /// <summary>
-/// <c>Jwt</c> section. <see cref="SigningKey"/> must come from user-secrets or an environment variable
-/// (<c>Jwt__SigningKey</c>); generate one with <c>openssl rand -base64 48</c>.
+/// <c>Jwt</c> section, editable at runtime in the configuration page. <see cref="SigningKey"/> is generated on the
+/// first start and stored encrypted in the platform database; changing it signs every user out.
 /// </summary>
 public sealed class JwtOptions
 {
@@ -18,8 +19,8 @@ public sealed class JwtOptions
     [Required]
     public string Audience { get; set; } = "project-client";
 
-    [Required]
-    [MinLength(32, ErrorMessage = "Jwt:SigningKey must have at least 32 characters.")]
+    [Secret]
+    [ConfigurationHelp("At least 32 characters. Generated automatically; changing it signs every user out.")]
     public string SigningKey { get; set; } = string.Empty;
 
     [Range(1, 1440)]
@@ -28,7 +29,11 @@ public sealed class JwtOptions
     [Range(1, 365)]
     public int RefreshTokenDays { get; set; } = 7;
 
-    public SymmetricSecurityKey GetSecurityKey() => new(Encoding.UTF8.GetBytes(SigningKey));
+    public SymmetricSecurityKey GetSecurityKey() =>
+        SigningKey.Length >= 32
+            ? new(Encoding.UTF8.GetBytes(SigningKey))
+            : throw new InvalidOperationException(
+                "Jwt:SigningKey is not configured. Set Configuration:MasterKey so it is generated and stored in the database, or provide Jwt__SigningKey.");
 }
 
 /// <summary><c>Cors</c> section. Only needed when the SPA is served from another origin.</summary>
@@ -36,6 +41,7 @@ public sealed class CorsOptions
 {
     public const string SectionName = "Cors";
 
+    [ConfigurationHelp("Origins allowed to call the API from a browser, for example https://app.example.com.")]
     public string[] AllowedOrigins { get; set; } = [];
 }
 
@@ -53,7 +59,7 @@ public sealed class RateLimitingOptions
     public int AuthPermitPer15Minutes { get; set; } = 10;
 }
 
-/// <summary><c>Hosting</c> section.</summary>
+/// <summary><c>Hosting</c> section. Read at startup: it stays in appsettings or environment variables.</summary>
 public sealed class HostingOptions
 {
     public const string SectionName = "Hosting";

@@ -1,13 +1,22 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
+using Project.Application.Files;
+using Project.Application.Notifications;
 using Project.Application.Organization;
+using Project.Application.Security;
+using Project.Application.Sequences;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
+using Project.Application.Workflows;
 using Project.Infrastructure.Tenancy;
+using Project.SharedKernel;
 
 namespace Project.Infrastructure.Services;
 
@@ -131,3 +140,73 @@ public sealed class LoggingEmailSender(ILogger<LoggingEmailSender> logger) : IEm
         return Task.CompletedTask;
     }
 }
+
+/// <summary>Secrets encrypted with ASP.NET Core Data Protection (one protector per purpose).</summary>
+public sealed class DataProtectionSecretProtector(IDataProtectionProvider provider) : ISecretProtector
+{
+    private const string Root = "Project.Secrets";
+
+    public string Protect(string purpose, string plaintext) => provider.CreateProtector(Root, purpose).Protect(plaintext);
+
+    public string? Unprotect(string purpose, string protectedValue)
+    {
+        try
+        {
+            return provider.CreateProtector(Root, purpose).Unprotect(protectedValue);
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
+    }
+}
+
+/// <summary>Used when the Files module is not registered.</summary>
+public sealed class NoOpFileService : IFileService
+{
+    private static readonly Error Disabled = Error.Failure("files.disabled", "File storage is not enabled in this application.");
+
+    public Task<Result<FileDescriptor>> UploadAsync(FileUpload upload, CancellationToken ct) => Task.FromResult<Result<FileDescriptor>>(Disabled);
+
+    public Task<Result<FileContent>> OpenAsync(Guid id, CancellationToken ct) => Task.FromResult<Result<FileContent>>(Disabled);
+
+    public Task<Result> DeleteAsync(Guid id, CancellationToken ct) => Task.FromResult<Result>(Disabled);
+
+    public Task<IReadOnlyList<FileDescriptor>> ListAsync(string entityType, string entityId, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<FileDescriptor>>([]);
+}
+
+/// <summary>Used when the Notifications module is not registered.</summary>
+public sealed class NoOpNotificationSender : INotificationSender
+{
+    public Task SendAsync(Notify notification, CancellationToken ct) => Task.CompletedTask;
+}
+
+/// <summary>Used when the Sequences module is not registered.</summary>
+public sealed class NoOpSequenceGenerator : ISequenceGenerator
+{
+    public Task<string> NextAsync(string sequence, CancellationToken ct) =>
+        throw new InvalidOperationException("Document numbering is not enabled: register the Sequences module.");
+}
+
+/// <summary>Used when the Workflows module is not registered: submissions fail, nothing is pending.</summary>
+public sealed class NoOpApprovalService : IApprovalService
+{
+    public Task<Result<Guid>> SubmitAsync(ApprovalSubmission submission, CancellationToken ct) =>
+        Task.FromResult<Result<Guid>>(Error.Failure("workflows.disabled", "Approval flows are not enabled in this application."));
+
+    public Task<ApprovalStatus?> GetStatusAsync(string entityType, string entityId, CancellationToken ct) => Task.FromResult<ApprovalStatus?>(null);
+}
+
+/// <summary>Scoped holder of the outbox message being dispatched (set by the outbox processor).</summary>
+public sealed class EventContext : IEventContext
+{
+    public Guid? MessageId { get; set; }
+}
+
+/// <summary><c>Features</c> section: default value of each feature flag (map of name to on/off).</summary>
+public sealed class FeatureDefaults : Dictionary<string, bool>;
+
+/// <summary><c>Secrets</c> section: values referenced by name from <see cref="ISecretStore"/> (map, encrypted).</summary>
+[Secret]
+public sealed class SecretValues : Dictionary<string, string>;

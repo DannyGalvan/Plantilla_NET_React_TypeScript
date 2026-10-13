@@ -6,8 +6,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Project.Application.Abstractions;
+using Project.Application.Configuration;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
+using Project.Infrastructure.Services;
 using Project.Infrastructure.Tenancy;
 using Project.SharedKernel.Domain;
 
@@ -17,8 +19,10 @@ public sealed class OutboxOptions
 {
     public const string SectionName = "Outbox";
 
+    [RequiresRestart]
     public bool Enabled { get; set; } = true;
 
+    [RequiresRestart]
     public int PollingIntervalSeconds { get; set; } = 5;
 
     public int BatchSize { get; set; } = 20;
@@ -26,22 +30,26 @@ public sealed class OutboxOptions
     public int MaxAttempts { get; set; } = 10;
 }
 
-/// <summary>
-/// Dispatches the outbox of one module. Rows are claimed with a lease (<c>LockId</c> + <c>LockedUntil</c>), so
-/// several API instances can run the processor without double delivery. In database-per-tenant mode it walks
-/// every tenant database; each message is dispatched with the tenant context it was written under.
-/// </summary>
-public sealed class OutboxProcessor<TContext>(
-    IServiceScopeFactory scopeFactory,
-    IOptions<OutboxOptions> options,
-    IOptions<TenancyOptions> tenancy,
-    TimeProvider clock,
-    ILogger<OutboxProcessor<TContext>> logger) : BackgroundService
-    where TContext : ModuleDbContext
+/// <summary>Processes the outbox of one module DbContext.</summary>
+public interface IOutboxProcessor
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly ConcurrentDictionary<string, Type?> TypeCache = new();
+    Type ContextType { get; }
 
+    /// <summary>Dispatches the pending messages once (every tenant database when they are dedicated).</summary>
+    Task ProcessAllAsync(CancellationToken ct);
+}
+
+/// <summary>
+/// One background loop per instance that drains the outbox of every module in turn. Sequential on purpose: one
+/// database connection at a time instead of one poller per module, which keeps connection pools small when the
+/// application has many modules and many tenant databases.
+/// </summary>
+public sealed class OutboxDispatcher(
+    IEnumerable<IOutboxProcessor> processors,
+    IOptions<OutboxOptions> options,
+    TimeProvider clock,
+    ILogger<OutboxDispatcher> logger) : BackgroundService
+{
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.Value.Enabled)
@@ -52,20 +60,42 @@ public sealed class OutboxProcessor<TContext>(
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(1, options.Value.PollingIntervalSeconds)), clock);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            try
+            foreach (var processor in processors)
             {
-                await ProcessAllAsync(stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Outbox of {Context} failed; retrying on the next tick", typeof(TContext).Name);
+                try
+                {
+                    await processor.ProcessAllAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Outbox of {Context} failed; retrying on the next tick", processor.ContextType.Name);
+                }
             }
         }
     }
+}
+
+/// <summary>
+/// Dispatches the outbox of one module. Rows are claimed with a lease (<c>LockId</c> + <c>LockedUntil</c>), so
+/// several API instances can run the dispatcher without double delivery. In database-per-tenant mode it walks
+/// every tenant database; each message is dispatched with the tenant context it was written under.
+/// </summary>
+public sealed class OutboxProcessor<TContext>(
+    IServiceScopeFactory scopeFactory,
+    IOptionsMonitor<OutboxOptions> options,
+    IOptions<TenancyOptions> tenancy,
+    TimeProvider clock,
+    ILogger<OutboxProcessor<TContext>> logger) : IOutboxProcessor
+    where TContext : ModuleDbContext
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly ConcurrentDictionary<string, Type?> TypeCache = new();
+
+    public Type ContextType => typeof(TContext);
 
     /// <summary>Processes pending messages once. Public for tests and for on-demand flushing.</summary>
     public async Task ProcessAllAsync(CancellationToken ct)
@@ -93,10 +123,10 @@ public sealed class OutboxProcessor<TContext>(
         var context = services.GetRequiredService<TContext>();
         var now = clock.GetUtcNow();
         var lockId = Guid.NewGuid();
-        var batch = options.Value.BatchSize;
+        var batch = options.CurrentValue.BatchSize;
 
         var candidates = await context.OutboxMessages
-            .Where(m => m.ProcessedAt == null && m.Attempts < options.Value.MaxAttempts && (m.LockedUntil == null || m.LockedUntil < now))
+            .Where(m => m.ProcessedAt == null && m.Attempts < options.CurrentValue.MaxAttempts && (m.LockedUntil == null || m.LockedUntil < now))
             .OrderBy(m => m.OccurredAt)
             .Select(m => m.Id)
             .Take(batch)
@@ -134,6 +164,7 @@ public sealed class OutboxProcessor<TContext>(
 
             // Each message runs in its own scope with the tenant it was written under.
             await using var scope = scopeFactory.CreateAsyncScope();
+            scope.ServiceProvider.GetRequiredService<EventContext>().MessageId = message.Id;
             var setter = scope.ServiceProvider.GetRequiredService<ITenantSetter>();
             var info = await scope.ServiceProvider.GetRequiredService<ITenantStore>().FindByIdAsync(message.TenantId, ct) ?? tenant;
             if (info is not null)
@@ -155,7 +186,10 @@ public sealed class OutboxProcessor<TContext>(
     }
 }
 
-/// <summary>In-process event bus: resolves every <see cref="IDomainEventHandler{TEvent}"/> of the event type.</summary>
+/// <summary>
+/// In-process event bus: resolves every <see cref="IDomainEventHandler{TEvent}"/> of the event type, then every
+/// <see cref="IDomainEventObserver"/>.
+/// </summary>
 public sealed class InProcessEventBus(IServiceProvider services) : IEventBus
 {
     private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, IDomainEvent, CancellationToken, Task>> Dispatchers = new();
@@ -177,6 +211,11 @@ public sealed class InProcessEventBus(IServiceProvider services) : IEventBus
         foreach (var handler in services.GetServices<IDomainEventHandler<TEvent>>())
         {
             await handler.HandleAsync((TEvent)domainEvent, ct);
+        }
+
+        foreach (var observer in services.GetServices<IDomainEventObserver>())
+        {
+            await observer.OnEventAsync(domainEvent, ct);
         }
     }
 }

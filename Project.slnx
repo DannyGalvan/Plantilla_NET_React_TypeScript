@@ -37,6 +37,54 @@
     <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Domain/Project.Modules.Catalog.Domain.csproj" />
     <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Infrastructure/Project.Modules.Catalog.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Files/">
+    <Project Path="src/Modules/Files/Project.Modules.Files.Application/Project.Modules.Files.Application.csproj" />
+    <Project Path="src/Modules/Files/Project.Modules.Files.Contracts/Project.Modules.Files.Contracts.csproj" />
+    <Project Path="src/Modules/Files/Project.Modules.Files.Domain/Project.Modules.Files.Domain.csproj" />
+    <Project Path="src/Modules/Files/Project.Modules.Files.Infrastructure/Project.Modules.Files.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Application/Project.Modules.Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Contracts/Project.Modules.Notifications.Contracts.csproj" />
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Domain/Project.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Infrastructure/Project.Modules.Notifications.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Audit/">
+    <Project Path="src/Modules/Audit/Project.Modules.Audit.Application/Project.Modules.Audit.Application.csproj" />
+    <Project Path="src/Modules/Audit/Project.Modules.Audit.Contracts/Project.Modules.Audit.Contracts.csproj" />
+    <Project Path="src/Modules/Audit/Project.Modules.Audit.Domain/Project.Modules.Audit.Domain.csproj" />
+    <Project Path="src/Modules/Audit/Project.Modules.Audit.Infrastructure/Project.Modules.Audit.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Jobs/">
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Application/Project.Modules.Jobs.Application.csproj" />
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Contracts/Project.Modules.Jobs.Contracts.csproj" />
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Domain/Project.Modules.Jobs.Domain.csproj" />
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Infrastructure/Project.Modules.Jobs.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Sequences/">
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Application/Project.Modules.Sequences.Application.csproj" />
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Contracts/Project.Modules.Sequences.Contracts.csproj" />
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Domain/Project.Modules.Sequences.Domain.csproj" />
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Infrastructure/Project.Modules.Sequences.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Workflows/">
+    <Project Path="src/Modules/Workflows/Project.Modules.Workflows.Application/Project.Modules.Workflows.Application.csproj" />
+    <Project Path="src/Modules/Workflows/Project.Modules.Workflows.Contracts/Project.Modules.Workflows.Contracts.csproj" />
+    <Project Path="src/Modules/Workflows/Project.Modules.Workflows.Domain/Project.Modules.Workflows.Domain.csproj" />
+    <Project Path="src/Modules/Workflows/Project.Modules.Workflows.Infrastructure/Project.Modules.Workflows.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Webhooks/">
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Application/Project.Modules.Webhooks.Application.csproj" />
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Contracts/Project.Modules.Webhooks.Contracts.csproj" />
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Domain/Project.Modules.Webhooks.Domain.csproj" />
+    <Project Path="src/Modules/Webhooks/Project.Modules.Webhooks.Infrastructure/Project.Modules.Webhooks.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Configuration/">
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Application/Project.Modules.Configuration.Application.csproj" />
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Contracts/Project.Modules.Configuration.Contracts.csproj" />
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Domain/Project.Modules.Configuration.Domain.csproj" />
+    <Project Path="src/Modules/Configuration/Project.Modules.Configuration.Infrastructure/Project.Modules.Configuration.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

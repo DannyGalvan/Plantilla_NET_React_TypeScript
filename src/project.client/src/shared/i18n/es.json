@@ -36,13 +36,27 @@
     "unitTypes": "Tipos de unidad",
     "tenants": "Tenants",
     "settings": "Configuración",
-    "profile": "Mi perfil"
+    "profile": "Mi perfil",
+    "files": "Archivos",
+    "storage": "Almacenamiento",
+    "notificationTemplates": "Plantillas de notificación",
+    "audit": "Auditoría",
+    "jobs": "Tareas programadas",
+    "sequences": "Numeración",
+    "approvals": "Aprobaciones",
+    "workflows": "Flujos de aprobación",
+    "webhooks": "Webhooks",
+    "platformConfiguration": "Configuración de plataforma"
   },
   "theme": {
     "customize": "Personalizar apariencia",
     "description": "Los cambios se aplican al instante y se guardan en este navegador.",
     "mode": "Modo",
-    "modes": { "light": "Claro", "dark": "Oscuro", "system": "Sistema" },
+    "modes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    },
     "preset": "Paleta",
     "presets": {
       "default": "Índigo",
@@ -55,11 +69,17 @@
     "useBrandColor": "Usar el de la marca",
     "radius": "Bordes",
     "density": "Densidad",
-    "densities": { "comfortable": "Cómoda", "compact": "Compacta" },
+    "densities": {
+      "comfortable": "Cómoda",
+      "compact": "Compacta"
+    },
     "language": "Idioma",
     "reset": "Restablecer"
   },
-  "languages": { "es": "Español", "en": "English" },
+  "languages": {
+    "es": "Español",
+    "en": "English"
+  },
   "context": {
     "tenant": "Organización",
     "unit": "Unidad",
@@ -93,5 +113,44 @@
     "code": "Código",
     "status": "Estado",
     "createdAt": "Creado"
+  },
+  "attachments": {
+    "title": "Adjuntos",
+    "add": "Adjuntar",
+    "uploading": "Subiendo...",
+    "download": "Descargar",
+    "empty": "Sin archivos adjuntos."
+  },
+  "history": {
+    "title": "Historial de cambios",
+    "empty": "Sin cambios registrados.",
+    "operations": {
+      "created": "Creado",
+      "updated": "Modificado",
+      "deleted": "Eliminado",
+      "restored": "Restaurado"
+    }
+  },
+  "dataExchange": {
+    "export": "Exportar",
+    "import": "Importar",
+    "formats": {
+      "csv": "CSV",
+      "xlsx": "Excel (.xlsx)"
+    },
+    "hint": "Se validará {{file}} completo antes de guardar: si una fila tiene errores no se importa nada.",
+    "validate": "Validar",
+    "valid": "{{count}} filas válidas. Puedes importarlas.",
+    "invalid": "{{count}} filas con errores. Corrígelas y vuelve a intentar.",
+    "imported": "{{count}} registros importados.",
+    "row": "Fila {{row}}"
+  },
+  "shell": {
+    "navigation": "Navegación principal",
+    "openMenu": "Abrir menú",
+    "show": "Mostrar menú lateral",
+    "hide": "Ocultar menú lateral",
+    "collapse": "Contraer",
+    "expand": "Expandir"
   }
 }

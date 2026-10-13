@@ -41,7 +41,7 @@ Define variables de entorno del sistema (o en el editor de configuración de IIS
 ```powershell
 [Environment]::SetEnvironmentVariable('Database__Provider', 'SqlServer', 'Machine')
 [Environment]::SetEnvironmentVariable('Database__ConnectionStrings__Default', '<cadena>', 'Machine')
-[Environment]::SetEnvironmentVariable('Jwt__SigningKey', '<clave-de-32-o-mas>', 'Machine')
+[Environment]::SetEnvironmentVariable('Configuration__MasterKey', '<openssl rand -base64 32>', 'Machine')
 [Environment]::SetEnvironmentVariable('Seed__AdminPassword', '<contraseña>', 'Machine')
 iisreset
 ```

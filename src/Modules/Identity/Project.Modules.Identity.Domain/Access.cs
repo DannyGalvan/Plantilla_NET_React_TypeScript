@@ -16,6 +16,7 @@ public sealed class Role : AuditableAggregateRoot
 
     public string Name { get; private set; } = string.Empty;
 
+    [AuditIgnore]
     public string NormalizedName { get; private set; } = string.Empty;
 
     public string? Description { get; private set; }

@@ -10,4 +10,10 @@ public interface IUserDirectory
 
     /// <summary>True when the user exists and belongs to the current tenant.</summary>
     Task<bool> IsMemberAsync(Guid userId, CancellationToken ct);
+
+    /// <summary>Members of the current tenant holding <paramref name="permission"/> through a role (approvers, recipients).</summary>
+    Task<IReadOnlyList<UserSummary>> FindWithPermissionAsync(string permission, CancellationToken ct);
+
+    /// <summary>Members of the current tenant assigned to the role named <paramref name="role"/>.</summary>
+    Task<IReadOnlyList<UserSummary>> FindInRoleAsync(string role, CancellationToken ct);
 }

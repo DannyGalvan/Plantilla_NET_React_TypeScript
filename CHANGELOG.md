@@ -2,6 +2,46 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); versionado [SemVer](https://semver.org/lang/es/).
 
+## [2.1.0] - 2026-10-13
+
+Plantilla agnóstica de dominio: capacidades transversales para cualquier tipo de aplicación.
+
+### Agregado
+
+- Módulos de capacidades, cada uno opcional, multi-tenant y con su abstracción en `Project.Application`:
+  - `Files`: adjuntos con los permisos del registro, y almacenamiento por tenant en disco, S3, Azure Blob, Google Drive
+    u OneDrive (OAuth).
+  - `Notifications`: bandeja in-app y email con plantillas por tenant.
+  - `Audit`: historial de cambios automático.
+  - `Jobs`: tareas programadas por tenant con lease distribuido.
+  - `Sequences`: numeración de documentos.
+  - `Workflows`: flujos de aprobación por permiso, rol, usuario o monto.
+  - `Webhooks`: firmados con HMAC, con reintentos y protección SSRF.
+- `Money` en el SharedKernel.
+- Importar y exportar CSV o Excel en todo recurso de `MapCrud`. La importación es todo o nada, con reporte por fila.
+- `IModule.EnabledByDefault` y `Modules:Enabled` para módulos opcionales; `scripts/remove-module.mjs`.
+- Widgets del inicio y elementos de la barra superior aportados por los manifiestos de cada módulo.
+- Llaves de Data Protection compartidas en la base de plataforma.
+- `ITenantJobRunner.RunForTenantAsync`, `IDomainEventObserver` e `IEventContext` (consumidores idempotentes).
+- Módulo `Configuration`: configuración de la plataforma en la base de datos, editable en *Configuración de
+  plataforma* y aplicada sin volver a desplegar. Incluye SMTP, OAuth, JWT, límites, webhooks, auditoría, feature flags
+  y secretos referenciados.
+  - Los secretos se cifran con `Configuration:MasterKey`, igual que el anillo de Data Protection.
+  - La llave JWT se genera en el primer arranque.
+  - Cada módulo publica sus secciones con `AddConfigurableSection`, y la pantalla se genera desde la clase de opciones.
+
+### Cambiado
+
+- `Catalog` es un ejemplo opcional: solo se carga con `Modules:Enabled: ["Catalog"]` (activo en Development).
+- Un único despachador de outbox por instancia en lugar de uno por módulo, para no agotar las conexiones de la base.
+- Los HttpClient ya no reintentan métodos no idempotentes (POST, PUT, PATCH, DELETE).
+- `appsettings.json` solo contiene el bootstrap: motor, conexión, modo de tenancy y módulos. `Jwt:SigningKey` ya no se
+  configura a mano; `Configuration:MasterKey` es el único secreto de arranque además de la conexión.
+- Permisos de plataforma declarados con `PermissionDefinition.PlatformOnly` en lugar de una lista fija.
+- Menú lateral expandible, contraíble a una barra de iconos (`Ctrl+B` o `Cmd+B`) u oculto. La preferencia se recuerda
+  en el navegador, y el menú tiene su propio scroll, independiente del de la página.
+- Las pruebas de arquitectura y la verificación de migraciones de CI descubren los módulos automáticamente.
+
 ## [2.0.0] - 2026-10-11
 
 Reescritura completa de la plantilla como plataforma modular.

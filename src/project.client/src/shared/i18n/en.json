@@ -36,13 +36,27 @@
     "unitTypes": "Unit types",
     "tenants": "Tenants",
     "settings": "Settings",
-    "profile": "My profile"
+    "profile": "My profile",
+    "files": "Files",
+    "storage": "Storage",
+    "notificationTemplates": "Notification templates",
+    "audit": "Audit",
+    "jobs": "Scheduled jobs",
+    "sequences": "Numbering",
+    "approvals": "Approvals",
+    "workflows": "Approval flows",
+    "webhooks": "Webhooks",
+    "platformConfiguration": "Platform configuration"
   },
   "theme": {
     "customize": "Customize appearance",
     "description": "Changes apply instantly and are saved in this browser.",
     "mode": "Mode",
-    "modes": { "light": "Light", "dark": "Dark", "system": "System" },
+    "modes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "preset": "Palette",
     "presets": {
       "default": "Indigo",
@@ -55,11 +69,17 @@
     "useBrandColor": "Use the brand color",
     "radius": "Corners",
     "density": "Density",
-    "densities": { "comfortable": "Comfortable", "compact": "Compact" },
+    "densities": {
+      "comfortable": "Comfortable",
+      "compact": "Compact"
+    },
     "language": "Language",
     "reset": "Reset"
   },
-  "languages": { "es": "Español", "en": "English" },
+  "languages": {
+    "es": "Español",
+    "en": "English"
+  },
   "context": {
     "tenant": "Organization",
     "unit": "Unit",
@@ -93,5 +113,44 @@
     "code": "Code",
     "status": "Status",
     "createdAt": "Created"
+  },
+  "attachments": {
+    "title": "Attachments",
+    "add": "Attach",
+    "uploading": "Uploading...",
+    "download": "Download",
+    "empty": "No attachments."
+  },
+  "history": {
+    "title": "Change history",
+    "empty": "No changes recorded.",
+    "operations": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "restored": "Restored"
+    }
+  },
+  "dataExchange": {
+    "export": "Export",
+    "import": "Import",
+    "formats": {
+      "csv": "CSV",
+      "xlsx": "Excel (.xlsx)"
+    },
+    "hint": "{{file}} is validated completely before saving: if a row has errors nothing is imported.",
+    "validate": "Validate",
+    "valid": "{{count}} valid rows. You can import them.",
+    "invalid": "{{count}} rows with errors. Fix them and try again.",
+    "imported": "{{count}} records imported.",
+    "row": "Row {{row}}"
+  },
+  "shell": {
+    "navigation": "Main navigation",
+    "openMenu": "Open menu",
+    "show": "Show sidebar",
+    "hide": "Hide sidebar",
+    "collapse": "Collapse",
+    "expand": "Expand"
   }
 }

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Use cases of the Audit module.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Riok.Mapperly" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.Modules.Audit.Domain\Project.Modules.Audit.Domain.csproj" />
+    <ProjectReference Include="..\Project.Modules.Audit.Contracts\Project.Modules.Audit.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

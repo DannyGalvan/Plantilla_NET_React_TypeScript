@@ -12,6 +12,7 @@ import { ApiError } from '@/shared/api/problem-details';
 import { useQueryScope } from '@/shared/api/query-keys';
 import { Can, usePermission } from '@/shared/auth/permissions';
 import { ConfirmDialog } from '@/shared/components/confirm-dialog';
+import { DataExchange } from '@/shared/components/data-exchange';
 import { DataTable, toListParams, useTableState } from '@/shared/components/data-table';
 import { applyServerErrors, fieldProps, FormField } from '@/shared/components/form';
 import { PageHeader } from '@/shared/components/page';
@@ -33,11 +34,8 @@ export function CategoriesPage() {
   const canUpdate = usePermission('catalog.categories.update');
   const canDelete = usePermission('catalog.categories.delete');
 
-  const list = useCrudList(
-    scope,
-    categoriesApi,
-    toListParams(state, (q) => `name:contains:${q}`),
-  );
+  const params = toListParams(state, (q) => `name:contains:${q}`);
+  const list = useCrudList(scope, categoriesApi, params);
   const { create, update, remove } = useCrudMutations(scope, categoriesApi);
   const form = useForm<CategoryForm>({ resolver: zodResolver(formSchema) });
   const errors = form.formState.errors;
@@ -118,17 +116,25 @@ export function CategoriesPage() {
         title={t('categories.title')}
         description={t('categories.description')}
         actions={
-          <Can permission="catalog.categories.create">
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setOpen(true);
-              }}
-            >
-              <PlusIcon />
-              {t('categories.new')}
-            </Button>
-          </Can>
+          <>
+            <DataExchange
+              resource="/catalog/categories"
+              params={params}
+              permission="catalog.categories"
+              onImported={() => void list.refetch()}
+            />
+            <Can permission="catalog.categories.create">
+              <Button
+                onClick={() => {
+                  setEditing(null);
+                  setOpen(true);
+                }}
+              >
+                <PlusIcon />
+                {t('categories.new')}
+              </Button>
+            </Can>
+          </>
         }
       />
       <DataTable

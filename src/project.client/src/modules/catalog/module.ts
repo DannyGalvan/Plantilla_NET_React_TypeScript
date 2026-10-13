@@ -1,12 +1,18 @@
 import type { ModuleManifest } from '@/shared/modules/manifest';
 
 import { catalogResources } from './i18n';
+import { CategoriesKpi, LowStockKpi, ProductsKpi } from './widgets';
 
-/** Sample business module. Copy it (or run `pnpm new-module <name>`) to start a new one. */
+/** Opt-in sample module (backend `Modules:Enabled`). Copy it, or run `pnpm new-module <name>`, to start a new one. */
 const manifest: ModuleManifest = {
   id: 'catalog',
   backendModule: 'catalog',
   i18n: catalogResources,
+  widgets: [
+    { id: 'catalog.products', component: ProductsKpi, order: 100 },
+    { id: 'catalog.categories', component: CategoriesKpi, order: 110 },
+    { id: 'catalog.low-stock', component: LowStockKpi, order: 120 },
+  ],
   routes: [
     {
       path: 'catalog/products',

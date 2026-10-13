@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Project.Application.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Project.Application.Abstractions;
 using Project.Application.Crud;
@@ -23,6 +24,7 @@ public static class DependencyInjection
 
         services.TryAddSingleton<QueryParser>();
         services.AddOptions<CrudOptions>().Bind(configuration.GetSection(CrudOptions.SectionName));
+        services.AddConfigurableSection<CrudOptions>(CrudOptions.SectionName, "platform", "Tamaño máximo de página de los listados.");
         return services;
     }
 

@@ -36,15 +36,15 @@ public sealed class BcryptPasswordHasher : IPasswordHasher
 }
 
 /// <summary>HS256 access tokens. Claims: sub, name, email, tid, ou, pv, role, jti. No permissions.</summary>
-public sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider clock) : ITokenService
+public sealed class JwtTokenService(IOptionsMonitor<JwtOptions> options, TimeProvider clock) : ITokenService
 {
     private readonly JsonWebTokenHandler _handler = new();
 
-    public TimeSpan RefreshTokenLifetime => TimeSpan.FromDays(options.Value.RefreshTokenDays);
+    public TimeSpan RefreshTokenLifetime => TimeSpan.FromDays(options.CurrentValue.RefreshTokenDays);
 
     public AccessToken CreateAccessToken(AccessTokenRequest request)
     {
-        var settings = options.Value;
+        var settings = options.CurrentValue;
         var now = clock.GetUtcNow();
         var expires = now.AddMinutes(settings.AccessTokenMinutes);
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Project.Application;
+using Project.Application.Configuration;
 using Project.Application.Security;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
@@ -29,6 +30,7 @@ public sealed class IdentityModule : IModule
     public void AddServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<IdentityOptions>().Bind(configuration.GetSection(IdentityOptions.SectionName));
+        services.AddConfigurableSection<IdentityOptions>(IdentityOptions.SectionName, "identity", "URL pública para enlaces de correo y vigencia del restablecimiento de contraseña.");
 
         services.AddModuleDbContext<IdentityDbContext>(Name, DataScope);
         services.AddRepositoriesFor<IdentityDbContext>();

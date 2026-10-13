@@ -243,14 +243,17 @@ public sealed class PermissionCatalog(IEnumerable<IPermissionProvider> providers
 
     public IReadOnlyList<PermissionDefinition> All { get; } = providers.SelectMany(p => p.GetPermissions()).DistinctBy(p => p.Key).ToList();
 
-    public IEnumerable<PermissionDefinition> Assignable => All.Where(p => !IsPlatformOnly(p.Key));
+    public IEnumerable<PermissionDefinition> Assignable => All.Where(p => !IsReserved(p.Key));
 
     public static bool IsPlatformOnly(string key) => PlatformOnlyPrefixes.Any(prefix => key.StartsWith(prefix, StringComparison.Ordinal));
+
+    /// <summary>Platform permissions: by legacy prefix or declared with <c>PlatformOnly</c>.</summary>
+    public bool IsReserved(string key) => IsPlatformOnly(key) || All.Any(p => p.Key == key && p.PlatformOnly);
 
     public Result<IReadOnlyList<string>> ValidateAssignable(IEnumerable<string> keys)
     {
         var normalized = keys.Select(k => k.Trim().ToLowerInvariant()).Distinct().ToList();
-        var unknown = normalized.Where(k => IsPlatformOnly(k) || All.All(p => p.Key != k)).ToList();
+        var unknown = normalized.Where(k => IsReserved(k) || All.All(p => p.Key != k)).ToList();
         return unknown.Count == 0
             ? Result<IReadOnlyList<string>>.Success(normalized)
             : Error.Validation("permissions", $"Unknown or reserved permissions: {string.Join(", ", unknown)}.");

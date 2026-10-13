@@ -23,7 +23,7 @@ public sealed class CrudService<TEntity, TId, TDto, TCreate, TUpdate>(
     ICurrentUser currentUser,
     IEnumerable<IValidator<TCreate>> createValidators,
     IEnumerable<IValidator<TUpdate>> updateValidators,
-    IOptions<CrudOptions> options)
+    IOptionsSnapshot<CrudOptions> options)
     : ICrudService<TId, TDto, TCreate, TUpdate>
     where TEntity : AggregateRoot<TId>
     where TId : notnull
@@ -176,6 +176,37 @@ public sealed class CrudService<TEntity, TId, TDto, TCreate, TUpdate>(
         mapper.Apply(input, entity);
         var saved = await SaveAsync(ct);
         return saved.IsFailure ? saved.Error! : mapper.ToDto(entity);
+    }
+
+    public async Task<Result<ImportReport>> ImportAsync(IReadOnlyList<ImportRow<TCreate>> rows, bool dryRun, CancellationToken ct)
+    {
+        var errors = new List<ImportRowError>();
+        foreach (var row in rows)
+        {
+            var problems = row.Errors.ToList();
+            if (row.Value is not null && await ValidationRunner.ValidateAsync(createValidators, row.Value, ct) is { } invalid)
+            {
+                problems.AddRange(invalid.Details?.SelectMany(d => d.Value.Select(m => $"{d.Key}: {m}")) ?? [invalid.Description]);
+            }
+
+            if (problems.Count > 0)
+            {
+                errors.Add(new ImportRowError(row.Number, problems));
+            }
+        }
+
+        if (errors.Count > 0 || dryRun)
+        {
+            return new ImportReport(rows.Count, 0, dryRun, errors);
+        }
+
+        foreach (var row in rows)
+        {
+            repository.Add(mapper.ToEntity(row.Value!));
+        }
+
+        var saved = await SaveAsync(ct);
+        return saved.IsFailure ? saved.Error! : new ImportReport(rows.Count, rows.Count, false, []);
     }
 
     private async Task<Result> SaveAsync(CancellationToken ct)

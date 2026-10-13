@@ -21,7 +21,7 @@ Abre `http://localhost:8080`. Usuario `admin`, contraseña `ADMIN_PASSWORD` del 
 
 ```bash
 docker compose --profile postgres up -d          # o sqlserver | mysql
-./scripts/setup.sh                               # elige motor y modo; guarda secretos en user-secrets
+./scripts/setup.sh                               # elige motor y modo; guarda conexión y master key en user-secrets
 dotnet run --project src/Host/Project.Api
 ```
 

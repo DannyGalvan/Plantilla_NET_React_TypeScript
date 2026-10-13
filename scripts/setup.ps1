@@ -41,7 +41,12 @@ $project = 'src/Host/Project.Api'
 dotnet user-secrets set 'Database:Provider' $provider --project $project | Out-Null
 dotnet user-secrets set 'Database:ConnectionStrings:Default' $connection --project $project | Out-Null
 dotnet user-secrets set 'Tenancy:Mode' $mode --project $project | Out-Null
-dotnet user-secrets set 'Jwt:SigningKey' (New-Secret 64) --project $project | Out-Null
+# The master key encrypts the secrets stored in the database: generated once, never replaced (a new key would make
+# the stored secrets unreadable). Everything else is configured at runtime in the configuration page.
+if (-not (dotnet user-secrets list --project $project 2>$null | Select-String '^Configuration:MasterKey')) {
+    $masterKey = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+    dotnet user-secrets set 'Configuration:MasterKey' $masterKey --project $project | Out-Null
+}
 dotnet user-secrets set 'Seed:AdminPassword' $adminPassword --project $project | Out-Null
 Write-Host 'OK user-secrets written (shared by Project.Api and Project.MigrationService).'
 

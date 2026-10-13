@@ -21,7 +21,7 @@ public static class ModuleRegistrationExtensions
     /// <summary>
     /// Registers a module DbContext. The connection (and even the engine) is resolved per scope through
     /// <see cref="ITenantConnectionResolver"/>, so the same registration serves every tenancy mode.
-    /// Also registers its outbox processor.
+    /// Also registers its outbox processor (drained by the single <see cref="OutboxDispatcher"/> of the instance).
     /// </summary>
     public static IServiceCollection AddModuleDbContext<TContext>(this IServiceCollection services, string module, DataScope scope)
         where TContext : ModuleDbContext
@@ -42,14 +42,18 @@ public static class ModuleRegistrationExtensions
             options.AddInterceptors(sp.GetRequiredService<ModuleSaveChangesInterceptor>());
 
             // Failed commands surface as exceptions (logged once by the exception handler or the caller).
-            options.ConfigureWarnings(w => w.Log((Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.CommandError, Microsoft.Extensions.Logging.LogLevel.Debug)));
+            options.ConfigureWarnings(w => w.Log(
+                (Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.CommandError, Microsoft.Extensions.Logging.LogLevel.Debug),
+                (Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.QueryIterationFailed, Microsoft.Extensions.Logging.LogLevel.Debug),
+                (Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.SaveChangesFailed, Microsoft.Extensions.Logging.LogLevel.Debug)));
             if (database.EnableSensitiveDataLogging && sp.GetRequiredService<IHostEnvironment>().IsDevelopment())
             {
                 options.EnableSensitiveDataLogging();
             }
         });
 
-        services.AddHostedService<OutboxProcessor<TContext>>();
+        services.AddSingleton<IOutboxProcessor, OutboxProcessor<TContext>>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, OutboxDispatcher>());
         return services;
     }
 

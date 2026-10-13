@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Project.Application;
+using Project.Application.Files;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
 using Project.Modules.Catalog.Application;
@@ -97,13 +98,16 @@ internal sealed class CatalogSampleSeeder(IConfiguration configuration) : IDataS
 
 /// <summary>
 /// Sample business module: two CRUD resources with zero handlers (generic engine), a Dapper report and a stored
-/// procedure. Copy it as the starting point of a new module.
+/// procedure. Opt-in: it loads only with <c>Modules:Enabled: ["Catalog"]</c> (on in Development). Use it as a reference
+/// or remove it with <c>node scripts/remove-module.mjs Catalog</c>.
 /// </summary>
 public sealed class CatalogModule : IModule
 {
     public string Name => "Catalog";
 
     public DataScope DataScope => DataScope.Tenant;
+
+    public bool EnabledByDefault => false;
 
     public void AddServices(IServiceCollection services, IConfiguration configuration)
     {
@@ -112,6 +116,9 @@ public sealed class CatalogModule : IModule
         services.AddSqlExecutor<CatalogDb, CatalogDbContext>();
         services.AddModuleConventions(typeof(CatalogPermissionProvider).Assembly);
         services.AddScoped<IDataSeeder, CatalogSampleSeeder>();
+
+        // Products accept attachments (photos, data sheets) with the permissions of the product itself.
+        services.AddAttachmentTarget<Product>(CatalogAttachments.Product, CatalogPermissions.Products.Read, CatalogPermissions.Products.Update);
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)

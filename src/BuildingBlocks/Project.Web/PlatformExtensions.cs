@@ -14,7 +14,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Project.Application.Configuration;
 using Project.Infrastructure;
+using Project.Infrastructure.Configuration;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Tenancy;
 using Project.Web.Http;
@@ -34,9 +36,14 @@ public static class PlatformExtensions
         var services = builder.Services;
         var configuration = builder.Configuration;
 
+        // Runtime configuration from the platform database (everything except the bootstrap values).
+        builder.Configuration.AddDatabaseConfiguration();
         services.AddInfrastructure(configuration);
 
-        services.AddOptions<JwtOptions>().Bind(configuration.GetSection(JwtOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<JwtOptions>().Bind(configuration.GetSection(JwtOptions.SectionName)).ValidateDataAnnotations();
+        services.AddConfigurableSection<JwtOptions>(JwtOptions.SectionName, "identity", "Tokens de acceso: emisor, audiencia, duración y llave de firma.");
+        services.AddConfigurableSection<CorsOptions>(CorsOptions.SectionName, "platform", "Orígenes permitidos cuando la SPA vive en otro dominio.");
+        services.AddConfigurableSection<RateLimitingOptions>(RateLimitingOptions.SectionName, "platform", "Límites de peticiones por usuario o IP.");
         services.AddOptions<CorsOptions>().Bind(configuration.GetSection(CorsOptions.SectionName));
         services.AddOptions<RateLimitingOptions>().Bind(configuration.GetSection(RateLimitingOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<HostingOptions>().Bind(configuration.GetSection(HostingOptions.SectionName));
@@ -59,17 +66,12 @@ public static class PlatformExtensions
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddAuthorization();
         services.AddHostedService<EndpointSecurityValidator>();
-        services.AddHostedService<MigrateOnStartupService>();
+        // First hosted service: in development the schema exists before Data Protection, the outbox or the jobs touch it.
+        services.Insert(0, ServiceDescriptor.Singleton<IHostedService, MigrateOnStartupService>());
         services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
-        services.AddCors(o => o.AddDefaultPolicy(policy =>
-        {
-            var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-            if (origins.Length > 0)
-            {
-                policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-            }
-        }));
+        services.AddCors();
+        services.AddSingleton<Microsoft.AspNetCore.Cors.Infrastructure.ICorsPolicyProvider, ConfigurableCorsPolicyProvider>();
 
         AddRateLimiting(services, configuration);
 
@@ -150,18 +152,24 @@ public static class PlatformExtensions
     private static void AddAuthentication(IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+        // Rebuilt whenever the Jwt section changes (database configuration), without a restart.
+        services.AddSingleton<IOptionsChangeTokenSource<JwtBearerOptions>>(
+            new ConfigurationChangeTokenSource<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, configuration.GetSection(JwtOptions.SectionName)));
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IOptions<JwtOptions>>((bearer, jwt) =>
+            .Configure<IOptionsMonitor<JwtOptions>>((bearer, monitor) =>
             {
+                var jwt = monitor.CurrentValue;
                 bearer.MapInboundClaims = false;
                 bearer.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = jwt.Value.Issuer,
+                    ValidIssuer = jwt.Issuer,
                     ValidateAudience = true,
-                    ValidAudience = jwt.Value.Audience,
+                    ValidAudience = jwt.Audience,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = jwt.Value.GetSecurityKey(),
+
+                    // Resolved per token: the key may be generated or rotated after startup.
+                    IssuerSigningKeyResolver = (_, _, _, _) => [monitor.CurrentValue.GetSecurityKey()],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromSeconds(30),
                     NameClaimType = "name",
@@ -172,34 +180,40 @@ public static class PlatformExtensions
 
     private static void AddRateLimiting(IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
-        var settings = configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>() ?? new RateLimitingOptions();
+        // Limits are read per request: a change in the configuration page applies at once (the limit is part of the
+        // partition key, so new limits start new windows).
+        static RateLimitingOptions Current(HttpContext context) =>
+            context.RequestServices.GetRequiredService<IOptionsMonitor<RateLimitingOptions>>().CurrentValue;
 
         services.AddRateLimiter(o =>
         {
             o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-            // Policies always exist so endpoints can reference them; when disabled they never limit.
-            if (!settings.Enabled)
-            {
-                o.AddPolicy(AuthRateLimitPolicy, _ => RateLimitPartition.GetNoLimiter("disabled"));
-                return;
-            }
-
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                RateLimitPartition.GetFixedWindowLimiter(PartitionKey(context), _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = settings.GlobalPermitPerMinute,
-                    Window = TimeSpan.FromMinutes(1),
-                    QueueLimit = 0,
-                }));
+            {
+                var settings = Current(context);
+                return settings.Enabled
+                    ? RateLimitPartition.GetFixedWindowLimiter($"{settings.GlobalPermitPerMinute}:{PartitionKey(context)}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = settings.GlobalPermitPerMinute,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                    })
+                    : RateLimitPartition.GetNoLimiter("disabled");
+            });
 
             o.AddPolicy(AuthRateLimitPolicy, context =>
-                RateLimitPartition.GetFixedWindowLimiter($"auth:{PartitionKey(context)}", _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = settings.AuthPermitPer15Minutes,
-                    Window = TimeSpan.FromMinutes(15),
-                    QueueLimit = 0,
-                }));
+            {
+                var settings = Current(context);
+                return settings.Enabled
+                    ? RateLimitPartition.GetFixedWindowLimiter($"auth:{settings.AuthPermitPer15Minutes}:{PartitionKey(context)}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = settings.AuthPermitPer15Minutes,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0,
+                    })
+                    : RateLimitPartition.GetNoLimiter("disabled");
+            });
         });
     }
 

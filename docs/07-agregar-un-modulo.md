@@ -76,17 +76,42 @@ Declara `public sealed class InventorySettings : ISettingsSection` y regístrala
 Emite eventos con `Raise(new StockLow(...))` dentro del agregado; se guardan en el outbox y se publican a los
 `IDomainEventHandler<StockLow>` de cualquier módulo (definiendo el evento en `Contracts` si otro módulo lo consume).
 
-## 9. Pruebas
+## 9. Capacidades de la plataforma
+
+Antes de crear tablas propias para archivos, avisos o aprobaciones, usa lo que ya existe. Todo se declara en
+`AddServices` del módulo:
+
+| Necesito | Declaro | Uso |
+|---|---|---|
+| Adjuntos en mi entidad | `AddAttachmentTarget<T>(tipo, permisoLectura, permisoEscritura)` | `<Attachments>` en el front |
+| Avisar a usuarios | `AddNotificationTemplate(...)` | `INotificationSender.SendAsync` |
+| Numerar documentos | `AddSequence(...)` | `ISequenceGenerator.NextAsync` |
+| Aprobar antes de continuar | `AddWorkflow(...)` | `IApprovalService.SubmitAsync` y un manejador de `ApprovalCompletedEvent` |
+| Trabajo periódico | `AddRecurringJob<T>(nombre, cron)` | La clase implementa `IRecurringJob` |
+| Notificar a otros sistemas | `AddWebhookEvent<T>(nombre)` | Automático al despachar el evento |
+| Historial e importar/exportar | Nada | Automático para entidades `IAuditable` y recursos de `MapCrud` |
+
+Detalle y ejemplos en [Capacidades transversales](guias/capacidades-transversales.md).
+
+## 10. Pruebas
 
 Las pruebas funcionales de aislamiento existentes sirven de modelo (`tests/Project.Api.FunctionalTests`). Agrega
 pruebas unitarias del dominio en `tests/Project.UnitTests`.
 
-## 10. Frontend
+## 11. Frontend
 
-Edita `src/project.client/src/modules/inventory`: esquema zod en `api.ts`, formularios con `FormField` y
-`applyServerErrors`, textos en `i18n.ts` (es y en). Las rutas declaran `handle.permission`.
+Edita `src/project.client/src/modules/inventory`:
 
-## 11. Verificar
+- Esquema zod en `api.ts`.
+- Formularios con `FormField` y `applyServerErrors`.
+- Textos en `i18n.ts`, en es y en.
+- Las rutas declaran `handle.permission`.
+- Las tarjetas del inicio van en `widgets` del manifiesto.
+- Los elementos de la barra superior van en `topbarItems`.
+
+Para quitar un módulo entero (backend, migraciones, registro y front) usa `node scripts/remove-module.mjs <Modulo>`.
+
+## 12. Verificar
 
 ```bash
 dotnet build Project.slnx && dotnet test Project.slnx

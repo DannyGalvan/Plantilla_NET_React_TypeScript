@@ -1,5 +1,7 @@
 using System.Reflection;
 using NetArchTest.Rules;
+using Project.Application.Tenancy;
+using Project.Composition;
 using Project.SharedKernel.Domain;
 
 namespace Project.ArchitectureTests;
@@ -10,7 +12,10 @@ namespace Project.ArchitectureTests;
 /// </summary>
 public sealed class ArchitectureRulesTests
 {
-    private static readonly string[] Modules = ["Tenancy", "Identity", "Organization", "Catalog"];
+    // Every module of the application, discovered from the composition root: a new module is covered automatically.
+    private static readonly string[] Modules = [.. AppModules.All().Select(m => m.Name)];
+
+    private static readonly string[] TenantModules = [.. AppModules.All().Where(m => m.DataScope == DataScope.Tenant).Select(m => m.Name)];
 
     private static Assembly Load(string name) => Assembly.Load(name);
 
@@ -18,6 +23,8 @@ public sealed class ArchitectureRulesTests
         assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("Project.", StringComparison.Ordinal) || n.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal) || n.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
 
     public static TheoryData<string> ModuleNames() => [.. Modules];
+
+    public static TheoryData<string> TenantModuleNames() => [.. TenantModules];
 
     [Fact]
     public void SharedKernel_has_no_dependencies()
@@ -83,8 +90,7 @@ public sealed class ArchitectureRulesTests
     }
 
     [Theory]
-    [InlineData("Catalog")]
-    [InlineData("Organization")]
+    [MemberData(nameof(TenantModuleNames))]
     public void Aggregates_of_tenant_modules_are_multi_tenant(string module)
     {
         var offenders = Load($"Project.Modules.{module}.Domain").GetTypes()

@@ -208,4 +208,22 @@ public sealed class TenantJobRunner(
             }
         });
     }
+
+    public async Task<bool> RunForTenantAsync(Guid tenantId, Func<IServiceProvider, TenantInfo, CancellationToken, Task> work, CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var tenant = tenancy.Value.Mode == TenancyMode.None
+            ? TenantContext.DefaultTenant
+            : await scope.ServiceProvider.GetRequiredService<ITenantStore>().FindByIdAsync(tenantId, ct);
+        if (tenant is null || tenant.Id != tenantId || tenant.Status != TenantStatus.Active)
+        {
+            return false;
+        }
+
+        scope.ServiceProvider.GetRequiredService<ITenantSetter>().Set(tenant);
+        await scope.ServiceProvider.GetRequiredService<ITenantConnectionResolver>().PrepareAsync(tenant, ct);
+        await scope.ServiceProvider.GetRequiredService<IOrganizationContext>().InitializeAsync(ct);
+        await work(scope.ServiceProvider, tenant, ct);
+        return true;
+    }
 }

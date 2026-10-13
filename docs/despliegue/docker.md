@@ -16,13 +16,13 @@
 
 ```bash
 cp deploy/docker/.env.example deploy/docker/.env
-openssl rand -base64 48                       # pega el resultado en JWT_SIGNING_KEY
+openssl rand -base64 32                       # pega el resultado en MASTER_KEY (una sola vez, guárdala en tu bóveda)
 docker compose -f deploy/docker/docker-compose.prod.yml --env-file deploy/docker/.env up -d --build
 ```
 
 ```powershell
 Copy-Item deploy/docker/.env.example deploy/docker/.env
-[Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Max 256 }))
+[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))   # MASTER_KEY
 docker compose -f deploy/docker/docker-compose.prod.yml --env-file deploy/docker/.env up -d --build
 ```
 

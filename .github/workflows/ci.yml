@@ -45,7 +45,7 @@ jobs:
         run: |
           dotnet tool restore
           for provider in SqlServer PostgreSql MySql; do
-            for module in Tenancy Identity Organization Catalog; do
+            for module in $(ls src/Modules); do
               dotnet ef migrations has-pending-model-changes --no-build --configuration Release \
                 --project src/Migrations/Project.Migrations.$provider \
                 --startup-project src/Migrations/Project.Migrations.$provider \
@@ -137,7 +137,7 @@ jobs:
         run: |
           cat > .env <<EOF
           DB_PASSWORD=ci-$(openssl rand -hex 16)
-          JWT_SIGNING_KEY=$(openssl rand -hex 32)
+          MASTER_KEY=$(openssl rand -base64 32)
           ADMIN_PASSWORD=Ci.Admin-$(openssl rand -hex 6)
           EOF
           docker compose -f docker-compose.prod.yml --env-file .env up -d --build
