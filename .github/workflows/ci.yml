@@ -4,87 +4,182 @@ on:
   push:
     branches: [master, main]
   pull_request:
-    branches: [master, main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
-  DOTNET_VERSION: "8.0.x"
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   backend:
-    name: Backend (.NET)
+    name: Backend build, unit and architecture tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore Project.sln
+        run: dotnet restore Project.slnx
 
       - name: Build (warnings as errors)
-        run: dotnet build Project.sln --no-restore --configuration Release -warnaserror
+        run: dotnet build Project.slnx --no-restore -c Release
 
-      - name: Test
-        run: dotnet test Project.sln --no-build --configuration Release --logger "trx;LogFileName=backend.trx"
+      - name: Unit tests
+        run: dotnet test tests/Project.UnitTests --no-build -c Release --logger "trx;LogFileName=unit.trx"
 
-      - name: Vulnerability scan
-        run: dotnet list Project.Server/Project.Server.csproj package --vulnerable --include-transitive
+      - name: Architecture tests
+        run: dotnet test tests/Project.ArchitectureTests --no-build -c Release --logger "trx;LogFileName=architecture.trx"
 
-  frontend:
-    name: Frontend (React + TS)
+      - name: Migrations are up to date with the model
+        run: |
+          dotnet tool restore
+          for provider in SqlServer PostgreSql MySql; do
+            for module in Tenancy Identity Organization Catalog; do
+              dotnet ef migrations has-pending-model-changes --no-build --configuration Release \
+                --project src/Migrations/Project.Migrations.$provider \
+                --startup-project src/Migrations/Project.Migrations.$provider \
+                --context ${module}DbContext
+            done
+          done
+
+      - name: Vulnerable packages
+        run: |
+          dotnet list Project.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then exit 1; fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: "**/TestResults/*.trx"
+
+  functional:
+    name: Functional and isolation tests (${{ matrix.provider }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [PostgreSql, SqlServer, MySql]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          package_json_file: project.client/package.json
+          global-json-file: global.json
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Test against a real ${{ matrix.provider }} (Testcontainers)
+        env:
+          TEST_DB_PROVIDER: ${{ matrix.provider }}
+        run: dotnet test tests/Project.Api.FunctionalTests -c Release --logger "trx;LogFileName=functional-${{ matrix.provider }}.trx"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          node-version-file: project.client/.nvmrc
-          cache: "pnpm"
-          cache-dependency-path: project.client/pnpm-lock.yaml
+          name: functional-test-results-${{ matrix.provider }}
+          path: "**/TestResults/*.trx"
 
-      - name: Install
-        working-directory: project.client
-        run: pnpm install --frozen-lockfile --engine-strict
+  frontend:
+    name: Frontend verify and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/project.client
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Typecheck
-        working-directory: project.client
-        run: pnpm typecheck
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: src/project.client/package.json
 
-      - name: Lint
-        working-directory: project.client
-        run: pnpm lint
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: src/project.client/.nvmrc
+          cache: pnpm
+          cache-dependency-path: src/project.client/pnpm-lock.yaml
 
-      - name: Format check
-        working-directory: project.client
-        run: pnpm format:check
+      - run: pnpm install --frozen-lockfile
 
-      - name: Build
-        working-directory: project.client
+      - name: Typecheck, lint, format, design tokens and tests
+        run: pnpm verify
+
+      - name: Coverage
+        run: pnpm test:coverage
+
+      - name: Production build
         run: pnpm build
 
-      - name: Test
-        working-directory: project.client
-        run: pnpm test
+      - name: Vulnerable packages
+        run: pnpm audit --audit-level high
 
-      - name: Vulnerability scan
-        working-directory: project.client
-        # Bloquea en pull_request: los avisos high/critical se arreglan antes del merge.
-        # Informativo en master: un CVE publicado hoy no debe tumbar el push a producción
-        # sin que haya cambiado una línea de código.
-        continue-on-error: ${{ github.event_name != 'pull_request' }}
-        run: pnpm audit --audit-level=high
+  docker:
+    name: Docker images and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the production-like stack
+        working-directory: deploy/docker
+        run: |
+          cat > .env <<EOF
+          DB_PASSWORD=ci-$(openssl rand -hex 16)
+          JWT_SIGNING_KEY=$(openssl rand -hex 32)
+          ADMIN_PASSWORD=Ci.Admin-$(openssl rand -hex 6)
+          EOF
+          docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8080/health/ready && exit 0
+            sleep 5
+          done
+          echo "The API did not become ready in time"
+          exit 1
+
+      - name: Smoke test
+        working-directory: deploy/docker
+        run: |
+          set -e
+          curl -fsS http://localhost:8080/health/ready
+          curl -fsS http://localhost:8080/api/v1/platform/config
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          password=$(grep ADMIN_PASSWORD .env | cut -d= -f2)
+          curl -fsS -X POST http://localhost:8080/api/v1/identity/auth/login \
+            -H 'content-type: application/json' -d "{\"userName\":\"admin\",\"password\":\"$password\"}" | grep -q accessToken
+
+      - name: Logs on failure
+        if: failure()
+        working-directory: deploy/docker
+        run: docker compose -f docker-compose.prod.yml logs --no-color
+
+      - name: Stop
+        if: always()
+        working-directory: deploy/docker
+        run: docker compose -f docker-compose.prod.yml down -v
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: src/project.client/.nvmrc
+      - run: node scripts/check-docs.mjs
+      - name: Scripts parse
+        run: |
+          bash -n scripts/*.sh
+          pwsh -NoProfile -Command 'Get-ChildItem scripts/*.ps1 | ForEach-Object { $null = [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errors); if ($errors) { throw "$($_.Name): $errors" } }'

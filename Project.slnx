@@ -1,0 +1,56 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path=".editorconfig" />
+    <File Path="README.md" />
+    <File Path="docker-compose.yml" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Project.Application/Project.Application.csproj" />
+    <Project Path="src/BuildingBlocks/Project.Infrastructure/Project.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/Project.SharedKernel/Project.SharedKernel.csproj" />
+    <Project Path="src/BuildingBlocks/Project.Web/Project.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Tenancy/">
+    <Project Path="src/Modules/Tenancy/Project.Modules.Tenancy.Application/Project.Modules.Tenancy.Application.csproj" />
+    <Project Path="src/Modules/Tenancy/Project.Modules.Tenancy.Contracts/Project.Modules.Tenancy.Contracts.csproj" />
+    <Project Path="src/Modules/Tenancy/Project.Modules.Tenancy.Domain/Project.Modules.Tenancy.Domain.csproj" />
+    <Project Path="src/Modules/Tenancy/Project.Modules.Tenancy.Infrastructure/Project.Modules.Tenancy.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Project.Modules.Identity.Application/Project.Modules.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/Project.Modules.Identity.Contracts/Project.Modules.Identity.Contracts.csproj" />
+    <Project Path="src/Modules/Identity/Project.Modules.Identity.Domain/Project.Modules.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/Project.Modules.Identity.Infrastructure/Project.Modules.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Organization/">
+    <Project Path="src/Modules/Organization/Project.Modules.Organization.Application/Project.Modules.Organization.Application.csproj" />
+    <Project Path="src/Modules/Organization/Project.Modules.Organization.Contracts/Project.Modules.Organization.Contracts.csproj" />
+    <Project Path="src/Modules/Organization/Project.Modules.Organization.Domain/Project.Modules.Organization.Domain.csproj" />
+    <Project Path="src/Modules/Organization/Project.Modules.Organization.Infrastructure/Project.Modules.Organization.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Application/Project.Modules.Catalog.Application.csproj" />
+    <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Contracts/Project.Modules.Catalog.Contracts.csproj" />
+    <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Domain/Project.Modules.Catalog.Domain.csproj" />
+    <Project Path="src/Modules/Catalog/Project.Modules.Catalog.Infrastructure/Project.Modules.Catalog.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Migrations/">
+    <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
+    <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />
+    <Project Path="src/Migrations/Project.Migrations.SqlServer/Project.Migrations.SqlServer.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/Project.Api/Project.Api.csproj" />
+    <Project Path="src/Host/Project.Composition/Project.Composition.csproj" />
+    <Project Path="src/Host/Project.MigrationService/Project.MigrationService.csproj" />
+    <Project Path="src/Host/Project.ServiceDefaults/Project.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Project.Api.FunctionalTests/Project.Api.FunctionalTests.csproj" />
+    <Project Path="tests/Project.ArchitectureTests/Project.ArchitectureTests.csproj" />
+    <Project Path="tests/Project.UnitTests/Project.UnitTests.csproj" />
+  </Folder>
+</Solution>

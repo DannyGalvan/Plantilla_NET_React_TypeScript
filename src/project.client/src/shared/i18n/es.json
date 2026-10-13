@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "new": "Nuevo",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "restore": "Restaurar",
+    "search": "Buscar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "retry": "Reintentar",
+    "signOut": "Cerrar sesión",
+    "actions": "Acciones",
+    "goHome": "Ir al inicio"
+  },
+  "table": {
+    "noResults": "No hay resultados.",
+    "pageOf": "Página {{page}} de {{pages}}",
+    "total": "{{count}} registros",
+    "rowsPerPage": "Filas por página",
+    "columns": "Columnas",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "nav": {
+    "dashboard": "Inicio",
+    "products": "Productos",
+    "categories": "Categorías",
+    "stockReport": "Reporte de inventario",
+    "users": "Usuarios",
+    "roles": "Roles",
+    "organization": "Organización",
+    "unitTypes": "Tipos de unidad",
+    "tenants": "Tenants",
+    "settings": "Configuración",
+    "profile": "Mi perfil"
+  },
+  "theme": {
+    "customize": "Personalizar apariencia",
+    "description": "Los cambios se aplican al instante y se guardan en este navegador.",
+    "mode": "Modo",
+    "modes": { "light": "Claro", "dark": "Oscuro", "system": "Sistema" },
+    "preset": "Paleta",
+    "presets": {
+      "default": "Índigo",
+      "ocean": "Océano",
+      "forest": "Bosque",
+      "sunset": "Atardecer",
+      "corporate": "Corporativo"
+    },
+    "primaryColor": "Color primario",
+    "useBrandColor": "Usar el de la marca",
+    "radius": "Bordes",
+    "density": "Densidad",
+    "densities": { "comfortable": "Cómoda", "compact": "Compacta" },
+    "language": "Idioma",
+    "reset": "Restablecer"
+  },
+  "languages": { "es": "Español", "en": "English" },
+  "context": {
+    "tenant": "Organización",
+    "unit": "Unidad",
+    "allUnits": "Todas mis unidades",
+    "switched": "Contexto actualizado"
+  },
+  "errors": {
+    "title": "Algo salió mal",
+    "generic": "Ocurrió un error inesperado. Intenta de nuevo.",
+    "network": "No se pudo contactar al servidor.",
+    "notFound": "La página no existe.",
+    "notFoundTitle": "Página no encontrada",
+    "forbidden": "No tienes permiso para ver esta página.",
+    "forbiddenTitle": "Acceso denegado",
+    "traceId": "Código de seguimiento: {{traceId}}",
+    "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo."
+  },
+  "common": {
+    "yes": "Sí",
+    "no": "No",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "loading": "Cargando...",
+    "saved": "Cambios guardados",
+    "deleted": "Registro eliminado",
+    "created": "Registro creado",
+    "confirmDelete": "¿Eliminar este registro?",
+    "confirmDeleteDescription": "Podrás restaurarlo más tarde desde la API.",
+    "name": "Nombre",
+    "description": "Descripción",
+    "code": "Código",
+    "status": "Estado",
+    "createdAt": "Creado"
+  }
+}

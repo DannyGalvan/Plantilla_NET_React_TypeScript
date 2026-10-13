@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "new": "New",
+    "edit": "Edit",
+    "delete": "Delete",
+    "restore": "Restore",
+    "search": "Search",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "retry": "Retry",
+    "signOut": "Sign out",
+    "actions": "Actions",
+    "goHome": "Go home"
+  },
+  "table": {
+    "noResults": "No results.",
+    "pageOf": "Page {{page}} of {{pages}}",
+    "total": "{{count}} records",
+    "rowsPerPage": "Rows per page",
+    "columns": "Columns",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "nav": {
+    "dashboard": "Home",
+    "products": "Products",
+    "categories": "Categories",
+    "stockReport": "Stock report",
+    "users": "Users",
+    "roles": "Roles",
+    "organization": "Organization",
+    "unitTypes": "Unit types",
+    "tenants": "Tenants",
+    "settings": "Settings",
+    "profile": "My profile"
+  },
+  "theme": {
+    "customize": "Customize appearance",
+    "description": "Changes apply instantly and are saved in this browser.",
+    "mode": "Mode",
+    "modes": { "light": "Light", "dark": "Dark", "system": "System" },
+    "preset": "Palette",
+    "presets": {
+      "default": "Indigo",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "sunset": "Sunset",
+      "corporate": "Corporate"
+    },
+    "primaryColor": "Primary color",
+    "useBrandColor": "Use the brand color",
+    "radius": "Corners",
+    "density": "Density",
+    "densities": { "comfortable": "Comfortable", "compact": "Compact" },
+    "language": "Language",
+    "reset": "Reset"
+  },
+  "languages": { "es": "Español", "en": "English" },
+  "context": {
+    "tenant": "Organization",
+    "unit": "Unit",
+    "allUnits": "All my units",
+    "switched": "Context updated"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "generic": "An unexpected error occurred. Try again.",
+    "network": "The server could not be reached.",
+    "notFound": "The page does not exist.",
+    "notFoundTitle": "Page not found",
+    "forbidden": "You do not have permission to see this page.",
+    "forbiddenTitle": "Access denied",
+    "traceId": "Trace id: {{traceId}}",
+    "sessionExpired": "Your session expired. Sign in again."
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "active": "Active",
+    "inactive": "Inactive",
+    "loading": "Loading...",
+    "saved": "Changes saved",
+    "deleted": "Record deleted",
+    "created": "Record created",
+    "confirmDelete": "Delete this record?",
+    "confirmDeleteDescription": "You can restore it later through the API.",
+    "name": "Name",
+    "description": "Description",
+    "code": "Code",
+    "status": "Status",
+    "createdAt": "Created"
+  }
+}

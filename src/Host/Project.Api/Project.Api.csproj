@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <Description>Host HTTP: compone la plataforma y los modulos. Sirve la SPA desde wwwroot en produccion.</Description>
+    <UserSecretsId>project-template-api</UserSecretsId>
+    <SpaRoot>..\..\project.client\</SpaRoot>
+    <SpaProxyLaunchCommand>pnpm dev</SpaProxyLaunchCommand>
+    <SpaProxyServerUrl>https://localhost:5173</SpaProxyServerUrl>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mediator.SourceGenerator">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Project.ServiceDefaults\Project.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Project.Composition\Project.Composition.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+  </ItemGroup>
+
+  <!--
+    dotnet publish builds the SPA (pnpm) and copies dist/ into wwwroot. Docker builds the SPA in its own stage and
+    passes -p:SkipSpaBuild=true.
+  -->
+  <Target Name="PublishSpa" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipSpaBuild)' != 'true'">
+    <Exec WorkingDirectory="$(SpaRoot)" Command="pnpm install --frozen-lockfile" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="pnpm build" />
+    <ItemGroup>
+      <SpaDistFiles Include="$(SpaRoot)dist\**" />
+      <ResolvedFileToPublish Include="@(SpaDistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+        <RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+</Project>

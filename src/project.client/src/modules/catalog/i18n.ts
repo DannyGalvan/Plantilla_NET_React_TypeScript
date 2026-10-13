@@ -1,0 +1,66 @@
+import type { ModuleResources } from '@/shared/i18n';
+
+export const catalogResources: ModuleResources = {
+  es: {
+    categories: {
+      title: 'Categorías',
+      description: 'Clasificación de productos compartida por toda la organización.',
+      new: 'Nueva categoría',
+      edit: 'Editar categoría',
+    },
+    products: {
+      title: 'Productos',
+      description: 'Cada producto pertenece a una unidad (por ejemplo una marca).',
+      new: 'Nuevo producto',
+      edit: 'Editar producto',
+      sku: 'SKU',
+      price: 'Precio',
+      stock: 'Existencia',
+      category: 'Categoría',
+      allCategories: 'Todas las categorías',
+      selectCategory: 'Selecciona una categoría',
+    },
+    reports: {
+      title: 'Reporte de inventario',
+      description: 'Consulta de alto rendimiento con Dapper y procedimiento almacenado, filtrada por tenant y unidad.',
+      category: 'Categoría',
+      products: 'Productos',
+      units: 'Unidades',
+      value: 'Valor del inventario',
+      lowStock: 'Bajo stock',
+      threshold: 'Umbral',
+      noLowStock: 'No hay productos por debajo del umbral.',
+    },
+  },
+  en: {
+    categories: {
+      title: 'Categories',
+      description: 'Product classification shared across the organization.',
+      new: 'New category',
+      edit: 'Edit category',
+    },
+    products: {
+      title: 'Products',
+      description: 'Every product belongs to a unit (for example a brand).',
+      new: 'New product',
+      edit: 'Edit product',
+      sku: 'SKU',
+      price: 'Price',
+      stock: 'Stock',
+      category: 'Category',
+      allCategories: 'All categories',
+      selectCategory: 'Select a category',
+    },
+    reports: {
+      title: 'Stock report',
+      description: 'High-performance query with Dapper and a stored procedure, filtered by tenant and unit.',
+      category: 'Category',
+      products: 'Products',
+      units: 'Units',
+      value: 'Inventory value',
+      lowStock: 'Low stock',
+      threshold: 'Threshold',
+      noLowStock: 'No products below the threshold.',
+    },
+  },
+};

@@ -1,0 +1,20 @@
+# /etc/systemd/system/project-migrations.service
+# One-shot: run before restarting the API on every deployment:
+#   sudo systemctl start project-migrations && sudo systemctl restart project-api
+
+[Unit]
+Description=Project database migrations
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=project
+Group=project
+WorkingDirectory=/opt/project/migrations
+ExecStart=/usr/bin/dotnet /opt/project/migrations/Project.MigrationService.dll migrate
+EnvironmentFile=/etc/project/api.env
+Environment=DOTNET_ENVIRONMENT=Production
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

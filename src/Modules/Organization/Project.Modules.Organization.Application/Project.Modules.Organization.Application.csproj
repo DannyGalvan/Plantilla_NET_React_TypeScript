@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Casos de uso del modulo Organization (CQRS con Mediator), DTOs, validadores y mapeos.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Riok.Mapperly" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.Modules.Organization.Domain\Project.Modules.Organization.Domain.csproj" />
+    <ProjectReference Include="..\Project.Modules.Organization.Contracts\Project.Modules.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Project.Modules.Identity.Contracts\Project.Modules.Identity.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

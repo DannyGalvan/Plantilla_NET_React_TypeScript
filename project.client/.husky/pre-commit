@@ -1,8 +1,0 @@
-#!/usr/bin/env sh
-# Phase 5.2 — pre-commit hook: run lint-staged on staged files so the
-# staged changes are guaranteed to satisfy `pnpm lint`.
-. "$(dirname -- "$0")/_/husky.sh"
-
-cd "$(git rev-parse --show-toplevel)/project.client" 2>/dev/null || cd .
-
-pnpm exec lint-staged --concurrent=false

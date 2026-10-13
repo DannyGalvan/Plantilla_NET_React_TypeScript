@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <Description>Worker de despliegue: aplica migraciones, sincroniza permisos, ejecuta seeders y termina.</Description>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>project-template-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\Project.Api\appsettings*.json" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Project.ServiceDefaults\Project.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Project.Composition\Project.Composition.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+  </ItemGroup>
+
+</Project>

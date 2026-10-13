@@ -1,0 +1,37 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Authors>Danny Galvan</Authors>
+    <Copyright>Copyright (c) 2026 Danny Galvan</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!--
+      Reglas desactivadas de forma deliberada (ver docs/05-arquitectura.md, seccion "Analizadores"):
+      - Documentacion XML opcional (CS1591).
+      - LoggerMessage source-generated solo en hot paths (CA1848, CA1873).
+      - Nombres de dominio intencionales: Module, EventHandler, Guid (CA1711, CA1716, CA1720).
+      - Tipos internos instanciados por DI (CA1812) y tipos publicos que son la API del modulo (CA1515).
+      - Nullable reference types sustituyen la validacion de argumentos publicos (CA1062).
+      - ASP.NET Core no tiene SynchronizationContext (CA2007).
+      - Catch generales solo en bordes que siempre registran: workers y middleware (CA1031).
+      - Diseno de DTOs, genericos y colecciones de configuracion (CA1000, CA1002, CA1024, CA1034, CA1056, CA1724,
+        CA1819, CA2227).
+      - Globalizacion: el backend usa claves de i18n y cultura invariante explicita donde importa
+        (CA1303, CA1304, CA1305, CA1307, CA1308, CA1309, CA1310, CA1311).
+      - AD0001: el RouteHandlerAnalyzer de ASP.NET Core falla con handlers genericos (MapCrud); es un fallo del analizador,
+        no del codigo.
+    -->
+    <NoWarn>$(NoWarn);CS1591;CA1848;CA1873;CA1711;CA1716;CA1720;CA1812;CA1515;CA1062;CA2007;CA1031;CA1000;CA1002;CA1024;CA1034;CA1056;CA1724;CA1819;CA2227;CA1303;CA1304;CA1305;CA1307;CA1308;CA1309;CA1310;CA1311;CA1707;CA1032;CA1064;CA1859;CA1822;CA1852;AD0001</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+</Project>
