@@ -82,13 +82,7 @@ jobs:
       - name: Test against a real ${{ matrix.provider }} (Testcontainers)
         env:
           TEST_DB_PROVIDER: ${{ matrix.provider }}
-        run: |
-          dotnet build tests/Project.Api.FunctionalTests -c Release
-          for i in $(seq 1 10); do
-            echo "::group::Run $i"
-            dotnet test tests/Project.Api.FunctionalTests -c Release --no-build || { echo "::endgroup::"; exit 1; }
-            echo "::endgroup::"
-          done
+        run: dotnet test tests/Project.Api.FunctionalTests -c Release --logger "trx;LogFileName=functional-${{ matrix.provider }}.trx"
 
       - uses: actions/upload-artifact@v4
         if: always()
