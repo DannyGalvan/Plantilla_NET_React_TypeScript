@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Project.Application.Abstractions;
 using Serilog.Core;
 using Serilog.Events;
 using Testcontainers.MsSql;
@@ -70,6 +71,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
     /// <summary>Errors logged by the server, to explain a failed assertion (the console output is not captured).</summary>
     public ServerErrorLog ServerErrors { get; } = new();
 
+    /// <summary>Emails sent by the server under test (delivered by the outbox).</summary>
+    public CapturedEmails Emails { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -87,7 +91,11 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("Tenancy:Mode", tenancyMode);
         builder.UseSetting($"Secrets:{DedicatedSecret}", server.ConnectionString(_database + "_d"));
         builder.UseSetting("Features:platform.admin", "true");
-        builder.ConfigureTestServices(services => services.AddSingleton<ILogEventSink>(ServerErrors));
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<ILogEventSink>(ServerErrors);
+            services.AddSingleton<IEmailSender>(Emails);
+        });
 
         for (var i = 0; i < resolvers.Length; i++)
         {
@@ -119,6 +127,36 @@ public sealed class NoneModeApi(DatabaseServer server) : ApiFactory(server, "Non
 public sealed class SharedModeApi(DatabaseServer server) : ApiFactory(server, "SharedDatabase", ["Host", "Claim"]);
 
 public sealed class HybridModeApi(DatabaseServer server) : ApiFactory(server, "Hybrid", ["Host", "Claim"]);
+
+/// <summary>Email sender that keeps the messages instead of sending them.</summary>
+public sealed class CapturedEmails : IEmailSender
+{
+    private readonly ConcurrentQueue<(string To, string Subject, string Body)> _messages = new();
+
+    public IReadOnlyList<(string To, string Subject, string Body)> Messages => [.. _messages];
+
+    public Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct)
+    {
+        _messages.Enqueue((to, subject, htmlBody));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Waits until an email that matches arrives (the outbox polls every second in the tests).</summary>
+    public async Task<(string To, string Subject, string Body)> WaitForAsync(Func<(string To, string Subject, string Body), bool> match, CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            if (Messages.FirstOrDefault(match) is { To: not null } found)
+            {
+                return found;
+            }
+
+            await Task.Delay(200, ct);
+        }
+
+        throw new TimeoutException("The expected email was not sent.");
+    }
+}
 
 /// <summary>Serilog sink that keeps the errors logged by the server under test.</summary>
 public sealed class ServerErrorLog : ILogEventSink

@@ -38,7 +38,8 @@
     "settings": "Settings",
     "profile": "My profile",
     "files": "Files",
-    "storage": "Storage"
+    "storage": "Storage",
+    "notificationTemplates": "Notification templates"
   },
   "theme": {
     "customize": "Customize appearance",

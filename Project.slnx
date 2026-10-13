@@ -43,6 +43,12 @@
     <Project Path="src/Modules/Files/Project.Modules.Files.Domain/Project.Modules.Files.Domain.csproj" />
     <Project Path="src/Modules/Files/Project.Modules.Files.Infrastructure/Project.Modules.Files.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Application/Project.Modules.Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Contracts/Project.Modules.Notifications.Contracts.csproj" />
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Domain/Project.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/Project.Modules.Notifications.Infrastructure/Project.Modules.Notifications.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

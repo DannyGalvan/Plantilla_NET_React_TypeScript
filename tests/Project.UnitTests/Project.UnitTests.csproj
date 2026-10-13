@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\Modules\Identity\Project.Modules.Identity.Infrastructure\Project.Modules.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Organization\Project.Modules.Organization.Infrastructure\Project.Modules.Organization.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Files\Project.Modules.Files.Infrastructure\Project.Modules.Files.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\Project.Modules.Notifications.Infrastructure\Project.Modules.Notifications.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Catalog\Project.Modules.Catalog.Infrastructure\Project.Modules.Catalog.Infrastructure.csproj" />
   </ItemGroup>
 

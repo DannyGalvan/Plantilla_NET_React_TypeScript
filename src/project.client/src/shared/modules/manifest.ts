@@ -22,6 +22,8 @@ export interface ModuleManifest {
   feature?: string;
   /** Cards the module contributes to the home dashboard (the dashboard knows no module). */
   widgets?: DashboardWidget[];
+  /** Components added to the top bar, before the theme and user menus (for example a notification bell). */
+  topbarItems?: ComponentType[];
 }
 
 /** A card on the home dashboard, rendered only when the user holds `permission`. */

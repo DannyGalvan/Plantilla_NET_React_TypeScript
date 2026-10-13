@@ -10,6 +10,7 @@ import { authApi } from '@/shared/auth/session';
 import type { NavigationItem } from '@/shared/auth/types';
 import { cn } from '@/shared/lib/cn';
 import type { RouteHandle } from '@/shared/modules/manifest';
+import { getActiveModules } from '@/shared/modules/active-modules';
 import { ContextSwitcher } from '@/shared/platform/context-switcher';
 import { usePlatformStore } from '@/shared/platform/platform-config';
 import { ThemeCustomizer } from '@/shared/theme/theme-customizer';
@@ -127,6 +128,7 @@ function UserMenu() {
 
 /** Authenticated layout: sidebar from the server navigation (already filtered by permission), top bar and content. */
 export function AppShell() {
+  const topbarItems = getActiveModules().flatMap((module) => module.topbarItems ?? []);
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
@@ -161,6 +163,9 @@ export function AppShell() {
             <div className="hidden md:block">
               <ContextSwitcher />
             </div>
+            {topbarItems.map((Item, index) => (
+              <Item key={index} />
+            ))}
             <ThemeCustomizer />
             <UserMenu />
           </div>

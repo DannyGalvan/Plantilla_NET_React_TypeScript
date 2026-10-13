@@ -38,7 +38,8 @@
     "settings": "Configuración",
     "profile": "Mi perfil",
     "files": "Archivos",
-    "storage": "Almacenamiento"
+    "storage": "Almacenamiento",
+    "notificationTemplates": "Plantillas de notificación"
   },
   "theme": {
     "customize": "Personalizar apariencia",

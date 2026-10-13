@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Notifications\Project.Modules.Notifications.Infrastructure\Project.Modules.Notifications.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Files\Project.Modules.Files.Infrastructure\Project.Modules.Files.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Tenancy\Project.Modules.Tenancy.Infrastructure\Project.Modules.Tenancy.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Project.Modules.Identity.Infrastructure\Project.Modules.Identity.Infrastructure.csproj" />

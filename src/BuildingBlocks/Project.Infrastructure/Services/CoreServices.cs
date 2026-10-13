@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Project.Application.Abstractions;
 using Project.Application.Files;
+using Project.Application.Notifications;
 using Project.Application.Organization;
 using Project.Application.Security;
 using Project.Application.Settings;
@@ -170,4 +171,10 @@ public sealed class NoOpFileService : IFileService
 
     public Task<IReadOnlyList<FileDescriptor>> ListAsync(string entityType, string entityId, CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<FileDescriptor>>([]);
+}
+
+/// <summary>Used when the Notifications module is not registered.</summary>
+public sealed class NoOpNotificationSender : INotificationSender
+{
+    public Task SendAsync(Notify notification, CancellationToken ct) => Task.CompletedTask;
 }

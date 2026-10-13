@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Infrastructure and endpoints of the Notifications module.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Infrastructure\Project.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Web\Project.Web.csproj" />
+    <ProjectReference Include="..\Project.Modules.Notifications.Application\Project.Modules.Notifications.Application.csproj" />
+  </ItemGroup>
+
+</Project>

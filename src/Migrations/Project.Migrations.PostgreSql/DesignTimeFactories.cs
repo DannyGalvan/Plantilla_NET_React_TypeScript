@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Notifications.Infrastructure;
 using Project.Modules.Files.Infrastructure;
 using Project.Modules.Catalog.Infrastructure;
 using Project.Modules.Identity.Infrastructure.Persistence;
@@ -34,4 +35,9 @@ public sealed class CatalogDbContextFactory : IDesignTimeDbContextFactory<Catalo
 public sealed class FilesDbContextFactory : IDesignTimeDbContextFactory<FilesDbContext>
 {
     public FilesDbContext CreateDbContext(string[] args) => DesignTime.Create<FilesDbContext>(new PostgreSqlProvider(), "Files");
+}
+
+public sealed class NotificationsDbContextFactory : IDesignTimeDbContextFactory<NotificationsDbContext>
+{
+    public NotificationsDbContext CreateDbContext(string[] args) => DesignTime.Create<NotificationsDbContext>(new PostgreSqlProvider(), "Notifications");
 }
