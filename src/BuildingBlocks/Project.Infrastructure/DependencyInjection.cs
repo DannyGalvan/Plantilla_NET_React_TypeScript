@@ -11,6 +11,7 @@ using Project.Application.Security;
 using Project.Application.Sequences;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
+using Project.Application.Workflows;
 using Project.Infrastructure.Outbox;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
@@ -88,6 +89,7 @@ public static class DependencyInjection
         services.TryAddScoped<IFileService, NoOpFileService>();
         services.TryAddScoped<INotificationSender, NoOpNotificationSender>();
         services.TryAddScoped<ISequenceGenerator, NoOpSequenceGenerator>();
+        services.TryAddScoped<IApprovalService, NoOpApprovalService>();
 
         // Data Protection keys are shared by every instance (the Tenancy module persists them in the platform database).
         services.AddDataProtection().SetApplicationName("Project");

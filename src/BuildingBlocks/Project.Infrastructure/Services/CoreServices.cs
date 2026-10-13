@@ -13,6 +13,7 @@ using Project.Application.Security;
 using Project.Application.Sequences;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
+using Project.Application.Workflows;
 using Project.Infrastructure.Tenancy;
 using Project.SharedKernel;
 
@@ -185,4 +186,13 @@ public sealed class NoOpSequenceGenerator : ISequenceGenerator
 {
     public Task<string> NextAsync(string sequence, CancellationToken ct) =>
         throw new InvalidOperationException("Document numbering is not enabled: register the Sequences module.");
+}
+
+/// <summary>Used when the Workflows module is not registered: submissions fail, nothing is pending.</summary>
+public sealed class NoOpApprovalService : IApprovalService
+{
+    public Task<Result<Guid>> SubmitAsync(ApprovalSubmission submission, CancellationToken ct) =>
+        Task.FromResult<Result<Guid>>(Error.Failure("workflows.disabled", "Approval flows are not enabled in this application."));
+
+    public Task<ApprovalStatus?> GetStatusAsync(string entityType, string entityId, CancellationToken ct) => Task.FromResult<ApprovalStatus?>(null);
 }

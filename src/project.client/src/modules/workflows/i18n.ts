@@ -1,0 +1,68 @@
+import type { ModuleResources } from '@/shared/i18n';
+
+export const resources: ModuleResources = {
+  es: {
+    inbox: {
+      title: 'Aprobaciones',
+      description: 'Solicitudes que esperan tu decisión y las que tú enviaste.',
+      pending: 'Por aprobar',
+      mine: 'Mis solicitudes',
+      empty: 'No hay solicitudes.',
+      approve: 'Aprobar',
+      reject: 'Rechazar',
+      cancel: 'Cancelar solicitud',
+      comment: 'Comentario',
+      commentRequired: 'Para rechazar escribe el motivo.',
+      step: 'Paso {{current}} de {{total}}: {{name}}',
+      amount: 'Monto',
+      open: 'Abrir registro',
+      done: 'Decisión registrada.',
+    },
+    statuses: { Pending: 'Pendiente', Approved: 'Aprobada', Rejected: 'Rechazada', Cancelled: 'Cancelada' },
+    definitions: {
+      title: 'Flujos de aprobación',
+      description:
+        'Pasos de cada flujo. El aprobador puede ser un permiso, un rol o un usuario; un monto mínimo hace el paso condicional.',
+      addStep: 'Agregar paso',
+      name: 'Paso',
+      kind: 'Aprobador por',
+      approver: 'Permiso, rol o id de usuario',
+      minAmount: 'Desde monto',
+      customized: 'Personalizado',
+      restore: 'Restaurar original',
+      kinds: { Permission: 'Permiso', Role: 'Rol', User: 'Usuario' },
+    },
+  },
+  en: {
+    inbox: {
+      title: 'Approvals',
+      description: 'Requests waiting for your decision and the ones you submitted.',
+      pending: 'To approve',
+      mine: 'My requests',
+      empty: 'No requests.',
+      approve: 'Approve',
+      reject: 'Reject',
+      cancel: 'Cancel request',
+      comment: 'Comment',
+      commentRequired: 'Write the reason to reject.',
+      step: 'Step {{current}} of {{total}}: {{name}}',
+      amount: 'Amount',
+      open: 'Open record',
+      done: 'Decision recorded.',
+    },
+    statuses: { Pending: 'Pending', Approved: 'Approved', Rejected: 'Rejected', Cancelled: 'Cancelled' },
+    definitions: {
+      title: 'Approval flows',
+      description:
+        'Steps of each flow. The approver can be a permission, a role or a user; a minimum amount makes the step conditional.',
+      addStep: 'Add step',
+      name: 'Step',
+      kind: 'Approver by',
+      approver: 'Permission, role or user id',
+      minAmount: 'From amount',
+      customized: 'Customized',
+      restore: 'Restore default',
+      kinds: { Permission: 'Permission', Role: 'Role', User: 'User' },
+    },
+  },
+};

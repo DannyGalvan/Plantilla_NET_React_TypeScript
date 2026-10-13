@@ -12,6 +12,7 @@ using Project.Application.Abstractions;
 using Project.Application.Jobs;
 using Project.Application.Sequences;
 using Project.Application.Tenancy;
+using Project.Application.Workflows;
 using Serilog.Core;
 using Serilog.Events;
 using Testcontainers.MsSql;
@@ -80,6 +81,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
     /// <summary>Tenants in which the test recurring job ran.</summary>
     public RecordingJob.Log JobRuns { get; } = new();
 
+    /// <summary>Approval outcomes received by the (test) owning module.</summary>
+    public ConcurrentQueue<ApprovalCompletedEvent> Approvals { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -105,6 +109,13 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
             services.AddSingleton(JobRuns);
             services.AddRecurringJob<RecordingJob>(RecordingJob.Name, "0 0 1 1 *", description: "Test job (yearly).");
             services.AddSequence(new SequenceDefinition("tests.invoice", "T-{yyyy}-{0000}", SequenceReset.Yearly));
+            services.AddSingleton(Approvals);
+            services.AddScoped<IDomainEventHandler<ApprovalCompletedEvent>, RecordingApprovalHandler>();
+            services.AddWorkflow(new WorkflowTemplate("tests.purchase", "tests", "Purchase",
+            [
+                new ApprovalStep("Manager", ApproverKind.Permission, "catalog.products.update"),
+                new ApprovalStep("Finance", ApproverKind.Role, "Finance", MinAmount: 1000),
+            ]));
         });
 
         for (var i = 0; i < resolvers.Length; i++)
@@ -152,6 +163,16 @@ public sealed class RecordingJob(RecordingJob.Log log, ITenantContext tenant) : 
     public sealed class Log
     {
         public ConcurrentQueue<Guid> Tenants { get; } = new();
+    }
+}
+
+/// <summary>The "owning module" of the test workflow: records the outcomes it is told about.</summary>
+public sealed class RecordingApprovalHandler(ConcurrentQueue<ApprovalCompletedEvent> outcomes) : IDomainEventHandler<ApprovalCompletedEvent>
+{
+    public Task HandleAsync(ApprovalCompletedEvent domainEvent, CancellationToken ct)
+    {
+        outcomes.Enqueue(domainEvent);
+        return Task.CompletedTask;
     }
 }
 

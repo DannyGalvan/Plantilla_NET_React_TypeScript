@@ -42,7 +42,9 @@
     "notificationTemplates": "Notification templates",
     "audit": "Audit",
     "jobs": "Scheduled jobs",
-    "sequences": "Numbering"
+    "sequences": "Numbering",
+    "approvals": "Approvals",
+    "workflows": "Approval flows"
   },
   "theme": {
     "customize": "Customize appearance",

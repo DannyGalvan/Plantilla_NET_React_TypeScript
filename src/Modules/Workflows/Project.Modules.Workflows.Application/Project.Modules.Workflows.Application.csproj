@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Use cases of the Workflows module.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Riok.Mapperly" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Project.Application\Project.Application.csproj" />
+    <ProjectReference Include="..\Project.Modules.Workflows.Domain\Project.Modules.Workflows.Domain.csproj" />
+    <ProjectReference Include="..\..\Identity\Project.Modules.Identity.Contracts\Project.Modules.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\Project.Modules.Workflows.Contracts\Project.Modules.Workflows.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Workflows.Infrastructure;
 using Project.Modules.Sequences.Infrastructure;
 using Project.Modules.Jobs.Infrastructure;
 using Project.Modules.Audit.Infrastructure;
@@ -58,4 +59,9 @@ public sealed class JobsDbContextFactory : IDesignTimeDbContextFactory<JobsDbCon
 public sealed class SequencesDbContextFactory : IDesignTimeDbContextFactory<SequencesDbContext>
 {
     public SequencesDbContext CreateDbContext(string[] args) => DesignTime.Create<SequencesDbContext>(new SqlServerProvider(), "Sequences");
+}
+
+public sealed class WorkflowsDbContextFactory : IDesignTimeDbContextFactory<WorkflowsDbContext>
+{
+    public WorkflowsDbContext CreateDbContext(string[] args) => DesignTime.Create<WorkflowsDbContext>(new SqlServerProvider(), "Workflows");
 }
