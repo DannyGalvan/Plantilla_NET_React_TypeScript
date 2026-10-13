@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Project.Application.Abstractions;
 using Project.Application.Jobs;
+using Project.Application.Sequences;
 using Project.Application.Tenancy;
 using Serilog.Core;
 using Serilog.Events;
@@ -103,6 +104,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
             services.AddSingleton<IEmailSender>(Emails);
             services.AddSingleton(JobRuns);
             services.AddRecurringJob<RecordingJob>(RecordingJob.Name, "0 0 1 1 *", description: "Test job (yearly).");
+            services.AddSequence(new SequenceDefinition("tests.invoice", "T-{yyyy}-{0000}", SequenceReset.Yearly));
         });
 
         for (var i = 0; i < resolvers.Length; i++)

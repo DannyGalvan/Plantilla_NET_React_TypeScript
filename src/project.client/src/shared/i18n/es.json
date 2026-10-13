@@ -41,7 +41,8 @@
     "storage": "Almacenamiento",
     "notificationTemplates": "Plantillas de notificación",
     "audit": "Auditoría",
-    "jobs": "Tareas programadas"
+    "jobs": "Tareas programadas",
+    "sequences": "Numeración"
   },
   "theme": {
     "customize": "Personalizar apariencia",

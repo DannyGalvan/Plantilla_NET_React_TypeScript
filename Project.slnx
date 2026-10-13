@@ -61,6 +61,12 @@
     <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Domain/Project.Modules.Jobs.Domain.csproj" />
     <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Infrastructure/Project.Modules.Jobs.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Sequences/">
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Application/Project.Modules.Sequences.Application.csproj" />
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Contracts/Project.Modules.Sequences.Contracts.csproj" />
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Domain/Project.Modules.Sequences.Domain.csproj" />
+    <Project Path="src/Modules/Sequences/Project.Modules.Sequences.Infrastructure/Project.Modules.Sequences.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

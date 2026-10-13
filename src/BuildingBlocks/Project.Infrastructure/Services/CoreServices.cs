@@ -10,6 +10,7 @@ using Project.Application.Files;
 using Project.Application.Notifications;
 using Project.Application.Organization;
 using Project.Application.Security;
+using Project.Application.Sequences;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Tenancy;
@@ -177,4 +178,11 @@ public sealed class NoOpFileService : IFileService
 public sealed class NoOpNotificationSender : INotificationSender
 {
     public Task SendAsync(Notify notification, CancellationToken ct) => Task.CompletedTask;
+}
+
+/// <summary>Used when the Sequences module is not registered.</summary>
+public sealed class NoOpSequenceGenerator : ISequenceGenerator
+{
+    public Task<string> NextAsync(string sequence, CancellationToken ct) =>
+        throw new InvalidOperationException("Document numbering is not enabled: register the Sequences module.");
 }

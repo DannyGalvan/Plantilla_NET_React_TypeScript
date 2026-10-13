@@ -6,6 +6,7 @@ using Project.Modules.Files.Infrastructure;
 using Project.Modules.Notifications.Infrastructure;
 using Project.Modules.Audit.Infrastructure;
 using Project.Modules.Jobs.Infrastructure;
+using Project.Modules.Sequences.Infrastructure;
 using Project.Web.Modules;
 
 namespace Project.Composition;
@@ -27,5 +28,6 @@ public static class AppModules
         new NotificationsModule(),
         new AuditModule(),
         new JobsModule(),
+        new SequencesModule(),
     ];
 }
