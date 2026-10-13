@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Project.Application;
 using Project.Application.Abstractions;
 using Project.Application.Auditing;
+using Project.Application.Jobs;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Outbox;
 using Project.Infrastructure.Persistence;
@@ -40,6 +41,24 @@ public sealed class AuditOptions
 
     /// <summary>Longest value stored per property.</summary>
     public int MaxValueLength { get; set; } = 500;
+
+    /// <summary>Entries older than this are deleted by the <c>audit.retention</c> job. 0 keeps them forever.</summary>
+    public int RetentionDays { get; set; } = 365;
+}
+
+/// <summary>Deletes history older than <c>Audit:RetentionDays</c>.</summary>
+public sealed class AuditRetentionJob(AuditDbContext db, IOptions<AuditOptions> options, TimeProvider clock) : IRecurringJob
+{
+    public const string Name = "audit.retention";
+
+    public async Task ExecuteAsync(CancellationToken ct)
+    {
+        if (options.Value.RetentionDays > 0)
+        {
+            var cutoff = clock.GetUtcNow().AddDays(-options.Value.RetentionDays);
+            await db.Entries.Where(e => e.OccurredAt < cutoff).ExecuteDeleteAsync(ct);
+        }
+    }
 }
 
 public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, ModuleDbContextDependencies dependencies)
@@ -219,6 +238,7 @@ public sealed class AuditModule : IModule
         services.AddModuleConventions(typeof(AuditPermissionProvider).Assembly);
         services.AddOptions<AuditOptions>().Bind(configuration.GetSection(AuditOptions.SectionName));
         services.TryAddEnumerable(ServiceDescriptor.Scoped<ISaveChangesStep, ChangeHistoryStep>());
+        services.AddRecurringJob<AuditRetentionJob>(AuditRetentionJob.Name, "0 4 * * *", description: "Deletes history older than the retention period.");
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api) =>

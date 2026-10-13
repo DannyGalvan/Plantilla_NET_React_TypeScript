@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Project.Application.Abstractions;
+using Project.Application.Jobs;
+using Project.Application.Tenancy;
 using Serilog.Core;
 using Serilog.Events;
 using Testcontainers.MsSql;
@@ -74,6 +76,9 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
     /// <summary>Emails sent by the server under test (delivered by the outbox).</summary>
     public CapturedEmails Emails { get; } = new();
 
+    /// <summary>Tenants in which the test recurring job ran.</summary>
+    public RecordingJob.Log JobRuns { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -88,6 +93,7 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         builder.UseSetting("Files:Default:Settings:rootPath", Path.Combine(Path.GetTempPath(), "project-tests", _database));
         builder.UseSetting("RateLimiting:Enabled", "false");
         builder.UseSetting("Outbox:PollingIntervalSeconds", "1");
+        builder.UseSetting("Jobs:PollingIntervalSeconds", "1");
         builder.UseSetting("Tenancy:Mode", tenancyMode);
         builder.UseSetting($"Secrets:{DedicatedSecret}", server.ConnectionString(_database + "_d"));
         builder.UseSetting("Features:platform.admin", "true");
@@ -95,6 +101,8 @@ public class ApiFactory(DatabaseServer server, string tenancyMode, string[] reso
         {
             services.AddSingleton<ILogEventSink>(ServerErrors);
             services.AddSingleton<IEmailSender>(Emails);
+            services.AddSingleton(JobRuns);
+            services.AddRecurringJob<RecordingJob>(RecordingJob.Name, "0 0 1 1 *", description: "Test job (yearly).");
         });
 
         for (var i = 0; i < resolvers.Length; i++)
@@ -127,6 +135,23 @@ public sealed class NoneModeApi(DatabaseServer server) : ApiFactory(server, "Non
 public sealed class SharedModeApi(DatabaseServer server) : ApiFactory(server, "SharedDatabase", ["Host", "Claim"]);
 
 public sealed class HybridModeApi(DatabaseServer server) : ApiFactory(server, "Hybrid", ["Host", "Claim"]);
+
+/// <summary>Recurring job of the tests: records the tenant of the scope it runs in.</summary>
+public sealed class RecordingJob(RecordingJob.Log log, ITenantContext tenant) : IRecurringJob
+{
+    public const string Name = "tests.recording";
+
+    public Task ExecuteAsync(CancellationToken ct)
+    {
+        log.Tenants.Enqueue(tenant.TenantId ?? Guid.Empty);
+        return Task.CompletedTask;
+    }
+
+    public sealed class Log
+    {
+        public ConcurrentQueue<Guid> Tenants { get; } = new();
+    }
+}
 
 /// <summary>Email sender that keeps the messages instead of sending them.</summary>
 public sealed class CapturedEmails : IEmailSender

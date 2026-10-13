@@ -40,7 +40,8 @@
     "files": "Files",
     "storage": "Storage",
     "notificationTemplates": "Notification templates",
-    "audit": "Audit"
+    "audit": "Audit",
+    "jobs": "Scheduled jobs"
   },
   "theme": {
     "customize": "Customize appearance",

@@ -2,6 +2,7 @@ import {
   BarChart3Icon,
   Building2Icon,
   CircleIcon,
+  ClockIcon,
   FolderOpenIcon,
   HardDriveIcon,
   HistoryIcon,
@@ -24,6 +25,7 @@ import {
 const icons: Record<string, LucideIcon> = {
   'bar-chart-3': BarChart3Icon,
   'building-2': Building2Icon,
+  clock: ClockIcon,
   'folder-open': FolderOpenIcon,
   'hard-drive': HardDriveIcon,
   history: HistoryIcon,

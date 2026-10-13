@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Project.Infrastructure.Persistence;
 using Project.Infrastructure.Persistence.Providers;
+using Project.Modules.Jobs.Infrastructure;
 using Project.Modules.Audit.Infrastructure;
 using Project.Modules.Notifications.Infrastructure;
 using Project.Modules.Files.Infrastructure;
@@ -46,4 +47,9 @@ public sealed class NotificationsDbContextFactory : IDesignTimeDbContextFactory<
 public sealed class AuditDbContextFactory : IDesignTimeDbContextFactory<AuditDbContext>
 {
     public AuditDbContext CreateDbContext(string[] args) => DesignTime.Create<AuditDbContext>(new MySqlProvider(), "Audit");
+}
+
+public sealed class JobsDbContextFactory : IDesignTimeDbContextFactory<JobsDbContext>
+{
+    public JobsDbContext CreateDbContext(string[] args) => DesignTime.Create<JobsDbContext>(new MySqlProvider(), "Jobs");
 }

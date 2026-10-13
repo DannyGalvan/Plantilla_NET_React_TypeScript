@@ -40,7 +40,8 @@
     "files": "Archivos",
     "storage": "Almacenamiento",
     "notificationTemplates": "Plantillas de notificación",
-    "audit": "Auditoría"
+    "audit": "Auditoría",
+    "jobs": "Tareas programadas"
   },
   "theme": {
     "customize": "Personalizar apariencia",

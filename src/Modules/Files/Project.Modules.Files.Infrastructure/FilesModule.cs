@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Project.Application;
 using Project.Application.Files;
+using Project.Application.Jobs;
 using Project.Application.Settings;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
@@ -75,6 +76,60 @@ internal sealed class StorageConnectionConfiguration : IEntityTypeConfiguration<
     }
 }
 
+/// <summary>Removes the content of files deleted more than <c>files.PurgeDeletedAfterDays</c> ago, then their metadata.</summary>
+public sealed class PurgeDeletedFilesJob(
+    FilesDbContext db,
+    IStorageAccountResolver accounts,
+    IEnumerable<IFileStorage> storages,
+    ISettingsProvider settings,
+    TimeProvider clock,
+    ILogger<PurgeDeletedFilesJob> logger) : IRecurringJob
+{
+    public const string Name = "files.purge-deleted";
+
+    public async Task ExecuteAsync(CancellationToken ct)
+    {
+        var days = (await settings.GetAsync<FileSettings>(ct)).PurgeDeletedAfterDays;
+        if (days <= 0)
+        {
+            return;
+        }
+
+        var cutoff = clock.GetUtcNow().AddDays(-days);
+        while (true)
+        {
+            var batch = await db.Files.IgnoreQueryFilters([QueryFilters.SoftDelete]).AsNoTracking()
+                .Where(f => f.IsDeleted && f.DeletedAt < cutoff)
+                .OrderBy(f => f.DeletedAt)
+                .Take(100)
+                .ToListAsync(ct);
+
+            foreach (var file in batch)
+            {
+                try
+                {
+                    if (await accounts.ResolveAsync(file.Provider, file.ConnectionId, ct) is { } account
+                        && storages.FirstOrDefault(s => s.Provider == file.Provider) is { } storage)
+                    {
+                        await storage.DeleteAsync(account, file.Location, ct);
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "The content of file {FileId} could not be removed from {Provider}", file.Id, file.Provider);
+                }
+            }
+
+            var ids = batch.Select(f => f.Id).ToList();
+            await db.Files.IgnoreQueryFilters([QueryFilters.SoftDelete]).Where(f => ids.Contains(f.Id)).ExecuteDeleteAsync(ct);
+            if (batch.Count < 100)
+            {
+                return;
+            }
+        }
+    }
+}
+
 public sealed record StartOAuthRequest(string Name, bool IsDefault);
 
 public sealed record CreateConnectionRequest(string Name, string Provider, Dictionary<string, string>? Settings, Dictionary<string, string>? Credentials, bool IsDefault);
@@ -103,6 +158,7 @@ public sealed class FilesModule : IModule
         services.AddScoped<FileAuthorization>();
         services.AddScoped<OAuthStateReader>();
         services.AddScoped<IStorageAccountResolver, StorageAccountResolver>();
+        services.AddRecurringJob<PurgeDeletedFilesJob>(PurgeDeletedFilesJob.Name, "30 3 * * *", description: "Removes deleted files after the retention period.");
 
         // Storage providers (strategies). A new provider is one more registration.
         services.AddMemoryCache();

@@ -55,6 +55,12 @@
     <Project Path="src/Modules/Audit/Project.Modules.Audit.Domain/Project.Modules.Audit.Domain.csproj" />
     <Project Path="src/Modules/Audit/Project.Modules.Audit.Infrastructure/Project.Modules.Audit.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Jobs/">
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Application/Project.Modules.Jobs.Application.csproj" />
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Contracts/Project.Modules.Jobs.Contracts.csproj" />
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Domain/Project.Modules.Jobs.Domain.csproj" />
+    <Project Path="src/Modules/Jobs/Project.Modules.Jobs.Infrastructure/Project.Modules.Jobs.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Migrations/">
     <Project Path="src/Migrations/Project.Migrations.MySql/Project.Migrations.MySql.csproj" />
     <Project Path="src/Migrations/Project.Migrations.PostgreSql/Project.Migrations.PostgreSql.csproj" />

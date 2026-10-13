@@ -99,6 +99,9 @@ public sealed class FileSettings : ISettingsSection
 
     public int MaxFileSizeMb { get; set; } = 25;
 
+    /// <summary>Deleted files stay restorable this many days; then the content is removed from the storage. 0 keeps them.</summary>
+    public int PurgeDeletedAfterDays { get; set; } = 30;
+
     public string[] AllowedExtensions { get; set; } =
         [".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".txt", ".csv", ".xlsx", ".xls", ".docx", ".doc", ".pptx", ".zip", ".xml", ".json"];
 }

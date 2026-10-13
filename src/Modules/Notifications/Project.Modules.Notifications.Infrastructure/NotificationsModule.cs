@@ -6,7 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Project.Application;
+using Project.Application.Jobs;
 using Project.Application.Notifications;
 using Project.Application.Tenancy;
 using Project.Infrastructure.Persistence;
@@ -61,6 +63,29 @@ internal sealed class NotificationTemplateOverrideConfiguration : IEntityTypeCon
     }
 }
 
+public sealed class NotificationsOptions
+{
+    public const string SectionName = "Notifications";
+
+    /// <summary>Read notifications older than this are deleted by the <c>notifications.cleanup</c> job. 0 keeps them.</summary>
+    public int RetentionDays { get; set; } = 90;
+}
+
+/// <summary>Deletes read notifications older than <c>Notifications:RetentionDays</c>.</summary>
+public sealed class NotificationsCleanupJob(NotificationsDbContext db, IOptions<NotificationsOptions> options, TimeProvider clock) : IRecurringJob
+{
+    public const string Name = "notifications.cleanup";
+
+    public async Task ExecuteAsync(CancellationToken ct)
+    {
+        if (options.Value.RetentionDays > 0)
+        {
+            var cutoff = clock.GetUtcNow().AddDays(-options.Value.RetentionDays);
+            await db.Notifications.Where(n => n.ReadAt != null && n.ReadAt < cutoff).ExecuteDeleteAsync(ct);
+        }
+    }
+}
+
 public sealed record UpdateTemplateRequest(string? Subject, string? Body);
 
 /// <summary>
@@ -81,6 +106,8 @@ public sealed class NotificationsModule : IModule
         services.AddScoped<TemplateRenderer>();
         services.AddScoped<INotificationSender, NotificationSender>();
         services.AddNotificationTemplate(NotificationTemplates.TestTemplate);
+        services.AddOptions<NotificationsOptions>().Bind(configuration.GetSection(NotificationsOptions.SectionName));
+        services.AddRecurringJob<NotificationsCleanupJob>(NotificationsCleanupJob.Name, "15 4 * * *", description: "Deletes old read notifications.");
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)
